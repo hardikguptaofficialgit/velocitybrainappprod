@@ -7,55 +7,81 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 from src.core.logging_config import get_logger
 
 
+def _env_str(name: str, default: str) -> str:
+    return os.getenv(name, default)
+
+
+def _env_optional_str(name: str) -> Optional[str]:
+    value = os.getenv(name)
+    return value if value not in {"", None} else None
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value in {"", None}:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value in {"", None}:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 class Settings(BaseModel):
     """Production-ready settings with validation."""
     
     # App settings
-    app_name: str = Field(default='Velocity Brain', description='Application name')
-    env: str = Field(default='dev', description='Environment (dev, staging, prod)')
-    port: int = Field(default=8080, ge=1, le=65535, description='Server port')
+    app_name: str = Field(default_factory=lambda: _env_str('APP_NAME', 'Velocity Brain'), description='Application name')
+    env: str = Field(default_factory=lambda: _env_str('ENV', 'dev'), description='Environment (dev, staging, prod)')
+    port: int = Field(default_factory=lambda: _env_int('PORT', 8080), ge=1, le=65535, description='Server port')
     
     # Database settings
-    database_url: str = Field(default='postgresql://velocity:velocity@localhost:5432/velocitybrain', description='Database connection URL')
-    db_connect_timeout_seconds: int = Field(default=5, ge=1, le=60, description='Database connection timeout')
-    db_lock_timeout_ms: int = Field(default=5000, ge=1000, le=300000, description='Database lock timeout')
-    db_statement_timeout_ms: int = Field(default=15000, ge=1000, le=300000, description='Database statement timeout')
+    database_url: str = Field(default_factory=lambda: _env_str('DATABASE_URL', 'postgresql://velocity:velocity@localhost:5432/velocitybrain'), description='Database connection URL')
+    db_connect_timeout_seconds: int = Field(default_factory=lambda: _env_int('DB_CONNECT_TIMEOUT_SECONDS', 5), ge=1, le=60, description='Database connection timeout')
+    db_lock_timeout_ms: int = Field(default_factory=lambda: _env_int('DB_LOCK_TIMEOUT_MS', 5000), ge=1000, le=300000, description='Database lock timeout')
+    db_statement_timeout_ms: int = Field(default_factory=lambda: _env_int('DB_STATEMENT_TIMEOUT_MS', 15000), ge=1000, le=300000, description='Database statement timeout')
     
     # Embedding settings
-    embed_dim: int = Field(default=1536, ge=1, le=10000, description='Embedding dimension')
-    embedding_provider: str = Field(default='openai-compatible', description='Embedding provider')
-    embedding_model: str = Field(default='text-embedding-3-small', description='Embedding model')
-    model_router: str = Field(default='native', description='Model router')
+    embed_dim: int = Field(default_factory=lambda: _env_int('EMBED_DIM', 1536), ge=1, le=10000, description='Embedding dimension')
+    embedding_provider: str = Field(default_factory=lambda: _env_str('EMBEDDING_PROVIDER', 'openai-compatible'), description='Embedding provider')
+    embedding_model: str = Field(default_factory=lambda: _env_str('EMBEDDING_MODEL', 'text-embedding-3-small'), description='Embedding model')
+    model_router: str = Field(default_factory=lambda: _env_str('MODEL_ROUTER', 'native'), description='Model router')
     
     # Path settings
-    skills_path: str = Field(default='skills', description='Skills directory path')
-    local_storage_path: str = Field(default='./data', description='Local storage path')
-    workspace_root: str = Field(default=str(Path.cwd()), description='Workspace root directory')
-    identity_spec_path: str = Field(default='identity.spec.json', description='Identity specification file path')
+    skills_path: str = Field(default_factory=lambda: _env_str('SKILLS_PATH', 'skills'), description='Skills directory path')
+    local_storage_path: str = Field(default_factory=lambda: _env_str('LOCAL_STORAGE_PATH', './data'), description='Local storage path')
+    workspace_root: str = Field(default_factory=lambda: _env_str('WORKSPACE_ROOT', str(Path.cwd())), description='Workspace root directory')
+    identity_spec_path: str = Field(default_factory=lambda: _env_str('IDENTITY_SPEC_PATH', 'identity.spec.json'), description='Identity specification file path')
     
     # Security settings
-    default_access_level: str = Field(default='private', description='Default access level')
-    allow_unsafe_file_reads: bool = Field(default=False, description='Allow unsafe file reads')
-    mcp_allow_destructive_tools: bool = Field(default=False, description='Allow destructive MCP tools')
+    default_access_level: str = Field(default_factory=lambda: _env_str('DEFAULT_ACCESS_LEVEL', 'private'), description='Default access level')
+    allow_unsafe_file_reads: bool = Field(default_factory=lambda: _env_bool('ALLOW_UNSAFE_FILE_READS', False), description='Allow unsafe file reads')
+    mcp_allow_destructive_tools: bool = Field(default_factory=lambda: _env_bool('MCP_ALLOW_DESTRUCTIVE_TOOLS', False), description='Allow destructive MCP tools')
     
     # Logging settings
-    log_level: str = Field(default='INFO', description='Log level')
-    log_file: Optional[str] = Field(default=None, description='Log file path')
-    enable_json_logging: bool = Field(default=True, description='Enable JSON logging')
+    log_level: str = Field(default_factory=lambda: _env_str('LOG_LEVEL', 'INFO'), description='Log level')
+    log_file: Optional[str] = Field(default_factory=lambda: _env_optional_str('LOG_FILE'), description='Log file path')
+    enable_json_logging: bool = Field(default_factory=lambda: _env_bool('ENABLE_JSON_LOGGING', True), description='Enable JSON logging')
     
     # Security settings
-    secret_key: Optional[str] = Field(default=None, description='Secret key for authentication')
-    jwt_algorithm: str = Field(default='HS256', description='JWT algorithm')
-    access_token_ttl_minutes: int = Field(default=60, ge=1, le=1440, description='Access token TTL in minutes')
-    backend_api_url: str = Field(default='http://localhost:3001', description='Backend API URL for API key validation')
+    secret_key: Optional[str] = Field(default_factory=lambda: _env_optional_str('SECRET_KEY'), description='Secret key for authentication')
+    jwt_algorithm: str = Field(default_factory=lambda: _env_str('JWT_ALGORITHM', 'HS256'), description='JWT algorithm')
+    access_token_ttl_minutes: int = Field(default_factory=lambda: _env_int('ACCESS_TOKEN_TTL_MINUTES', 60), ge=1, le=1440, description='Access token TTL in minutes')
+    backend_api_url: str = Field(default_factory=lambda: _env_str('BACKEND_API_URL', 'http://localhost:3001'), description='Backend API URL for API key validation')
     
     # Rate limiting
-    rate_limit_enabled: bool = Field(default=True, description='Enable rate limiting')
-    rate_limit_requests_per_minute: int = Field(default=100, ge=1, le=10000, description='Rate limit requests per minute')
+    rate_limit_enabled: bool = Field(default_factory=lambda: _env_bool('RATE_LIMIT_ENABLED', True), description='Enable rate limiting')
+    rate_limit_requests_per_minute: int = Field(default_factory=lambda: _env_int('RATE_LIMIT_REQUESTS_PER_MINUTE', 100), ge=1, le=10000, description='Rate limit requests per minute')
     
     # Content validation
-    max_content_length: int = Field(default=10*1024*1024, ge=1024, le=100*1024*1024, description='Max content length in bytes')
-    max_query_length: int = Field(default=2000, ge=100, le=10000, description='Max query length')
+    max_content_length: int = Field(default_factory=lambda: _env_int('MAX_CONTENT_LENGTH', 10*1024*1024), ge=1024, le=100*1024*1024, description='Max content length in bytes')
+    max_query_length: int = Field(default_factory=lambda: _env_int('MAX_QUERY_LENGTH', 2000), ge=100, le=10000, description='Max query length')
     
     @field_validator('env')
     @classmethod
