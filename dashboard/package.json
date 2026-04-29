@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "VelocityBrain Dashboard - API Key Management & Analytics",
   "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
