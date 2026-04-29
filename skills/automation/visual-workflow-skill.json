@@ -1,0 +1,38 @@
+{
+    "skill_key": "visual-workflow-skill",
+    "name": "Visual Workflow Designer",
+    "category": "automation",
+    "version": "2.0.0",
+    "trigger_conditions": [
+        "intent:planning",
+        "intent:execution",
+        "keyword:workflow",
+        "keyword:automate",
+        "keyword:design",
+        "auto:automation"
+    ],
+    "workflow": [
+        "validate_workflow_structure",
+        "create_workflow_nodes",
+        "establish_connections",
+        "validate_logic",
+        "store_workflow",
+        "enable_execution"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "must_validate_workflow_structure",
+        "validate_node_connections"
+    ],
+    "output_structure": {
+        "status": "string",
+        "workflow_id": "string",
+        "node_count": "number",
+        "connection_count": "number",
+        "validation_results": "array",
+        "execution_ready": "boolean",
+        "confidence": "number",
+        "references": "array"
+    }
+}

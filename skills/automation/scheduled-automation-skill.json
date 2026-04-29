@@ -1,0 +1,40 @@
+{
+    "skill_key": "scheduled-automation-skill",
+    "name": "Scheduled Automation",
+    "category": "automation",
+    "version": "2.0.0",
+    "trigger_conditions": [
+        "intent:planning",
+        "intent:execution",
+        "keyword:schedule",
+        "keyword:cron",
+        "keyword:recurring",
+        "keyword:timer",
+        "auto:automation"
+    ],
+    "workflow": [
+        "validate_schedule_config",
+        "calculate_next_execution",
+        "check_dependencies",
+        "execute_scheduled_action",
+        "handle_retries",
+        "update_execution_status"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "must_validate_schedule",
+        "validate_dependencies",
+        "validate_retry_logic"
+    ],
+    "output_structure": {
+        "status": "string",
+        "schedule_id": "string",
+        "next_execution": "string",
+        "dependencies_met": "boolean",
+        "execution_result": "object",
+        "retry_count": "number",
+        "confidence": "number",
+        "references": "array"
+    }
+}

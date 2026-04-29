@@ -1,0 +1,37 @@
+{
+    "skill_key": "predictive-analytics-skill",
+    "name": "Predictive Analytics Engine",
+    "category": "intelligence",
+    "version": "2.0.0",
+    "trigger_conditions": [
+        "intent:planning",
+        "intent:execution",
+        "keyword:forecast",
+        "keyword:predict",
+        "keyword:trends",
+        "auto:analytics"
+    ],
+    "workflow": [
+        "validate_time_period",
+        "collect_historical_data",
+        "generate_forecast",
+        "identify_patterns",
+        "create_insights",
+        "store_predictions"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "must_validate_time_period",
+        "validate_forecast_accuracy"
+    ],
+    "output_structure": {
+        "status": "string",
+        "forecast": "object",
+        "trends": "array",
+        "insights": "array",
+        "model_accuracy": "number",
+        "confidence": "number",
+        "references": "array"
+    }
+}

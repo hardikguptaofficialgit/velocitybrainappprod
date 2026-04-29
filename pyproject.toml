@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "velocitybrain"
+version = "0.10.0"
+description = "Velocity Brain: agent-first memory and execution engine"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "fastapi==0.116.1",
+  "uvicorn[standard]==0.35.0",
+  "psycopg[binary]==3.2.9",
+  "pydantic==2.11.7",
+  "python-dotenv==1.1.1",
+  "python-json-logger==2.0.7",
+  "apscheduler==3.11.0",
+  "pgvector==0.3.6",
+  "requests==2.32.5",
+  "PyJWT==2.10.1",
+  "psutil==7.1.1"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.1",
+  "pytest-asyncio==1.2.0",
+  "httpx==0.28.1"
+]
+automation = [
+  "pytz>=2024.1,<2026.0"
+]
+analytics = [
+  "networkx>=3.4,<4.0",
+  "pandas>=2.2,<3.0",
+  "scikit-learn>=1.5,<2.0"
+]
+nlp = [
+  "spacy>=3.8,<4.0"
+]
+codeintel = [
+  "tree-sitter>=0.24,<0.26",
+  "tree-sitter-python>=0.23,<0.26",
+  "tree-sitter-javascript>=0.23,<0.26",
+  "tree-sitter-typescript>=0.23,<0.26",
+  "tree-sitter-java>=0.23,<0.26",
+  "tree-sitter-cpp>=0.23,<0.26",
+  "tree-sitter-go>=0.23,<0.26",
+  "tree-sitter-rust>=0.23,<0.26"
+]
+full = [
+  "velocitybrain[automation,analytics,nlp,codeintel]"
+]
+
+[project.scripts]
+velocitybrain = "src.cli:main"
+velocityx = "src.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [
+  ".git",
+  ".venv",
+  ".venv-test",
+  "node_modules",
+  "dist",
+  "build",
+  "velocitybrain-open-source",
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"

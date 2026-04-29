@@ -1,0 +1,22 @@
+# Optional feature packs. Install only the groups you enable in production.
+
+# Scheduling and timezone-aware automations
+pytz>=2024.1,<2026.0
+
+# Graph and analytics features
+networkx>=3.4,<4.0
+pandas>=2.2,<3.0
+scikit-learn>=1.5,<2.0
+
+# NLP enrichment
+spacy>=3.8,<4.0
+
+# Code intelligence and repository indexing
+tree-sitter>=0.24,<0.26
+tree-sitter-python>=0.23,<0.26
+tree-sitter-javascript>=0.23,<0.26
+tree-sitter-typescript>=0.23,<0.26
+tree-sitter-java>=0.23,<0.26
+tree-sitter-cpp>=0.23,<0.26
+tree-sitter-go>=0.23,<0.26
+tree-sitter-rust>=0.23,<0.26

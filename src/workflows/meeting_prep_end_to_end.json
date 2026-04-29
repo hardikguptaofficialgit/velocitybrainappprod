@@ -1,0 +1,10 @@
+{
+  "workflow_key": "meeting_prep_end_to_end",
+  "steps": [
+    "intent_detect",
+    "brain_query",
+    "entity_enrich",
+    "briefing_generate",
+    "memory_update"
+  ]
+}

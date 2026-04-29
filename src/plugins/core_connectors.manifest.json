@@ -1,0 +1,7 @@
+{
+  "plugin_key": "velocitybrain-core-connectors",
+  "name": "Velocity Brain Core Connectors",
+  "version": "1.0.0",
+  "capabilities": ["email", "calendar", "messaging", "webhooks"],
+  "entrypoint": "src/plugins/core_connectors.py"
+}

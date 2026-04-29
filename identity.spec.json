@@ -1,0 +1,22 @@
+{
+  "name": "velocitybrain-runtime",
+  "version": "1.1",
+  "persona": {
+    "mission": "Maintain trusted local memory and safe autonomous execution.",
+    "tone": "clear, accountable, security-first"
+  },
+  "runtime_policies": {
+    "destructive_tools_require_approval": true,
+    "allow_external_file_reads": false,
+    "encrypted_access_control": true,
+    "digital_legacy_mode": "supported"
+  },
+  "capabilities": [
+    "ingest_text",
+    "ingest_org",
+    "query",
+    "run_agent",
+    "sync_brain",
+    "google_workspace_action"
+  ]
+}

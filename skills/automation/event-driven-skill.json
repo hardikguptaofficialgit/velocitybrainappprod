@@ -1,0 +1,41 @@
+{
+    "skill_key": "event-driven-skill",
+    "name": "Event-Driven Automation",
+    "category": "automation",
+    "version": "2.0.0",
+    "trigger_conditions": [
+        "intent:planning",
+        "intent:execution",
+        "keyword:event",
+        "keyword:trigger",
+        "keyword:webhook",
+        "keyword:listen",
+        "auto:automation"
+    ],
+    "workflow": [
+        "register_event_listener",
+        "validate_event_data",
+        "match_triggers",
+        "execute_trigger_actions",
+        "handle_event_processing",
+        "store_event_results"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "must_validate_event_data",
+        "validate_trigger_matching",
+        "validate_action_execution"
+    ],
+    "output_structure": {
+        "status": "string",
+        "event_id": "string",
+        "triggers_matched": "number",
+        "actions_executed": "number",
+        "processing_results": "array",
+        "event_processed": "boolean",
+        "confidence": "number",
+        "processing_time_ms": "number",
+        "references": "array"
+    }
+}

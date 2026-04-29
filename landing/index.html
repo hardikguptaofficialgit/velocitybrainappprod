@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VelocityBrain - AI Agent Memory & Execution Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --clay-bg: #f0f0f3;
+            --clay-surface: #ffffff;
+            --clay-text: #2d3748;
+            --clay-text-muted: #718096;
+            --clay-primary: #f97316;
+            --clay-primary-dark: #ea580c;
+            --clay-shadow: 8px 8px 16px #d1d1d4, -8px -8px 16px #ffffff;
+            --clay-shadow-sm: 4px 4px 8px #d1d1d4, -4px -4px 8px #ffffff;
+            --clay-radius: 20px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            line-height: 1.6; 
+            color: var(--clay-text);
+            background: var(--clay-bg);
+        }
+        
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            background: rgba(240, 240, 243, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        
+        .navbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--clay-text);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: var(--clay-text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--clay-primary);
+        }
+        
+        .nav-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: var(--clay-radius);
+            background: var(--clay-primary);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: var(--clay-shadow-sm);
+            transition: transform 0.2s;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 2rem 4rem;
+            background: var(--clay-bg);
+        }
+        
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: white;
+            border-radius: 50px;
+            box-shadow: var(--clay-shadow-sm);
+            font-size: 0.875rem;
+            color: var(--clay-text-muted);
+            margin-bottom: 2rem;
+        }
+        
+        .hero-badge span {
+            color: var(--clay-primary);
+            font-weight: 600;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            color: var(--clay-text);
+        }
+        
+        .hero-description {
+            font-size: 1.25rem;
+            color: var(--clay-text-muted);
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: var(--clay-radius);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: var(--clay-primary);
+            color: white;
+            box-shadow: 4px 4px 8px rgba(249, 115, 22, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.8);
+        }
+        
+        .btn-primary:hover {
+            background: var(--clay-primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--clay-text);
+            box-shadow: var(--clay-shadow-sm);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Hero Stats */
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .hero-stat {
+            text-align: center;
+        }
+        
+        .hero-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--clay-primary);
+        }
+        
+        .hero-stat-label {
+            font-size: 0.875rem;
+            color: var(--clay-text-muted);
+        }
+        
+        /* Capabilities Section */
+        .capabilities {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--clay-text);
+        }
+        
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--clay-text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .capability-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+        
+        .capability-card {
+            background: var(--clay-surface);
+            border-radius: var(--clay-radius);
+            box-shadow: var(--clay-shadow);
+            padding: 2rem;
+            transition: transform 0.2s;
+        }
+        
+        .capability-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .capability-icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            background: linear-gradient(135deg, #fff7ed, #ffedd5);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .capability-icon svg {
+            width: 1.75rem;
+            height: 1.75rem;
+            color: var(--clay-primary);
+        }
+        
+        .capability-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--clay-text);
+        }
+        
+        .capability-card p {
+            color: var(--clay-text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .capability-features {
+            list-style: none;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .capability-features li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--clay-text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        .capability-features li::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            background: var(--clay-primary);
+            border-radius: 50%;
+        }
+        
+        /* Code Preview Section */
+        .code-section {
+            padding: 6rem 2rem;
+            background: white;
+        }
+        
+        .code-section-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .code-preview {
+            background: #1e293b;
+            border-radius: var(--clay-radius);
+            padding: 1.5rem;
+            box-shadow: var(--clay-shadow);
+        }
+        
+        .code-header {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .code-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .code-dot.red { background: #ef4444; }
+        .code-dot.yellow { background: #f59e0b; }
+        .code-dot.green { background: #10b981; }
+        
+        .code-content {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: #e2e8f0;
+        }
+        
+        .code-content .keyword { color: #c084fc; }
+        .code-content .string { color: #86efac; }
+        .code-content .function { color: #60a5fa; }
+        .code-content .comment { color: #64748b; }
+        
+        /* Pricing Section */
+        .pricing {
+            padding: 6rem 2rem;
+            background: var(--clay-bg);
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .pricing-card {
+            background: var(--clay-surface);
+            border-radius: var(--clay-radius);
+            box-shadow: var(--clay-shadow);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .pricing-card.popular {
+            position: relative;
+            border: 2px solid var(--clay-primary);
+        }
+        
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--clay-primary);
+            color: white;
+            padding: 0.35rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            box-shadow: var(--clay-shadow-sm);
+        }
+        
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .price {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--clay-text);
+            margin: 1rem 0;
+        }
+        
+        .price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--clay-text-muted);
+        }
+        
+        .pricing-features {
+            list-style: none;
+            padding: 1.5rem 0;
+            text-align: left;
+        }
+        
+        .pricing-features li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            color: var(--clay-text-muted);
+            font-size: 0.95rem;
+        }
+        
+        .pricing-features li::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/contain no-repeat;
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--clay-text);
+            color: white;
+            padding: 4rem 2rem 2rem;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+        
+        .footer-brand p {
+            color: #94a3b8;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .footer-links h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .footer-links ul {
+            list-style: none;
+        }
+        
+        .footer-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            line-height: 2;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--clay-primary);
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid #334155;
+            padding-top: 2rem;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar { padding: 1rem; }
+            .nav-links { display: none; }
+            
+            .hero { padding-top: 5rem; }
+            .hero h1 { font-size: 2.25rem; }
+            .hero-description { font-size: 1rem; }
+            .hero-stats { flex-direction: column; gap: 1.5rem; }
+            
+            .code-section-content { grid-template-columns: 1fr; }
+            .footer-content { grid-template-columns: 1fr; gap: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="#" class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect x="8" y="2" width="4" height="4" fill="#f97316"/>
+                    <rect x="12" y="2" width="4" height="4" fill="#f97316"/>
+                    <rect x="16" y="2" width="4" height="4" fill="#f97316"/>
+                    <rect x="20" y="2" width="4" height="4" fill="#f97316"/>
+                    <rect x="4" y="6" width="4" height="4" fill="#f97316"/>
+                    <rect x="8" y="6" width="4" height="4" fill="#f97316"/>
+                    <rect x="12" y="6" width="4" height="4" fill="#f97316"/>
+                    <rect x="16" y="6" width="4" height="4" fill="#f97316"/>
+                    <rect x="20" y="6" width="4" height="4" fill="#f97316"/>
+                    <rect x="24" y="6" width="4" height="4" fill="#f97316"/>
+                    <rect x="2" y="10" width="4" height="4" fill="#f97316"/>
+                    <rect x="6" y="10" width="4" height="4" fill="#f97316"/>
+                    <rect x="10" y="10" width="4" height="4" fill="#f97316"/>
+                    <rect x="14" y="10" width="4" height="4" fill="#f97316"/>
+                    <rect x="18" y="10" width="4" height="4" fill="#f97316"/>
+                    <rect x="22" y="10" width="4" height="4" fill="#f97316"/>
+                    <rect x="26" y="10" width="4" height="4" fill="#f97316"/>
+                    <rect x="2" y="14" width="4" height="4" fill="#f97316"/>
+                    <rect x="6" y="14" width="4" height="4" fill="#f97316"/>
+                    <rect x="10" y="14" width="4" height="4" fill="#f97316"/>
+                    <rect x="14" y="14" width="4" height="4" fill="#f97316"/>
+                    <rect x="18" y="14" width="4" height="4" fill="#f97316"/>
+                    <rect x="22" y="14" width="4" height="4" fill="#f97316"/>
+                    <rect x="26" y="14" width="4" height="4" fill="#f97316"/>
+                    <rect x="4" y="18" width="4" height="4" fill="#f97316"/>
+                    <rect x="8" y="18" width="4" height="4" fill="#f97316"/>
+                    <rect x="12" y="18" width="4" height="4" fill="#f97316"/>
+                    <rect x="16" y="18" width="4" height="4" fill="#f97316"/>
+                    <rect x="20" y="18" width="4" height="4" fill="#f97316"/>
+                    <rect x="24" y="18" width="4" height="4" fill="#f97316"/>
+                    <rect x="6" y="22" width="4" height="4" fill="#f97316"/>
+                    <rect x="10" y="22" width="4" height="4" fill="#f97316"/>
+                    <rect x="14" y="22" width="4" height="4" fill="#f97316"/>
+                    <rect x="18" y="22" width="4" height="4" fill="#f97316"/>
+                    <rect x="22" y="22" width="4" height="4" fill="#f97316"/>
+                    <rect x="10" y="26" width="4" height="4" fill="#f97316"/>
+                    <rect x="14" y="26" width="4" height="4" fill="#f97316"/>
+                    <rect x="18" y="26" width="4" height="4" fill="#f97316"/>
+                    <rect x="0" y="12" width="2" height="4" fill="#f97316"/>
+                    <rect x="30" y="12" width="2" height="4" fill="#f97316"/>
+                    <rect x="0" y="8" width="2" height="4" fill="#f97316"/>
+                    <rect x="30" y="8" width="2" height="4" fill="#f97316"/>
+                </svg>
+                VelocityBrain
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#api">API</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#docs">Docs</a></li>
+            </ul>
+            <a href="/dashboard" class="nav-btn">Dashboard</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span>New</span> Now with Appwrite Integration
+            </div>
+            <h1>Give Your AI Agent a Real Brain</h1>
+            <p class="hero-description">
+                VelocityBrain is the open-source memory and execution engine for AI agents. 
+                Store context, retrieve knowledge, and execute skills through a simple API.
+            </p>
+            <div class="hero-buttons">
+                <a href="#get-started" class="btn btn-primary">
+                    Get Started Free
+                </a>
+                <a href="https://github.com/velocitybrain/velocitybrain-client" class="btn btn-secondary">
+                    View on GitHub
+                </a>
+            </div>
+            
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value">10ms</div>
+                    <div class="hero-stat-label">Avg Response Time</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">99.9%</div>
+                    <div class="hero-stat-label">Uptime</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">10K+</div>
+                    <div class="hero-stat-label">Daily Requests</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities Section -->
+    <section class="capabilities" id="features">
+        <div class="section-header">
+            <h2>Everything Your Agent Needs</h2>
+            <p>Powerful capabilities designed to supercharge your AI agents with memory, skills, and execution.</p>
+        </div>
+        
+        <div class="capability-grid">
+            <div class="capability-card">
+                <div class="capability-icon">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                </div>
+                <h3>Persistent Memory</h3>
+                <p>Store and retrieve context across conversations. Your agent remembers user preferences, conversation history, and learned facts.</p>
+                <ul class="capability-features">
+                    <li>Long-term memory storage</li>
+                    <li>Context-aware retrieval</li>
+                    <li>Semantic search</li>
+                </ul>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <h3>Fast Execution</h3>
+                <p>Execute skills and workflows with sub-second response times. Built for performance at scale.</p>
+                <ul class="capability-features">
+                    <li>Sub-100ms response times</li>
+                    <li>Auto-scaling infrastructure</li>
+                    <li>Global edge deployment</li>
+                </ul>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
+                    </svg>
+                </div>
+                <h3>MCP Compatible</h3>
+                <p>Works seamlessly with Claude Desktop, OpenAI Codex, and any MCP-capable client. Just configure and go.</p>
+                <ul class="capability-features">
+                    <li>Claude Desktop integration</li>
+                    <li>OpenAI Codex support</li>
+                    <li>Standard MCP protocol</li>
+                </ul>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <h3>Extensible Skills</h3>
+                <p>Create, share, and discover skills. Build on the community-driven skill marketplace or create your own.</p>
+                <ul class="capability-features">
+                    <li>Custom skill creation</li>
+                    <li>Skill marketplace</li>
+                    <li>Version management</li>
+                </ul>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <h3>Analytics Dashboard</h3>
+                <p>Track usage, monitor performance, and optimize your agent with detailed analytics and insights.</p>
+                <ul class="capability-features">
+                    <li>Real-time usage metrics</li>
+                    <li>Performance monitoring</li>
+                    <li>Cost optimization</li>
+                </ul>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <h3>Enterprise Security</h3>
+                <p>Built with security in mind. API key authentication, rate limiting, and comprehensive audit logging.</p>
+                <ul class="capability-features">
+                    <li>API key authentication</li>
+                    <li>Rate limiting & quotas</li>
+                    <li>Audit logging</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Preview Section -->
+    <section class="code-section" id="api">
+        <div class="code-section-content">
+            <div>
+                <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">Simple, Powerful API</h2>
+                <p style="color: var(--clay-text-muted); margin-bottom: 2rem;">
+                    Integrate VelocityBrain in minutes with our RESTful API. 
+                    Store memory, execute skills, and retrieve context with simple HTTP requests.
+                </p>
+                <ul style="list-style: none;">
+                    <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                        <span style="width: 24px; height: 24px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </span>
+                        <span>RESTful API with JSON responses</span>
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                        <span style="width: 24px; height: 24px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </span>
+                        <span>SDKs for Python, JavaScript, and more</span>
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                        <span style="width: 24px; height: 24px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </span>
+                        <span>WebSocket support for real-time updates</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="code-preview">
+                <div class="code-header">
+                    <div class="code-dot red"></div>
+                    <div class="code-dot yellow"></div>
+                    <div class="code-dot green"></div>
+                </div>
+                <div class="code-content">
+                    <span class="comment">// Store memory for your agent</span><br>
+                    <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">'/v1/memory/store'</span>, {<br>
+                    &nbsp;&nbsp;method: <span class="string">'POST'</span>,<br>
+                    &nbsp;&nbsp;headers: {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="string">'Authorization'</span>: <span class="string">'Bearer YOUR_API_KEY'</span>,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="string">'Content-Type'</span>: <span class="string">'application/json'</span><br>
+                    &nbsp;&nbsp;},<br>
+                    &nbsp;&nbsp;body: <span class="function">JSON.stringify</span>({<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;agentId: <span class="string">'agent-123'</span>,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;content: <span class="string">'User prefers dark mode'</span>,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;metadata: { type: <span class="string">'preference'</span> }<br>
+                    &nbsp;&nbsp;})<br>
+                    });
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="section-header">
+            <h2>Simple, Transparent Pricing</h2>
+            <p>Start free, upgrade when you need more. No hidden fees.</p>
+        </div>
+        
+        <div class="pricing-grid" id="get-started">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="price">$0<span>/month</span></div>
+                <p style="color: var(--clay-text-muted); margin-bottom: 1.5rem;">Perfect for trying out VelocityBrain</p>
+                <ul class="pricing-features">
+                    <li>100 requests/day</li>
+                    <li>Basic query & ingest</li>
+                    <li>Community support</li>
+                    <li>Standard response time</li>
+                </ul>
+                <a href="#" class="btn btn-secondary" style="width: 100%; justify-content: center;">Get Started</a>
+            </div>
+            
+            <div class="pricing-card popular">
+                <div class="popular-badge">Most Popular</div>
+                <h3>Pro</h3>
+                <div class="price">$19<span>/month</span></div>
+                <p style="color: var(--clay-text-muted); margin-bottom: 1.5rem;">For developers and small teams</p>
+                <ul class="pricing-features">
+                    <li>10,000 requests/day</li>
+                    <li>All skills & advanced features</li>
+                    <li>Priority support</li>
+                    <li>Analytics dashboard</li>
+                    <li>Custom skill creation</li>
+                </ul>
+                <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Upgrade to Pro</a>
+            </div>
+            
+            <div class="pricing-card">
+                <h3>Enterprise</h3>
+                <div class="price">$99<span>/month</span></div>
+                <p style="color: var(--clay-text-muted); margin-bottom: 1.5rem;">For organizations with advanced needs</p>
+                <ul class="pricing-features">
+                    <li>Unlimited requests</li>
+                    <li>Custom deployment</li>
+                    <li>Dedicated support</li>
+                    <li>SLA guarantee</li>
+                    <li>SSO & team management</li>
+                </ul>
+                <a href="#" class="btn btn-secondary" style="width: 100%; justify-content: center;">Contact Sales</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <a href="#" class="logo" style="color: white;">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect x="8" y="2" width="4" height="4" fill="#f97316"/>
+                        <rect x="12" y="2" width="4" height="4" fill="#f97316"/>
+                        <rect x="16" y="2" width="4" height="4" fill="#f97316"/>
+                        <rect x="20" y="2" width="4" height="4" fill="#f97316"/>
+                        <rect x="4" y="6" width="4" height="4" fill="#f97316"/>
+                        <rect x="8" y="6" width="4" height="4" fill="#f97316"/>
+                        <rect x="12" y="6" width="4" height="4" fill="#f97316"/>
+                        <rect x="16" y="6" width="4" height="4" fill="#f97316"/>
+                        <rect x="20" y="6" width="4" height="4" fill="#f97316"/>
+                        <rect x="24" y="6" width="4" height="4" fill="#f97316"/>
+                        <rect x="10" y="26" width="4" height="4" fill="#f97316"/>
+                        <rect x="14" y="26" width="4" height="4" fill="#f97316"/>
+                        <rect x="18" y="26" width="4" height="4" fill="#f97316"/>
+                    </svg>
+                    VelocityBrain
+                </a>
+                <p>The open-source memory and execution engine for AI agents. Built for developers, by developers.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Product</h4>
+                <ul>
+                    <li><a href="#">Features</a></li>
+                    <li><a href="#">Pricing</a></li>
+                    <li><a href="#">API Docs</a></li>
+                    <li><a href="#">Changelog</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">Tutorials</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Community</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">GitHub</a></li>
+                    <li><a href="#">Discord</a></li>
+                    <li><a href="#">Twitter</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>2024 VelocityBrain. Open-source client, proprietary core.</p>
+        </div>
+    </footer>
+</body>
+</html>

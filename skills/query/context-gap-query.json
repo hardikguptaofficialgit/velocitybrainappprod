@@ -1,0 +1,31 @@
+{
+    "skill_key": "context-gap-query",
+    "name": "context gap query",
+    "category": "query",
+    "version": "1.0.0",
+    "trigger_conditions": [
+        "intent:query",
+        "keyword:gap",
+        "keyword:missing",
+        "auto:query"
+    ],
+    "workflow": [
+        "validate_input",
+        "brain_first_lookup",
+        "execute_core_steps",
+        "validate_output",
+        "write_audit"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "must_preserve_access_level"
+    ],
+    "output_structure": {
+        "status": "string",
+        "summary": "string",
+        "confidence": "number",
+        "references": "array",
+        "payload": "object"
+    }
+}

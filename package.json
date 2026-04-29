@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@revenuecat/purchases-js": "^1.35.0",
+    "svgl": "^0.0.1"
+  }
+}

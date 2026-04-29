@@ -1,0 +1,72 @@
+# Production Dockerfile with security best practices
+FROM python:3.11-slim as builder
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r velocitybrain && useradd -r -g velocitybrain velocitybrain
+
+# Set work directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt requirements-prod.txt ./
+
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install -r requirements-prod.txt
+
+# Production stage
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/home/velocitybrain/.local/bin:$PATH"
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create non-root user
+RUN groupadd -r velocitybrain && useradd -r -g velocitybrain velocitybrain
+
+# Set work directory
+WORKDIR /app
+
+# Copy Python dependencies from builder stage
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY --chown=velocitybrain:velocitybrain . .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs && \
+    chown -R velocitybrain:velocitybrain /app
+
+# Switch to non-root user
+USER velocitybrain
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/v1/healthz || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# Security: Run the application
+CMD ["python", "-m", "src.cli", "serve", "--host", "0.0.0.0", "--port", "8080"]

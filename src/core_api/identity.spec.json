@@ -1,0 +1,44 @@
+{
+  "identity": {
+    "name": "VelocityBrain Core API",
+    "version": "1.0.0",
+    "description": "Proprietary core engine API for VelocityBrain",
+    "environment": "development"
+  },
+  "policy": {
+    "default_access_level": "private",
+    "allow_destructive_operations": false,
+    "audit_logging": true,
+    "rate_limiting": true
+  },
+  "capabilities": {
+    "max_content_length": 10485760,
+    "max_query_length": 2000,
+    "supported_formats": ["text", "json", "markdown"],
+    "skills_enabled": true,
+    "mcp_enabled": true
+  },
+  "security": {
+    "jwt_expiry": 3600,
+    "max_login_attempts": 5,
+    "session_timeout": 1800,
+    "encryption_required": true
+  },
+  "limits": {
+    "free_tier": {
+      "daily_requests": 100,
+      "max_file_size": 1048576,
+      "skills": ["basic_query", "basic_ingest", "summarize", "extract"]
+    },
+    "pro_tier": {
+      "daily_requests": 10000,
+      "max_file_size": 10485760,
+      "skills": ["all"]
+    },
+    "enterprise_tier": {
+      "daily_requests": -1,
+      "max_file_size": 104857600,
+      "skills": ["all", "custom_models", "dedicated_instances"]
+    }
+  }
+}

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Velocity Brain Guide</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/guide/static/styles.css" />
+  </head>
+
+  <body>
+    <!-- Background grid -->
+    <div class="page-bg" aria-hidden="true"></div>
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="brand">
+        <pre id="ansi-hero" class="ansi-hero ansi-nav" aria-hidden="true"></pre>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="copy-link" class="topbar-btn" aria-label="Copy deep link">Copy Link</button>
+
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          aria-label="Toggle theme"
+        >
+          Theme
+        </button>
+      </div>
+    </header>
+
+    <!-- Layout -->
+    <main class="layout">
+      <!-- Sidebar -->
+      <aside
+        class="sidebar"
+        id="sidebar"
+        aria-label="Sidebar navigation"
+      >
+        <div class="sidebar-head">
+          <h1 class="sidebar-title">Docs</h1>
+          <p class="sidebar-sub">
+            Architecture, flows, APIs, runtime.
+          </p>
+        </div>
+
+        <div class="search-wrap">
+          <input
+            id="doc-search"
+            type="search"
+            placeholder="Search…"
+            autocomplete="off"
+            aria-label="Search documentation"
+          />
+        </div>
+
+        <section class="meta-section" aria-label="Guide status">
+          <h2 class="meta-title">System Status</h2>
+          <div class="status-list">
+            <div class="status-item"><span>API</span><strong id="status-api">Checking...</strong></div>
+            <div class="status-item"><span>Docs Pages</span><strong id="status-pages">-</strong></div>
+            <div class="status-item status-item-wrap"><span>Last Updated</span><strong id="status-runtime-updated">-</strong></div>
+          </div>
+        </section>
+
+        <section class="meta-section" aria-label="OpenClaw profile">
+          <h2 class="meta-title">OpenClaw Profile</h2>
+          <div class="status-list">
+            <div class="status-item"><span>Command</span><strong id="status-openclaw-command">-</strong></div>
+            <div class="status-item"><span>Tools</span><strong id="status-openclaw-tools">-</strong></div>
+            <div class="status-item"><span>Skills</span><strong id="status-openclaw-skills">-</strong></div>
+            <div class="status-item status-item-wrap"><span>Smoke Flow</span><strong id="status-openclaw-flow">-</strong></div>
+          </div>
+        </section>
+
+        <section class="meta-section" aria-label="Audit trail">
+          <h2 class="meta-title">Audit Trail</h2>
+          <div class="status-list">
+            <div class="status-item"><span>Recent Events</span><strong id="status-audit-count">-</strong></div>
+            <div class="status-item status-item-wrap"><span>Latest Event</span><strong id="status-audit-latest">-</strong></div>
+          </div>
+        </section>
+
+        <section class="meta-section" aria-label="Recent pages">
+          <h2 class="meta-title">Recent Pages</h2>
+          <nav id="recent-nav" class="recent-nav"></nav>
+        </section>
+
+        <nav
+          id="doc-nav"
+          class="doc-nav"
+          aria-label="Documentation navigation"
+        ></nav>
+      </aside>
+
+      <!-- Content -->
+      <section class="content-panel">
+        <!-- Header -->
+        <div class="content-head">
+          <button
+            id="menu-toggle"
+            class="menu-toggle"
+            aria-label="Toggle navigation"
+          >
+            ☰
+          </button>
+
+          <div class="content-title-wrap">
+            <h2 id="page-title">Loading...</h2>
+            <span id="page-path" class="page-path"></span>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="content-body">
+          <!-- Main doc -->
+          <article
+            id="doc-content"
+            class="doc-content"
+            role="article"
+          ></article>
+
+          <!-- TOC -->
+          <aside
+            class="toc-panel"
+            id="toc-panel"
+            aria-label="Table of contents"
+          >
+            <h3 class="toc-title">On this page</h3>
+            <nav id="toc-nav" class="toc-nav"></nav>
+          </aside>
+        </div>
+
+        <!-- Footer nav -->
+        <div class="doc-nav-footer">
+          <button
+            id="prev-page"
+            class="page-nav-btn"
+            type="button"
+          >
+            ← Previous
+          </button>
+
+          <button
+            id="next-page"
+            class="page-nav-btn"
+            type="button"
+          >
+            Next →
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Script -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <script src="/guide/static/app.js"></script>
+  </body>
+</html>

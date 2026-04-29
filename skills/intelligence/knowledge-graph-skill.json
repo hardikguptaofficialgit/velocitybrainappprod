@@ -1,0 +1,39 @@
+{
+    "skill_key": "knowledge-graph-skill",
+    "name": "Knowledge Graph Analyzer",
+    "category": "intelligence",
+    "version": "2.0.0",
+    "trigger_conditions": [
+        "intent:query",
+        "intent:planning",
+        "keyword:relationships",
+        "keyword:connections",
+        "keyword:graph",
+        "auto:intelligence"
+    ],
+    "workflow": [
+        "validate_entities",
+        "analyze_relationships",
+        "discover_connections",
+        "find_paths",
+        "calculate_centrality",
+        "update_graph",
+        "store_insights"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "validate_graph_structure",
+        "validate_path_length"
+    ],
+    "output_structure": {
+        "status": "string",
+        "relationships": "array",
+        "paths": "array",
+        "central_entities": "array",
+        "graph_metrics": "object",
+        "insights": "array",
+        "confidence": "number",
+        "references": "array"
+    }
+}

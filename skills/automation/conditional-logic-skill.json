@@ -1,0 +1,39 @@
+{
+    "skill_key": "conditional-logic-skill",
+    "name": "Conditional Logic Engine",
+    "category": "automation",
+    "version": "2.0.0",
+    "trigger_conditions": [
+        "intent:planning",
+        "intent:execution",
+        "keyword:condition",
+        "keyword:rule",
+        "keyword:logic",
+        "keyword:if",
+        "auto:automation"
+    ],
+    "workflow": [
+        "parse_conditions",
+        "evaluate_expressions",
+        "apply_logical_operators",
+        "determine_actions",
+        "execute_actions",
+        "store_results"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "must_validate_conditions",
+        "validate_logical_expressions"
+    ],
+    "output_structure": {
+        "status": "string",
+        "rule_id": "string",
+        "conditions_evaluated": "number",
+        "actions_executed": "number",
+        "evaluation_results": "array",
+        "confidence": "number",
+        "execution_time_ms": "number",
+        "references": "array"
+    }
+}

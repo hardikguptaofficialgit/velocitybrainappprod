@@ -1,0 +1,29 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: velocity
+      POSTGRES_PASSWORD: velocity
+      POSTGRES_DB: velocitybrain
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://velocity:velocity@db:5432/velocitybrain
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/app
+    command: python -m src.cli serve --host 0.0.0.0 --port 8080 --reload
+
+volumes:
+  pgdata:
+

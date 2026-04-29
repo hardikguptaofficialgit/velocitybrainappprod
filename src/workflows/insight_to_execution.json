@@ -1,0 +1,10 @@
+{
+  "workflow_key": "insight_to_execution",
+  "steps": [
+    "pattern_detect",
+    "decision_analysis",
+    "action_plan",
+    "execute_actions",
+    "timeline_append"
+  ]
+}

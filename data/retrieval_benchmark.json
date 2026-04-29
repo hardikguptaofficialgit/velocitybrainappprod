@@ -1,0 +1,23 @@
+[
+  {
+    "id": "jane-doe",
+    "source": "benchmark-note",
+    "seed_content": "Met Hardik Gupta from Acme and discussed GTM.",
+    "question": "What do I know about Hardik Gupta?",
+    "expected_slugs": ["jane-doe"]
+  },
+  {
+    "id": "raj-patel",
+    "source": "benchmark-note",
+    "seed_content": "Spoke with Raj Patel from Northstar about roadmap and execution.",
+    "question": "Prepare me for meeting with Raj Patel tomorrow.",
+    "expected_slugs": ["raj-patel"]
+  },
+  {
+    "id": "maya-chen",
+    "source": "benchmark-note",
+    "seed_content": "Reviewed sprint plan with Maya Chen at Orbit Labs.",
+    "question": "Summarize what I know about Maya Chen.",
+    "expected_slugs": ["maya-chen"]
+  }
+]

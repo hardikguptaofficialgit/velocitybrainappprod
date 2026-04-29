@@ -1,0 +1,14 @@
+[
+  {
+    "id": "react-rerender",
+    "text": "The reason your React component re-renders is that you create a new object on every render. Wrap the object creation in useMemo and pass stable dependencies."
+  },
+  {
+    "id": "db-timeout",
+    "text": "Your database query times out because the statement scans too many rows without an index. Add an index on the filter columns and reduce the result set with a stricter where clause."
+  },
+  {
+    "id": "api-auth",
+    "text": "The request fails because the authentication middleware expects a bearer token but the client sends a raw token string. Send an Authorization header with the Bearer prefix and validate token expiry before retries."
+  }
+]

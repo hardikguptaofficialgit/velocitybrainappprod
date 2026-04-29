@@ -1,0 +1,36 @@
+{
+    "skill_key": "semantic-analysis-skill",
+    "name": "Semantic Analysis Engine",
+    "category": "intelligence",
+    "version": "2.0.0",
+    "trigger_conditions": [
+        "intent:query",
+        "intent:planning",
+        "intent:execution",
+        "keyword:analyze",
+        "keyword:understand",
+        "auto:intelligence"
+    ],
+    "workflow": [
+        "validate_input",
+        "semantic_analysis",
+        "context_enhancement",
+        "generate_insights",
+        "store_analysis"
+    ],
+    "validation_rules": [
+        "must_include_references",
+        "must_include_confidence",
+        "must_preserve_access_level",
+        "validate_semantic_confidence"
+    ],
+    "output_structure": {
+        "status": "string",
+        "semantic_analysis": "object",
+        "enhanced_context": "array",
+        "insights": "array",
+        "confidence": "number",
+        "processing_time_ms": "number",
+        "references": "array"
+    }
+}
