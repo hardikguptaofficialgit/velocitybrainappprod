@@ -21,7 +21,7 @@ export const isBackendUnavailable = (error) => {
 export const getErrorMessage = (error, fallbackMessage) => {
   if (isBackendUnavailable(error)) {
     const apiTarget = configuredApiUrl || 'the dashboard proxy on port 3000';
-    return `Backend is unavailable right now. Tried ${apiTarget}. Make sure the API server is reachable on port 5001.`;
+    return `Backend is unavailable right now. Tried ${apiTarget}. Make sure the configured API server is reachable.`;
   }
 
   if (error?.response?.status === 401) {

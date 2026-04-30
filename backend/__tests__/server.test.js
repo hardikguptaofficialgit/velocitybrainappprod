@@ -366,6 +366,25 @@ describe('Backend API', () => {
         expect(response.body.recentActivity).toHaveLength(1);
     });
 
+    test('dashboard agents returns repo-backed agent runtime status', async () => {
+        const response = await request(app)
+            .get('/api/dashboard/agents')
+            .set('Authorization', 'Bearer test-token');
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(Array.isArray(response.body.agents)).toBe(true);
+        expect(response.body.agents.length).toBeGreaterThan(0);
+        expect(response.body.workspace.agentsMdPresent).toBe(true);
+        expect(response.body.workspace.mcpRuntimePresent).toBe(true);
+        expect(response.body.workspace.integrationDocsPresent).toBeGreaterThan(0);
+        expect(response.body.workspace.setupScriptsPresent).toBeGreaterThan(0);
+        expect(response.body.workspace.readyAgentCount).toBeGreaterThan(0);
+        expect(response.body.agents.some((agent) => agent.templateReady)).toBe(true);
+        expect(response.body.agents.some((agent) => Array.isArray(agent.extras) && agent.extras.length > 0)).toBe(true);
+        expect(Array.isArray(response.body.workspaceFiles)).toBe(true);
+    });
+
     test('firebase session requires a verified Firebase ID token', async () => {
         const response = await request(app)
             .post('/api/auth/firebase-session')

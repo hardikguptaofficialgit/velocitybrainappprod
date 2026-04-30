@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Activity, ArrowRight, BarChart3, LogOut, Menu, Settings, X } from './Icons';
+import { Activity, ArrowRight, BarChart3, Cpu, LogOut, Menu, Settings, X } from './Icons';
 import Logo from './Logo';
 import BlobLoader from './BlobLoader';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Agents', href: '/dashboard/agents', icon: Cpu },
   { name: 'API Keys', href: '/dashboard/api-keys', icon: ArrowRight },
   { name: 'Usage', href: '/dashboard/usage', icon: Activity },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings }

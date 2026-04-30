@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Bell, Shield, Globe } from '../components/Icons';
+import { User, Bell, Shield, Globe, Cpu } from '../components/Icons';
+import { supportedAgents } from '../lib/agentRuntime';
 import BlobLoader from '../components/BlobLoader';
 
 const Settings = () => {
@@ -15,6 +16,7 @@ const Settings = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'agents', label: 'Agent Integrations', icon: Cpu },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'api', label: 'API Settings', icon: Globe }
@@ -169,6 +171,43 @@ const Settings = () => {
                         }`}></div>
                       </div>
                     </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'agents' && (
+            <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
+              <div>
+                <h2 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Agent Integrations</h2>
+                <p className="text-sm text-zinc-500 leading-7">
+                  Keep one MCP memory layer behind every supported coding agent.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-[#EA803A]/30 bg-[#130a02] px-4 py-3 text-sm text-zinc-300 leading-7">
+                Ideal flow: prompt arrives, Velocity Brain retrieves context, the agent executes, and useful results can be written back.
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {supportedAgents.map((agent) => (
+                  <div key={agent.id} className="rounded-xl border border-[#202020] bg-[#111] p-4">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{agent.name}</h3>
+                      <span className="inline-flex items-center gap-1 rounded border border-[#EA803A33] bg-[#EA803A14] px-2 py-0.5 text-[10px] text-[#f2b07d]">
+                        {agent.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-6 mb-3">{agent.summary}</p>
+                    <div className="rounded-lg border border-[#2a2a2a] bg-[#0c0c0c] px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        Setup command
+                      </p>
+                      <code className="text-xs text-zinc-300 break-all" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {agent.setup}
+                      </code>
+                    </div>
                   </div>
                 ))}
               </div>

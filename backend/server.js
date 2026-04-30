@@ -37,8 +37,14 @@ const normalizeOrigin = (value) => {
     return value.replace(/\/+$/, '');
 };
 
+const configuredCorsOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => normalizeOrigin(origin?.trim()))
+    .filter(Boolean);
+
 const allowedOrigins = new Set([
     frontendUrl,
+    ...configuredCorsOrigins,
     `http://localhost:${frontendPort}`,
     `http://127.0.0.1:${frontendPort}`,
     `http://localhost:${PORT}`,

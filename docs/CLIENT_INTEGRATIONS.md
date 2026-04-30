@@ -60,8 +60,8 @@ Expected: `velocitybrain` should be connected.
 ### Smoke prompts
 
 - Use velocitybrain `healthz` and show raw result.
-- Query velocitybrain for "What do I know about Hardik Gupta?"
-- Run agent for "Prepare me for meeting with Hardik Gupta tomorrow"
+- Query velocitybrain for "What do we know about auth and API keys in this repo?"
+- Run agent for "Prepare me to review the large codebase before refactoring auth"
 
 ## OpenAI Codex CLI
 
@@ -110,17 +110,17 @@ Keep the repository `AGENTS.md` file in place. It tells Codex to call Velocity B
 
 That means a user can ask:
 
-- `Tell me about Arushi Gupta`
-- `What do we know about Arushi Gupta?`
-- `Prepare me for a meeting with Arushi Gupta`
+- `Map the auth system before I change it`
+- `What do we know about the API key flow in this repo?`
+- `Prepare me to review this large codebase`
 
 and Codex should prefer the Velocity Brain MCP tools without needing the user to mention `velocitybrain` in the prompt.
 
 ### Recommended smoke prompts
 
-- `Tell me about Arushi Gupta. Use internal memory if available.`
-- `What do we know about Hardik Gupta?`
-- `Prepare me for a meeting with Hardik Gupta tomorrow.`
+- `Map the auth system. Use internal memory if available.`
+- `What do we know about the API key flow in this repo?`
+- `Prepare me to review this large codebase before editing auth.`
 
 ## Gemini CLI
 
@@ -204,7 +204,7 @@ Example:
 {
   "name": "query",
   "arguments": {
-    "question": "What do I know about Hardik Gupta?",
+    "question": "What do we know about auth and API keys in this repo?",
     "response_style": "full"
   }
 }
@@ -286,8 +286,8 @@ This is expected by default. Enable policy only when needed using runtime approv
 ## Recommended Validation Flow
 
 1. `velocitybrain doctor`
-2. `velocitybrain ingest --source note --content "Met Hardik Gupta from Acme"`
-3. `velocitybrain query "What do I know about Hardik Gupta?"`
+2. `velocitybrain ingest --source note --content "Auth uses Firebase on the frontend and backend session sync through /api/auth/firebase-session."`
+3. `velocitybrain query "What do we know about auth and API keys in this repo?"`
 4. Client MCP `healthz` call
 5. Client MCP `query` call
 

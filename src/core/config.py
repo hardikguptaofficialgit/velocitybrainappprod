@@ -74,6 +74,8 @@ class Settings(BaseModel):
     jwt_algorithm: str = Field(default_factory=lambda: _env_str('JWT_ALGORITHM', 'HS256'), description='JWT algorithm')
     access_token_ttl_minutes: int = Field(default_factory=lambda: _env_int('ACCESS_TOKEN_TTL_MINUTES', 60), ge=1, le=1440, description='Access token TTL in minutes')
     backend_api_url: str = Field(default_factory=lambda: _env_str('BACKEND_API_URL', 'http://localhost:3001'), description='Backend API URL for API key validation')
+    cors_origins: Optional[str] = Field(default_factory=lambda: _env_optional_str('CORS_ORIGINS'), description='Comma-separated CORS origins')
+    cors_allow_credentials: bool = Field(default_factory=lambda: _env_bool('CORS_ALLOW_CREDENTIALS', False), description='Allow CORS credentials')
     
     # Rate limiting
     rate_limit_enabled: bool = Field(default_factory=lambda: _env_bool('RATE_LIMIT_ENABLED', True), description='Enable rate limiting')

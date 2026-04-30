@@ -3,9 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { GLSLHills } from '../components/ui/glsl-hills';
 import {
   ArrowRight,
-  ChatCenteredText,
-  Clock,
-  Code,
   Cpu,
   Database,
   Gear,
@@ -20,6 +17,7 @@ import {
   TerminalWindow,
   X,
 } from '../components/Icons';
+import { promptLifecycle, supportedAgents } from '../lib/agentRuntime';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    FONT STRATEGY
@@ -246,9 +244,33 @@ export default function Landing() {
   }, []);
 
   const cliTabs = {
-    query: { cmd: 'velocity-brain query "What do I know about Jane?"', lines: [['text-[#EA803A]','⚙ Brain lookup: 4 memory traces found'],['text-zinc-400','  Entity: Hardik Gupta (Linkit App)'],['text-zinc-400','  Context: GTM discussion, follow-up pending'],['text-green-400','✓ Confidence: 0.94 · Citations: 3']] },
-    ingest: { cmd: 'velocity-brain ingest --source note --content "Met Jane from Acme"', lines: [['text-[#EA803A]','⚙ Signal detected: contact-mention'],['text-zinc-400','  Entity created: Hardik Gupta'],['text-zinc-400','  Timeline event stored'],['text-green-400','✓ Memory updated in 43ms']] },
-    run: { cmd: 'velocity-brain run "Prepare me for meeting with Jane"', lines: [['text-[#EA803A]','⚙ Brain lookup -> 4 traces found'],['text-[#EA803A]','⚙ Plan: [brief, context, actions]'],['text-zinc-400','  Executing deterministic skill...'],['text-green-400','✓ Done · Audit logged']] },
+    query: {
+      cmd: 'velocity-brain query "What do we know about auth and API keys in this repo?"',
+      lines: [
+        ['text-[#EA803A]', '⚙ Brain lookup: 6 repo traces found'],
+        ['text-zinc-400', '  Modules: auth, API keys, usage, dashboard'],
+        ['text-zinc-400', '  Notes: Firebase session sync, CORS, key quotas'],
+        ['text-green-400', '✓ Prepared context package ready']
+      ]
+    },
+    ingest: {
+      cmd: 'velocity-brain ingest --source note --content "Frontend auth syncs through /api/auth/firebase-session"',
+      lines: [
+        ['text-[#EA803A]', '⚙ Signal detected: architecture-note'],
+        ['text-zinc-400', '  Repo memory updated: auth flow'],
+        ['text-zinc-400', '  Related entities linked: backend, dashboard'],
+        ['text-green-400', '✓ Memory updated in 43ms']
+      ]
+    },
+    run: {
+      cmd: 'velocity-brain run "Prepare me to refactor auth in this large codebase"',
+      lines: [
+        ['text-[#EA803A]', '⚙ Brain lookup -> 6 traces found'],
+        ['text-[#EA803A]', '⚙ Plan: [modules, risks, sequence]'],
+        ['text-zinc-400', '  Preparing the agent before edits...'],
+        ['text-green-400', '✓ Done · Audit logged']
+      ]
+    },
   };
 
   return (
@@ -502,13 +524,13 @@ export default function Landing() {
 
                 <div className="p-4 space-y-2 bg-[#0a0a0a]">
                   <TL color="text-zinc-400">
-                    $ velocity-brain ingest --source note --content "Met Jane from Acme"
+                    $ velocity-brain ingest --source note --content "Auth middleware now writes usage events before API key validation"
                   </TL>
                   <TL color="text-[#EA803A]" indent>
                     ⚙ Signal detected - entity-mention
                   </TL>
                   <TL color="text-zinc-500" indent>
-                    Entity created: Hardik Gupta (Linkit App)
+                    Repo memory updated: auth and usage pipeline
                   </TL>
                   <TL color="text-green-400" indent>
                     ✓ Memory updated · 43ms · Audit logged
@@ -551,34 +573,34 @@ export default function Landing() {
        <Fade delay={60}>
   <ImageComparisonSlider
   beforeContent={[
-    ['text-zinc-500', '> analyze Hardik Gupta profile'],
-    ['text-zinc-400', '● Attempting to understand profile...'],
+    ['text-zinc-500', '> debug auth flow across large repo'],
+    ['text-zinc-400', '● Attempting to reconstruct context...'],
     ['text-zinc-400', ''],
-    ['text-zinc-400', 'No structured context available'],
-    ['text-zinc-400', 'Scanning scattered inputs...'],
-    ['text-zinc-400', 'Reading: partial data, assumptions, guesses'],
+    ['text-zinc-400', 'No prepared repo memory'],
+    ['text-zinc-400', 'Scanning scattered files and notes...'],
+    ['text-zinc-400', 'Reading partial docs, guessing module boundaries'],
     ['text-zinc-400', ''],
-    ['text-red-400', 'Incomplete understanding'],
-    ['text-red-400', 'Fragmented insights'],
+    ['text-red-400', 'Fragmented understanding'],
+    ['text-red-400', 'Repeated prompt setup'],
     ['text-red-400', ''],
-    ['text-red-400', '✗ Vague output · Low accuracy'],
-    ['text-red-400', '95k tokens · No context · Inefficient']
+    ['text-red-400', '✗ Slow repo onboarding · Weak handoff'],
+    ['text-red-400', '95k tokens · Repeated context · Inefficient']
   ]}
   afterContent={[
-    ['text-zinc-500', '> analyze Hardik Gupta profile'],
-    ['text-zinc-400', '● Executing with structured context'],
+    ['text-zinc-500', '> debug auth flow across large repo'],
+    ['text-zinc-400', '● Executing with prepared repo context'],
     ['text-[#EA803A]', ''],
     ['text-[#EA803A]', '✦ Velocity Brain MCP engaged'],
-    ['text-[#EA803A]', 'Context graph + structured signals loaded'],
+    ['text-[#EA803A]', 'Related modules, notes, and prior decisions loaded'],
     ['text-[#EA803A]', ''],
-    ['text-zinc-400', 'Profile synthesized'],
-    ['text-zinc-400', 'Extracting key traits...'],
+    ['text-zinc-400', 'Auth architecture assembled'],
+    ['text-zinc-400', 'Preparing the agent before edits...'],
     ['text-zinc-400', ''],
-    ['text-green-400', '✓ Clear behavioral patterns'],
-    ['text-green-400', '✓ Consistent identity mapping'],
-    ['text-green-400', '✓ High-confidence output'],
+    ['text-green-400', '✓ Faster codebase understanding'],
+    ['text-green-400', '✓ Cleaner debugging path'],
+    ['text-green-400', '✓ Better agent handoff'],
     ['text-green-400', ''],
-    ['text-green-400', '42k tokens· Context-aware · Deterministic']
+    ['text-green-400', '42k tokens · Context-aware · Deterministic']
   ]}
 />
 </Fade>
@@ -753,136 +775,94 @@ export default function Landing() {
           <Fade>
             <div className="text-center mb-12">
               <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// installation'}</p>
-              <h2 className="syne font-bold text-white text-3xl md:text-4xl">Install in Your Favorite AI Client</h2>
-              <p className="text-zinc-500 text-base md:text-lg mt-4 max-w-2xl mx-auto">Velocity Brain works as an MCP server with Claude Code, OpenAI Codex, Gemini CLI, Cline, and OpenClaw.</p>
+              <h2 className="syne font-bold text-white text-3xl md:text-4xl">Connect once. Use it across your agents.</h2>
+              <p className="text-zinc-500 text-base md:text-lg mt-4 max-w-2xl mx-auto">Velocity Brain should run before the agent thinks, not force users through a manual memory workflow.</p>
             </div>
           </Fade>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Claude Code */}
-            <Fade delay={60}>
-              <Clay className="p-6 h-full border border-[#2a2a2a]">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {supportedAgents.map((agent, index) => (
+              <Fade key={agent.id} delay={60 + (index * 40)}>
+                <Clay className="p-6 h-full border border-[#2a2a2a]">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="syne font-bold text-white text-lg">{agent.name}</h3>
+                      <p className="text-zinc-500 text-sm mt-1">{agent.summary}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="rounded-full border border-[#EA803A33] bg-[#EA803A14] px-2.5 py-1 mono text-[10px] text-[#f2b07d]">
+                        {agent.surface}
+                      </span>
+                      <span className="rounded-full border border-[#17301f] bg-[#13261d] px-2.5 py-1 mono text-[10px] text-[#7fe3c8]">
+                        {agent.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
+                    <p className="text-[#EA803A] mb-2"># Quick setup</p>
+                    <code>{agent.setup}</code>
+                  </div>
+                </Clay>
+              </Fade>
+            ))}
+          </div>
+
+          <Fade delay={300}>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-6 mt-8">
+              <Clay className="p-6 border border-[#2a2a2a]">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#111] border border-[#333]">
-                    <ITerm size={24} />
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#111] border border-[#333]">
+                    <Cpu size={22} />
                   </div>
-                  <h3 className="syne font-bold text-white text-lg">Claude Code</h3>
+                  <div>
+                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">Automatic flow</p>
+                    <h3 className="syne font-bold text-white text-xl">What should happen on each prompt</h3>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># One-command setup</p>
-                    <code>powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_mcp_plugin.ps1 -Client claude</code>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># Or add manually</p>
-                    <code>claude mcp add velocitybrain -- velocitybrain serve mcp</code>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {promptLifecycle.map((item) => (
+                    <div key={item.step} className="rounded-xl border border-[#222] bg-[#0a0a0a] p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-[#EA803A] text-black mono text-sm font-bold flex items-center justify-center">
+                          {item.step}
+                        </div>
+                        <p className="syne text-sm font-bold text-white">{item.title}</p>
+                      </div>
+                      <p className="text-sm text-zinc-500 leading-6">{item.description}</p>
+                    </div>
+                  ))}
                 </div>
               </Clay>
-            </Fade>
 
-            {/* OpenAI Codex */}
-            <Fade delay={120}>
-              <Clay className="p-6 h-full border border-[#2a2a2a]">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#111] border border-[#333]">
-                    <Clock size={24} weight="duotone" color="#ffffff" />
-                  </div>
-                  <h3 className="syne font-bold text-white text-lg">OpenAI Codex</h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># Add server</p>
-                    <code>codex mcp add velocitybrain -- velocitybrain serve mcp</code>
-                  </div>
-                  <p className="text-zinc-500 text-sm">Use Codex MCP listing command, then run tool calls against query.</p>
-                </div>
-              </Clay>
-            </Fade>
-
-            {/* Gemini CLI */}
-            <Fade delay={180}>
-              <Clay className="p-6 h-full border border-[#2a2a2a]">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#111] border border-[#333]">
-                    <ChatCenteredText size={24} weight="duotone" color="#ffffff" />
-                  </div>
-                  <h3 className="syne font-bold text-white text-lg">Gemini CLI</h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># MCP config</p>
-                    <code>{"{\n  \"mcpServers\": {\n    \"velocitybrain\": {\n      \"command\": \"velocitybrain\",\n      \"args\": [\"serve\", \"mcp\"]\n    }\n  }\n}"}</code>
-                  </div>
-                </div>
-              </Clay>
-            </Fade>
-
-            {/* Cline */}
-            <Fade delay={240}>
-              <Clay className="p-6 h-full border border-[#2a2a2a]">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#111] border border-[#333]">
-                    <Code size={24} weight="duotone" color="#ffffff" />
-                  </div>
-                  <h3 className="syne font-bold text-white text-lg">Cline</h3>
-                </div>
-                <div className="space-y-3">
-                  <p className="text-zinc-500 text-sm">Add Velocity Brain in Cline MCP settings with the same stdio command.</p>
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <code>velocitybrain serve mcp</code>
-                  </div>
-                </div>
-              </Clay>
-            </Fade>
-
-            {/* OpenClaw */}
-            <Fade delay={300}>
-              <Clay className="p-6 h-full border border-[#2a2a2a]">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#111] border border-[#333]">
-                    <Package size={24} weight="duotone" color="#ffffff" />
-                  </div>
-                  <h3 className="syne font-bold text-white text-lg">OpenClaw</h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># One-command setup</p>
-                    <code>powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_mcp_plugin.ps1 -Client openclaw</code>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># Export profile</p>
-                    <code>velocitybrain openclaw</code>
-                  </div>
-                </div>
-              </Clay>
-            </Fade>
-
-            {/* Quick Install */}
-            <Fade delay={360}>
               <Clay className="p-6 h-full border border-[#EA803A]/30 bg-[#130a02]">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#EA803A]/10 border border-[#EA803A]/30">
-                    <IZap size={24} />
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#EA803A]/10 border border-[#EA803A]/30">
+                    <IZap size={22} />
                   </div>
-                  <h3 className="syne font-bold text-[#EA803A] text-lg">Quick Install</h3>
+                  <div>
+                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-[#f2b07d]">Product promise</p>
+                    <h3 className="syne font-bold text-white text-xl">Talk to the agent normally</h3>
+                  </div>
                 </div>
+                <p className="text-sm text-zinc-300 leading-7 mb-4">
+                  Velocity Brain retrieves context first, passes a smaller package forward, and keeps the next run smarter.
+                </p>
                 <div className="space-y-3">
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># Install via pip</p>
-                    <code>pip install velocitybrain</code>
+                  <div className="bg-[#0a0a0a] rounded-lg p-3">
+                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1">Without Velocity Brain</p>
+                    <p className="text-sm text-zinc-400">Long prompts, repeated setup, and more wasted tokens.</p>
                   </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># Start MCP server</p>
-                    <code>velocitybrain serve mcp</code>
+                  <div className="bg-[#0a0a0a] rounded-lg p-3">
+                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1">With Velocity Brain</p>
+                    <p className="text-sm text-zinc-400">Shorter prompts, retrieval first, and less context waste.</p>
                   </div>
-                  <a href="/docs" className="inline-flex items-center gap-2 text-sm font-medium text-[#EA803A] hover:text-white transition-colors">
-                    View Full Docs <IArrow size={16} stroke="#EA803A" />
+                  <a href="/docs/integrations" className="inline-flex items-center gap-2 text-sm font-medium text-[#EA803A] hover:text-white transition-colors">
+                    View integration docs <IArrow size={16} stroke="#EA803A" />
                   </a>
                 </div>
               </Clay>
-            </Fade>
-          </div>
+            </div>
+          </Fade>
         </div>
       </section>
 
@@ -937,23 +917,23 @@ export default function Landing() {
           <Fade delay={70}>
             <div>
               <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// mcp tools'}</p>
-              <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-4">One Server. All Clients.</h2>
-              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Works with Claude Code, OpenAI Codex, Gemini CLI, Cline, and any MCP-compatible client.</p>
+              <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-4">One runtime. Clear tool surface.</h2>
+              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Use one MCP server command and keep the same memory workflow across supported clients.</p>
               <Clay className="overflow-hidden mb-6 border border-[#2a2a2a]">
                 <div className="px-5 py-3 border-b border-[#2a2a2a] flex items-center gap-3 bg-[#111]">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#EA803A]"/>
                   <span className="mono text-sm text-zinc-400">velocity-brain serve mcp</span>
                 </div>
                 <div className="p-5 space-y-3 bg-[#0a0a0a]">
-                  {[['ingest_text',null],['query',null],['run_agent',null],['caveman_commit',null],['caveman_review',null],['caveman_compress',null],
+                  {[['lookup_memory',null],['query',null],['run_agent',null],['ingest_text',null],['caveman_compress',null],['healthz',null],
                     ['sync_brain','policy-gated'],['put_page','policy-gated'],['delete_page','policy-gated'],
-                    ['list_skills',null],['get_identity_spec',null],['healthz',null],['google_workspace_action',null],
                   ].map(([name,gate])=>(
                     <div key={name} className="flex items-center justify-between">
                       <span className="mono text-sm text-zinc-300"><span className="text-[#EA803A] mr-2">-</span>{name}</span>
                       {gate && <span className="mono text-xs px-2.5 py-1 rounded border border-red-900/40 text-red-400/80 bg-red-900/10">{gate}</span>}
                     </div>
                   ))}
+                  <div className="mono text-xs text-zinc-500 pt-2">+ shared client helpers and policy-aware actions</div>
                 </div>
               </Clay>
 
@@ -1021,7 +1001,7 @@ export default function Landing() {
                 { c:'# 2 · Configure', ls:['cp .env.example .env'] },
                 { c:'# 3 · Start DB', ls:['docker compose up db -d','docker compose exec -T db psql -U velocity -d velocity_brain -f /docker-entrypoint-initdb.d/01-schema.sql'] },
                 { c:'# 4 · Validate', ls:['velocity-brain init','velocity-brain doctor'] },
-                { c:'# 5 · Core workflows', ls:['velocity-brain ingest --source note --content "Met Jane from Acme"','velocity-brain query "What do I know about Jane?"','velocity-brain run "Prepare me for meeting with Jane tomorrow"'] },
+                { c:'# 5 · Core workflows', ls:['velocity-brain ingest --source note --content "Document auth callback edge cases before refactor"','velocity-brain query "What do we know about auth and API key flows in this repo?"','velocity-brain run "Prepare me to review this large codebase before changing auth"'] },
               ].map((b,i)=>(
                 <div key={i}>
                   <TL color="text-zinc-500"><span className="font-bold">{b.c}</span></TL>

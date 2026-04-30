@@ -55,8 +55,8 @@ Expected: `velocitybrain` should be connected.
 ### Smoke prompts
 
 - Use velocitybrain `healthz` and show raw result.
-- Query velocitybrain for "What do I know about Hardik Gupta?"
-- Run agent for "Prepare me for meeting with Hardik Gupta tomorrow"
+- Query velocitybrain for "What do we know about auth and API keys in this repo?"
+- Run agent for "Prepare me to review the large codebase before refactoring auth"
 
 ## OpenAI Codex CLI
 
@@ -152,7 +152,7 @@ Example:
 {
   "name": "query",
   "arguments": {
-    "question": "What do I know about Hardik Gupta?",
+    "question": "What do we know about auth and API keys in this repo?",
     "response_style": "full"
   }
 }
@@ -234,8 +234,8 @@ This is expected by default. Enable policy only when needed using runtime approv
 ## Recommended Validation Flow
 
 1. `velocitybrain doctor`
-2. `velocitybrain ingest --source note --content "Met Hardik Gupta from Acme"`
-3. `velocitybrain query "What do I know about Hardik Gupta?"`
+2. `velocitybrain ingest --source note --content "Auth uses Firebase on the frontend and backend session sync through /api/auth/firebase-session."`
+3. `velocitybrain query "What do we know about auth and API keys in this repo?"`
 4. Client MCP `healthz` call
 5. Client MCP `query` call
 

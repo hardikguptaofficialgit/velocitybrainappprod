@@ -3,8 +3,9 @@ import axios from 'axios';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Activity, ArrowRight, TrendingUp, User as Users } from '../components/Icons';
+import { Activity, ArrowRight, Cpu, Database, Shield, TrendingUp, User as Users } from '../components/Icons';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
+import { promptLifecycle, supportedAgents } from '../lib/agentRuntime';
 import BlobLoader from '../components/BlobLoader';
 
 const chartColors = ['#EA803A', '#f4b183', '#5fd1b3', '#7c9cf5'];
@@ -163,6 +164,70 @@ const Dashboard = () => {
             )) : (
               <p className="text-zinc-500 text-sm">No endpoint data yet.</p>
             )}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 xl:grid-cols-[1.05fr_.95fr] gap-6">
+        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Automatic Flow</p>
+              <h3 className="text-lg text-white font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>How memory should run before the agent</h3>
+            </div>
+            <Link
+              to="/dashboard/agents"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#111] border border-[#2a2a2a] text-sm text-zinc-300 hover:text-white hover:border-[#EA803A66] transition-colors"
+            >
+              Open Agent View
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {promptLifecycle.map((item) => (
+              <div key={item.step} className="rounded-xl border border-[#202020] bg-[#111] p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#EA803A] text-black flex items-center justify-center font-bold flex-shrink-0" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                    {item.step}
+                  </div>
+                  <h4 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{item.title}</h4>
+                </div>
+                <p className="text-sm text-zinc-400 leading-6">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Supported Agents</p>
+          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Clients ready for the same memory layer</h3>
+          <div className="space-y-3">
+            {supportedAgents.slice(0, 4).map((agent, index) => {
+              const icon = index % 3 === 0 ? Cpu : index % 3 === 1 ? Database : Shield;
+              const Icon = icon;
+              return (
+                <div key={agent.id} className="rounded-xl border border-[#202020] bg-[#111] p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-[#EA803A] text-black flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{agent.name}</h4>
+                        <span className="inline-flex items-center gap-1 rounded border border-[#EA803A33] bg-[#EA803A14] px-2 py-0.5 text-[10px] text-[#f2b07d]">
+                          {agent.surface}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded border border-[#17301f] bg-[#13261d] px-2 py-0.5 text-[10px] text-[#7fe3c8]">
+                          {agent.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-400 leading-6 mb-2">{agent.summary}</p>
+                      <code className="text-xs text-zinc-500 break-all" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{agent.setup}</code>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

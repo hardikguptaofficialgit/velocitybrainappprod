@@ -232,9 +232,9 @@ velocitybrain doctor
 ### 4) Core workflows
 
 ```powershell
-velocitybrain ingest --source note --content "Met Hardik Gupta from Acme and discussed GTM"
-velocitybrain query "What do I know about Hardik Gupta?"
-velocitybrain run "Prepare me for meeting with Hardik Gupta tomorrow"
+velocitybrain ingest --source note --content "Auth uses Firebase on the frontend and backend session sync through /api/auth/firebase-session."
+velocitybrain query "What do we know about auth and API key flows in this repo?"
+velocitybrain run "Prepare me to refactor the API key system in this large codebase"
 ```
 
 ## Production Deployment
@@ -362,7 +362,7 @@ Basic Codex flow:
 2. Register the MCP server in Codex with `codex mcp add velocitybrain -- velocitybrain serve mcp`
 3. Keep the repository `AGENTS.md` file so Codex knows to consult Velocity Brain automatically for internal knowledge lookups
 4. Restart Codex if needed so it picks up the new MCP server
-5. Ask normal questions like `Tell me about Arushi Gupta` or `Prepare me for a meeting with Arushi Gupta`
+5. Ask normal questions like `What do we know about auth and API key flows in this repo?` or `Prepare me to review this large codebase before changing auth`
 6. Use `response_style` when you want shorter or denser outputs
 
 - OpenClaw / Gemini CLI / Cline / Antigravity / any MCP-capable client:
@@ -497,15 +497,15 @@ If you are testing Velocity Brain as a brand new user:
 Suggested first Codex test:
 
 ```text
-Tell me about Arushi Gupta.
+What do we know about auth and API key flows in this repo?
 ```
 
 Suggested first CLI test:
 
 ```powershell
-velocitybrain ingest --source note --content "Met Hardik Gupta from Acme and discussed GTM"
-velocitybrain query "What do I know about Hardik Gupta?"
-velocitybrain run "Prepare me for meeting with Hardik Gupta tomorrow"
+velocitybrain ingest --source note --content "Auth uses Firebase on the frontend and backend session sync through /api/auth/firebase-session."
+velocitybrain query "What do we know about auth and API key flows in this repo?"
+velocitybrain run "Prepare me to refactor the API key system in this large codebase"
 ```
 
 OpenClaw profile export command:

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import ApiKeys from './pages/ApiKeys';
+import Agents from './pages/Agents';
 import Usage from './pages/Usage';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
@@ -42,6 +43,8 @@ function App() {
                 <Route path="/docs" element={<Documentation />} />
                 <Route path="/docs/cli" element={<Documentation />} />
                 <Route path="/docs/mcp" element={<Documentation />} />
+                <Route path="/docs/integrations" element={<Documentation />} />
+                <Route path="/docs/token-efficiency" element={<Documentation />} />
                 <Route path="/docs/security" element={<Documentation />} />
                 <Route path="/docs/api" element={<Documentation />} />
                 <Route path="/docs/architecture" element={<Documentation />} />
@@ -58,6 +61,7 @@ function App() {
                   </ProtectedRoute>
                 }>
                   <Route index element={<Dashboard />} />
+                  <Route path="agents" element={<Agents />} />
                   <Route path="api-keys" element={<ApiKeys />} />
                   <Route path="billing" element={<Navigate to="/dashboard" replace />} />
                   <Route path="usage" element={<Usage />} />

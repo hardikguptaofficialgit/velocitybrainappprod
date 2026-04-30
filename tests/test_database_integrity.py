@@ -32,8 +32,14 @@ class TestDatabaseConstraints:
     
     def test_schema_bootstrap_validation(self):
         """Test schema bootstrap with validation."""
-        # Valid dimension
-        result = bootstrap_schema(1536)
+        # Valid dimension without requiring a live Postgres instance
+        with patch('src.core.db.get_conn') as mock_get_conn:
+            mock_conn = mock_get_conn.return_value.__enter__.return_value
+            mock_cursor = mock_conn.cursor.return_value.__enter__.return_value
+            mock_cursor.execute.return_value = None
+            mock_conn.commit.return_value = None
+            result = bootstrap_schema(1536)
+
         assert result['ok'] is True
         assert result['embed_dim'] == 1536
         

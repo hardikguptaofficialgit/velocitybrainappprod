@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useQuery } from 'react-query';
 import { Activity, TrendingUp, AlertTriangle, CheckCircle } from '../components/Icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { estimateTokenSavings } from '../lib/agentRuntime';
 import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
 
@@ -82,6 +83,7 @@ const Usage = () => {
     hourlyDistribution: rawData.hourlyDistribution || mockData.hourlyDistribution
   };
   const COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6'];
+  const tokenStats = estimateTokenSavings(data.stats.totalCalls);
 
   if (isLoading) {
     return (
@@ -190,6 +192,44 @@ const Usage = () => {
             <p className="text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reset In</p>
             <p className="font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.resetIn}</p>
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Token Efficiency</p>
+            <h3 className="text-lg text-white font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>Why memory-backed prompts cost less context</h3>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-lg border border-[#EA803A33] bg-[#EA803A14] px-3 py-2 text-[11px] text-[#f2b07d]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+            ~{tokenStats.percentSaved}% estimated prompt-token reduction
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Without Velocity Brain</p>
+            <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{tokenStats.estimatedWithoutBrain.toLocaleString()}</p>
+            <p className="text-xs text-zinc-500">Estimated prompt tokens if users keep repeating repo context manually.</p>
+          </div>
+          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>With Velocity Brain</p>
+            <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{tokenStats.estimatedWithBrain.toLocaleString()}</p>
+            <p className="text-xs text-zinc-500">Estimated prompt tokens after retrieval, filtering, and compression before execution.</p>
+          </div>
+          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Context Saved</p>
+            <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{tokenStats.saved.toLocaleString()}</p>
+            <p className="text-xs text-zinc-500">Estimated prompt-token waste avoided by using the memory layer first.</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
+          <p className="text-sm text-zinc-300 leading-7">
+            Velocity Brain lowers prompt cost by retrieving only the relevant memory, repo facts, and prior decisions for each task.
+            Instead of asking the user to resend architecture, conventions, and past findings every time, the agent starts with a smaller,
+            denser context package.
+          </p>
         </div>
       </div>
 

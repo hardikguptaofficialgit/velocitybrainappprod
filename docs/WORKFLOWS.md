@@ -12,7 +12,7 @@ This document summarizes core workflow patterns currently supported by Velocity 
 
 ## 2) Query Workflow
 
-- Input: question (for example, "What do I know about X?")
+- Input: question (for example, "What do we know about auth and API keys in this repo?")
 - Perform hybrid retrieval from internal memory
 - Rank and synthesize top results
 - Return answer with confidence and references

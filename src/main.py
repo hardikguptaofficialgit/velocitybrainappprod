@@ -69,9 +69,9 @@ app = FastAPI(
 if hasattr(settings, 'cors_origins'):
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins.split(',') if settings.cors_origins else [],
+        allow_origins=[origin.strip() for origin in settings.cors_origins.split(',') if origin.strip()] if settings.cors_origins else [],
         allow_credentials=getattr(settings, 'cors_allow_credentials', False),
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_methods=["*"],
         allow_headers=["*"],
     )
 
