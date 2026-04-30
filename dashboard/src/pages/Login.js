@@ -91,7 +91,7 @@ export default function Login() {
               Welcome back
             </h2>
             <p className="text-zinc-500 text-sm">
-              Sign in to access your workspace. Velocity Brain is free for everyone for a limited time, with usage limits in place.
+              Sign in to access your workspace. Access is currently limited to approved accounts.
             </p>
           </div>
 

@@ -1,6 +1,8 @@
 const request = require('supertest');
 
 process.env.INTERNAL_USAGE_SECRET = 'test-usage-secret';
+process.env.ALLOW_PUBLIC_SIGNUP = 'false';
+process.env.APPROVED_USER_DOMAINS = 'example.com';
 
 jest.mock('../config/firebase', () => {
     const state = {
@@ -221,7 +223,7 @@ describe('Backend API', () => {
         expect(response.body.status).toBe('healthy');
     });
 
-    test('auth register creates a user payload with limited-time access metadata', async () => {
+    test('auth register creates a user payload with approved-access metadata', async () => {
         const response = await request(app)
             .post('/api/auth/register')
             .send({
@@ -233,7 +235,7 @@ describe('Backend API', () => {
         expect(response.statusCode).toBe(201);
         expect(response.body.success).toBe(true);
         expect(response.body.user.email).toBe('new@example.com');
-        expect(response.body.access.label).toBe('Limited-time free access');
+        expect(response.body.access.label).toBe('Approved accounts only');
     });
 
     test('auth me returns the authenticated user payload', async () => {
@@ -403,6 +405,27 @@ describe('Backend API', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.user.email).toBe('firebase@example.com');
         expect(response.body.token).toBeTruthy();
+    });
+
+    test('firebase session blocks unapproved new users when public signup is disabled', async () => {
+        firebase.__setMockData({
+            users: [],
+            apiKeys: [],
+            usageLogs: []
+        });
+
+        firebase.auth.verifyIdToken.mockResolvedValueOnce({
+            uid: 'outsider-user',
+            email: 'outsider@blocked.com',
+            name: 'Outsider User'
+        });
+
+        const response = await request(app)
+            .post('/api/auth/firebase-session')
+            .send({ idToken: 'valid-id-token' });
+
+        expect(response.statusCode).toBe(403);
+        expect(response.body.success).toBe(false);
     });
 
     test('api key delete blocks access to another user key', async () => {
