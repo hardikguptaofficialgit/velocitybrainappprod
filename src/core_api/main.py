@@ -14,10 +14,10 @@ import os
 import httpx
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from core.config import settings
-from core.logging_config import get_logger
-from core_api import create_auth_router, create_brain_router, create_skills_router, create_monitoring_router
-from core_api.auth import validate_api_key_with_backend
+from src.core.config import settings
+from src.core.logging_config import get_logger
+from src.core_api import create_auth_router, create_brain_router, create_skills_router, create_monitoring_router
+from src.core_api.auth import validate_api_key_with_backend
 
 logger = get_logger("core_api.main")
 

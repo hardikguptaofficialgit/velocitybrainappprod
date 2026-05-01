@@ -11,11 +11,12 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from core_api.auth import get_current_user, get_rate_limit_info
-from monitoring.health_monitor import HealthMonitor
-from services.metrics_service import MetricsService
-from services.reuse_service import ReuseService
-from core.logging_config import get_logger
+from src.monitoring.health_monitor import HealthMonitor
+from src.services.metrics_service import MetricsService
+from src.services.reuse_service import ReuseService
+from src.core.logging_config import get_logger
+
+from .auth import get_current_user, get_rate_limit_info
 
 logger = get_logger("core_api.monitoring")
 

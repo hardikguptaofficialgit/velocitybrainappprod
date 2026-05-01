@@ -130,7 +130,9 @@ def create_auth_router() -> APIRouter:
         token_store[access_token] = {
             "api_key": api_key,
             "expires_at": expires_at.timestamp(),
-            "tier": key_info["tier"]
+            "tier": key_info["tier"],
+            "rate_limit": key_info["rate_limit"],
+            "user_id": key_info.get("user_id"),
         }
         
         logger.info(f"Authorized API key for tier: {key_info['tier']}")
@@ -204,7 +206,9 @@ def create_auth_router() -> APIRouter:
         token_store[access_token] = {
             "api_key": api_key,
             "expires_at": expires_at.timestamp(),
-            "tier": key_info["tier"]
+            "tier": key_info["tier"],
+            "rate_limit": key_info["rate_limit"],
+            "user_id": key_info.get("user_id"),
         }
         
         return AuthResponse(

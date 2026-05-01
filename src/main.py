@@ -14,6 +14,8 @@ from src.background.scheduler import start_scheduler
 from src.core.config import settings
 from src.core.logging_config import setup_logging, get_logger
 from src.core_api.auth import create_auth_router
+from src.core_api.brain import create_brain_router
+from src.core_api.skills import create_skills_router
 from src.monitoring.health_monitor import health_monitor
 
 # Initialize logging
@@ -132,6 +134,8 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(router)
 app.include_router(create_auth_router())
+app.include_router(create_brain_router())
+app.include_router(create_skills_router())
 
 for optional_router in (
     _load_optional_router('src.api.advanced_routes'),

@@ -1,4 +1,4 @@
-"""VelocityBrain Core API - product-facing hosted run and usage endpoints."""
+"""VelocityBrain Core API - product-facing hosted query, run, and usage endpoints."""
 
 from __future__ import annotations
 
@@ -8,9 +8,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from core_api.auth import get_current_user, get_rate_limit_info
-from core.logging_config import get_logger
-from services.reuse_service import ReuseService
+from src.core.logging_config import get_logger
+from src.services.response_style import apply_response_style
+from src.services.retrieval_engine import RetrievalEngine
+from src.services.reuse_service import ReuseService
+
+from .auth import get_current_user, get_rate_limit_info
 
 logger = get_logger("core_api.brain")
 
@@ -42,6 +45,21 @@ class UsageResponse(BaseModel):
     repeat_rate: float
     reuse_hit_rate: float
     avg_token_savings: float
+
+
+class QueryRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=4000)
+    response_style: str = Field(default="normal", pattern="^(normal|lite|full|ultra)$")
+    max_results: int = Field(default=10, ge=1, le=100)
+    filters: dict[str, Any] | None = None
+
+
+class QueryResponse(BaseModel):
+    answer: str
+    confidence: float
+    sources: list[dict[str, Any]]
+    reasoning_summary: str
+    response_style: str
 
 
 def _metadata_dict(metadata: TaskMetadata | None) -> dict[str, Any]:
@@ -84,9 +102,61 @@ def _normalize_product_response(event: dict[str, Any]) -> ProductRunResponse:
     )
 
 
+def _normalize_query_response(payload: dict[str, Any]) -> QueryResponse:
+    return QueryResponse(
+        answer=str(payload.get("answer", "")),
+        confidence=float(payload.get("confidence", 0.0)),
+        sources=list(payload.get("sources", [])),
+        reasoning_summary=str(payload.get("reasoning_summary", "")),
+        response_style=str(payload.get("response_style", "normal")),
+    )
+
+
 def create_brain_router() -> APIRouter:
     router = APIRouter(prefix="/v1", tags=["brain"])
     reuse_service = ReuseService()
+    retrieval = RetrievalEngine()
+
+    @router.post("/query", response_model=QueryResponse)
+    async def query(
+        request: QueryRequest,
+        current_user: dict[str, Any] = Depends(get_current_user),
+        rate_info: dict[str, Any] = Depends(get_rate_limit_info),
+    ):
+        try:
+            filters = request.filters or {}
+            org_key = filters.get("org_key")
+            hits = retrieval.hybrid_search(request.question, limit=request.max_results, org_key=org_key)
+
+            if not hits:
+                payload = apply_response_style(
+                    {
+                        "answer": "The internal brain does not currently contain sufficient data for this question.",
+                        "confidence": 0.0,
+                        "sources": [],
+                        "reasoning_summary": "Brain-first lookup completed with zero hits. No hallucinated answer returned.",
+                    },
+                    request.response_style,
+                )
+                return _normalize_query_response(payload)
+
+            top = hits[0]
+            payload = apply_response_style(
+                {
+                    "answer": f"{top['title']}: {top['compiled_truth_md'][:400]}",
+                    "confidence": float(top.get("confidence", 0.0)),
+                    "sources": [
+                        {"type": "entity", "slug": hit["slug"], "title": hit["title"]}
+                        for hit in hits
+                    ],
+                    "reasoning_summary": f"Hybrid retrieval returned {len(hits)} internal matches; top-ranked entity used for synthesis.",
+                },
+                request.response_style,
+            )
+            return _normalize_query_response(payload)
+        except Exception as exc:
+            logger.error("Query error: %s", exc)
+            raise HTTPException(status_code=500, detail="Query lookup failed")
 
     @router.post("/run", response_model=ProductRunResponse)
     async def run_agent(

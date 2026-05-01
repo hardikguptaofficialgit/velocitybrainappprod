@@ -10,9 +10,10 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from core.logging_config import get_logger
-from core_api.auth import get_current_user, get_rate_limit_info
-from services.skill_registry import SkillRegistry
+from src.core.logging_config import get_logger
+from src.services.skill_registry import SkillRegistry
+
+from .auth import get_current_user, get_rate_limit_info
 
 logger = get_logger("core_api.skills")
 
