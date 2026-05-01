@@ -1,23 +1,20 @@
 [
   {
-    "id": "jane-doe",
-    "source": "benchmark-note",
-    "seed_content": "Met Hardik Gupta from Acme and discussed GTM.",
     "question": "What do I know about Hardik Gupta?",
-    "expected_slugs": ["jane-doe"]
+    "expected_slugs": ["hardik-gupta"],
+    "seed_content": "Hardik Gupta is associated with Velocity Brain product strategy and repository direction.",
+    "source": "benchmark"
   },
   {
-    "id": "raj-patel",
-    "source": "benchmark-note",
-    "seed_content": "Spoke with Raj Patel from Northstar about roadmap and execution.",
-    "question": "Prepare me for meeting with Raj Patel tomorrow.",
-    "expected_slugs": ["raj-patel"]
+    "question": "Prepare me for meeting with Raj Patel.",
+    "expected_slugs": ["raj-patel"],
+    "seed_content": "Raj Patel is a stakeholder referenced in planning conversations and meeting prep workflows.",
+    "source": "benchmark"
   },
   {
-    "id": "maya-chen",
-    "source": "benchmark-note",
-    "seed_content": "Reviewed sprint plan with Maya Chen at Orbit Labs.",
-    "question": "Summarize what I know about Maya Chen.",
-    "expected_slugs": ["maya-chen"]
+    "question": "What do we know about Velocity Brain auth flow?",
+    "expected_slugs": ["velocity-brain-auth-flow"],
+    "seed_content": "Velocity Brain auth flows include backend API key validation, Firebase-backed user sessions, and protected API routes.",
+    "source": "benchmark"
   }
 ]

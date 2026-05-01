@@ -1,6 +1,6 @@
 # Client Integrations Guide
 
-This guide shows how to connect Velocity Brain to MCP-capable clients and how to verify the connection reliably.
+This guide shows how to connect Velocity Brain to MCP-capable clients in the hosted product and how to verify the connection reliably.
 
 For Codex specifically, there are two parts:
 
@@ -11,13 +11,14 @@ For Codex specifically, there are two parts:
 
 - Velocity Brain runs as an MCP server process.
 - Your client runtime (Claude Code, Codex CLI, Gemini CLI, Cline, OpenClaw) is the MCP client.
-- The client launches `velocitybrain serve mcp` and calls tools like `query`, `ingest_text`, and `run_agent`.
+- The client launches `velocitybrain serve mcp` and calls hosted tools like `retrieve_reuse_context`, `query`, and `run_agent`.
 
 ## Prerequisites
 
 1. Activate the project virtual environment.
-2. Ensure DB is running if you want memory-backed query and run behavior.
+2. Run `velocitybrain login --api-key <key-from-dashboard>`.
 3. Ensure `velocitybrain about` and `velocitybrain doctor` succeed.
+4. Treat self-hosted mode as legacy/dev-only compatibility, not the main product path.
 
 ## MCP Server Command
 
@@ -26,6 +27,8 @@ Preferred command:
 ```powershell
 velocitybrain serve mcp
 ```
+
+Hosted mode is the primary product path. It is selected automatically when an API key is configured through `velocitybrain login` or `VELOCITYBRAIN_API_KEY`. Self-hosted mode remains a deprecated compatibility path.
 
 If `velocitybrain` is not on PATH, use the full executable path:
 
@@ -60,7 +63,7 @@ Expected: `velocitybrain` should be connected.
 ### Smoke prompts
 
 - Use velocitybrain `healthz` and show raw result.
-- Query velocitybrain for "What do we know about auth and API keys in this repo?"
+- Call `retrieve_reuse_context` for "Map the auth system in this repo"
 - Run agent for "Prepare me to review the large codebase before refactoring auth"
 
 ## OpenAI Codex CLI
@@ -115,6 +118,25 @@ That means a user can ask:
 - `Prepare me to review this large codebase`
 
 and Codex should prefer the Velocity Brain MCP tools without needing the user to mention `velocitybrain` in the prompt.
+
+### Hosted onboarding flow
+
+```powershell
+python -m pip install velocitybrain
+velocitybrain login --api-key vb_live_xxx
+velocitybrain doctor
+velocitybrain connect codex --apply
+velocitybrain smoke
+```
+
+That flow connects Codex to the hosted Velocity Brain backend running in managed infrastructure. No local Docker or Postgres setup is required in hosted mode.
+
+Helpful validation commands:
+
+- `velocitybrain doctor --verbose`
+- `velocitybrain smoke`
+- `velocitybrain connect claude`
+- `velocitybrain connect openclaw`
 
 ### Recommended smoke prompts
 
@@ -187,9 +209,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_mcp_plugin.ps1
 Recommended OpenClaw smoke flow:
 
 1. Call `healthz` and verify `{ "ok": true }`.
-2. Call `list_skills` and verify a non-zero `count`.
-3. Call `query` with a known entity.
-4. Call `run_agent` with a planning signal.
+2. Call `retrieve_reuse_context` with a known repo task.
+3. Call `query` and confirm the response includes reuse/savings fields.
+4. Call `run_agent` and confirm the response includes reuse/savings fields.
 
 To enable terse/caveman responses in OpenClaw (or any MCP client), pass `response_style` in tool arguments:
 
@@ -226,7 +248,7 @@ The guide app at `https://velocitybrain.vercel.app/guide` surfaces these integra
 Use these defaults when integrating any client, including OpenClaw:
 
 - Keep `MCP_ALLOW_DESTRUCTIVE_TOOLS=false` until explicitly needed.
-- Start with read-only and non-mutating tool usage (`query`, `list_skills`, `healthz`).
+- Start with read-only and non-mutating hosted tool usage (`retrieve_reuse_context`, `query`, `healthz`).
 - Enable destructive tools only for controlled maintenance windows.
 - Pair tool access with runtime identity and policy checks.
 

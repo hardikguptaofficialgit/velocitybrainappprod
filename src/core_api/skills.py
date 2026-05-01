@@ -1,172 +1,111 @@
 """
-VelocityBrain Core API - Skills Management
-
-Skills execution and management endpoints.
+VelocityBrain Core API - SDK/MCP-facing skill catalog.
 """
 
-from typing import Dict, Any, Optional, List
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from __future__ import annotations
 
+import time
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+
+from core.logging_config import get_logger
 from core_api.auth import get_current_user, get_rate_limit_info
 from services.skill_registry import SkillRegistry
-from core.logging_config import get_logger
 
 logger = get_logger("core_api.skills")
 
-# Models
+
 class SkillExecutionRequest(BaseModel):
     skill_name: str = Field(..., min_length=1, max_length=100)
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
     response_style: str = Field(default="normal", pattern="^(normal|lite|full|ultra)$")
+
 
 class SkillExecutionResponse(BaseModel):
     skill_name: str
     success: bool
-    result: Dict[str, Any]
+    result: dict[str, Any]
     execution_time: float
     message: str
 
-class SkillInfo(BaseModel):
-    name: str
-    description: str
-    category: str
-    version: str
-    parameters: Dict[str, Any]
-    required_tier: str
 
 class SkillsListResponse(BaseModel):
-    skills: List[SkillInfo]
+    skills: list[dict[str, Any]]
     total: int
-    categories: List[str]
+    categories: list[str]
+
 
 def create_skills_router() -> APIRouter:
-    """Create skills management router."""
     router = APIRouter(prefix="/v1/skills", tags=["skills"])
-    
-    # Initialize skill registry
     skill_registry = SkillRegistry()
-    
+
     @router.get("", response_model=SkillsListResponse)
     async def list_skills(
-        category: Optional[str] = None,
-        current_user: Dict[str, Any] = Depends(get_current_user),
-        rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
+        category: str | None = None,
+        current_user: dict[str, Any] = Depends(get_current_user),
+        rate_info: dict[str, Any] = Depends(get_rate_limit_info),
     ):
-        """List available skills for the user's tier."""
         try:
-            logger.info(f"Skills list requested by {rate_info['tier']} user")
-            
-            # Get skills available for user's tier
-            skills = skill_registry.list_skills(
-                category=category,
-                user_tier=rate_info["tier"]
-            )
-            
-            # Get all categories
-            categories = skill_registry.list_categories(user_tier=rate_info["tier"])
-            
-            skill_infos = []
-            for skill in skills:
-                skill_infos.append(SkillInfo(
-                    name=skill["name"],
-                    description=skill["description"],
-                    category=skill["category"],
-                    version=skill["version"],
-                    parameters=skill["parameters"],
-                    required_tier=skill.get("required_tier", "free")
-                ))
-            
-            return SkillsListResponse(
-                skills=skill_infos,
-                total=len(skill_infos),
-                categories=categories
-            )
-            
-        except Exception as e:
-            logger.error(f"Skills list error: {str(e)}")
+            skills = skill_registry.list_skills()
+            if category:
+                skills = [skill for skill in skills if skill.get("category") == category]
+            categories = sorted({skill.get("category", "uncategorized") for skill in skill_registry.list_skills()})
+            return SkillsListResponse(skills=skills, total=len(skills), categories=categories)
+        except Exception as exc:
+            logger.error("Skills list error: %s", exc)
             raise HTTPException(status_code=500, detail="Failed to list skills")
-    
+
     @router.post("/execute", response_model=SkillExecutionResponse)
     async def execute_skill(
         request: SkillExecutionRequest,
-        current_user: Dict[str, Any] = Depends(get_current_user),
-        rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
+        current_user: dict[str, Any] = Depends(get_current_user),
+        rate_info: dict[str, Any] = Depends(get_rate_limit_info),
     ):
-        """Execute a specific skill."""
-        import time
         start_time = time.time()
-        
         try:
-            logger.info(f"Skill execution '{request.skill_name}' by {rate_info['tier']} user")
-            
-            # Check if skill is available for user's tier
-            if not skill_registry.is_skill_available(request.skill_name, rate_info["tier"]):
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"Skill '{request.skill_name}' not available for {rate_info['tier']} tier"
-                )
-            
-            # Execute skill
-            result = skill_registry.execute_skill(
-                skill_name=request.skill_name,
-                parameters=request.parameters,
-                response_style=request.response_style,
-                user_tier=rate_info["tier"]
-            )
-            
-            execution_time = time.time() - start_time
-            
+            skills = skill_registry.list_skills()
+            skill = next((item for item in skills if item.get("name") == request.skill_name or item.get("skill_key") == request.skill_name), None)
+            if not skill:
+                raise HTTPException(status_code=404, detail=f"Skill '{request.skill_name}' not found")
+            result = {
+                "skill_key": skill.get("skill_key"),
+                "category": skill.get("category"),
+                "workflow": skill.get("workflow", []),
+                "parameters": request.parameters,
+                "response_style": request.response_style,
+                "hosted_note": "Hosted VelocityBrain exposes the skill catalog through the SDK/MCP layer. Execution remains provider-controlled.",
+            }
             return SkillExecutionResponse(
                 skill_name=request.skill_name,
-                success=result.get("success", True),
-                result=result.get("result", {}),
-                execution_time=execution_time,
-                message=result.get("message", "Skill executed successfully")
+                success=True,
+                result=result,
+                execution_time=time.time() - start_time,
+                message="Skill metadata returned for hosted SDK/MCP compatibility",
             )
-            
         except HTTPException:
             raise
-        except Exception as e:
-            logger.error(f"Skill execution error: {str(e)}")
+        except Exception as exc:
+            logger.error("Skill execution error: %s", exc)
             raise HTTPException(status_code=500, detail="Skill execution failed")
-    
-    @router.get("/{skill_name}", response_model=SkillInfo)
+
+    @router.get("/{skill_name}")
     async def get_skill_info(
         skill_name: str,
-        current_user: Dict[str, Any] = Depends(get_current_user),
-        rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
+        current_user: dict[str, Any] = Depends(get_current_user),
+        rate_info: dict[str, Any] = Depends(get_rate_limit_info),
     ):
-        """Get detailed information about a specific skill."""
         try:
-            logger.info(f"Skill info requested: {skill_name} by {rate_info['tier']} user")
-            
-            # Check if skill is available for user's tier
-            if not skill_registry.is_skill_available(skill_name, rate_info["tier"]):
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Skill '{skill_name}' not found or not available for {rate_info['tier']} tier"
-                )
-            
-            # Get skill details
-            skill = skill_registry.get_skill_info(skill_name)
-            
-            return SkillInfo(
-                name=skill["name"],
-                description=skill["description"],
-                category=skill["category"],
-                version=skill["version"],
-                parameters=skill["parameters"],
-                required_tier=skill.get("required_tier", "free")
-            )
-            
+            skills = skill_registry.list_skills()
+            skill = next((item for item in skills if item.get("name") == skill_name or item.get("skill_key") == skill_name), None)
+            if not skill:
+                raise HTTPException(status_code=404, detail=f"Skill '{skill_name}' not found")
+            return skill
         except HTTPException:
             raise
-        except Exception as e:
-            logger.error(f"Skill info error: {str(e)}")
+        except Exception as exc:
+            logger.error("Skill info error: %s", exc)
             raise HTTPException(status_code=500, detail="Failed to get skill information")
-    
+
     return router

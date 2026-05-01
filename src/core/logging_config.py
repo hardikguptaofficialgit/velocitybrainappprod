@@ -4,7 +4,7 @@ Centralized logging configuration for Velocity Brain.
 
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -20,7 +20,7 @@ class VelocityBrainFormatter(jsonlogger.JsonFormatter):
         
         # Add timestamp if not present
         if not log_record.get('timestamp'):
-            log_record['timestamp'] = datetime.utcnow().isoformat()
+            log_record['timestamp'] = datetime.now(UTC).isoformat()
         
         # Add log level
         log_record['level'] = record.levelname

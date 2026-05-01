@@ -351,6 +351,9 @@ describe('Backend API', () => {
                         endpoint: '/v1/ingest/file',
                         method: 'POST',
                         status_code: 201,
+                        avoided_input_tokens: 420,
+                        estimated_cost_saved: 0.00126,
+                        reuse_hit_type: 'repo_context',
                         created_at: now
                     }
                 }
@@ -364,7 +367,9 @@ describe('Backend API', () => {
         expect(response.statusCode).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.stats.activeApiKeys).toBe(1);
-        expect(response.body.stats.documentsProcessed).toBe(1);
+        expect(response.body.stats.totalApiCalls).toBe(420);
+        expect(response.body.stats.documentsProcessed).toBe(0.00126);
+        expect(response.body.stats.successRate).toBe(100);
         expect(response.body.recentActivity).toHaveLength(1);
     });
 

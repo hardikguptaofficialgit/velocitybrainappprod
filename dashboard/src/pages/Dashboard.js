@@ -18,14 +18,17 @@ const fallbackStats = {
   documentsProcessed: 0,
   documentsChange: 0,
   successRate: 0,
-  successRateChange: 0
+  successRateChange: 0,
+  averageSavedPercent: 0,
+  requestSuccessRate: 0
 };
 
 const fallbackData = {
   apiCallsOverTime: [],
   usageByEndpoint: [],
   recentActivity: [],
-  hourlyDistribution: []
+  hourlyDistribution: [],
+  topReusableRepos: []
 };
 
 const Dashboard = () => {
@@ -56,7 +59,8 @@ const Dashboard = () => {
         apiCallsOverTime: payload.apiCallsOverTime || fallbackData.apiCallsOverTime,
         usageByEndpoint,
         recentActivity: payload.recentActivity || fallbackData.recentActivity,
-        hourlyDistribution: payload.hourlyDistribution || fallbackData.hourlyDistribution
+        hourlyDistribution: payload.hourlyDistribution || fallbackData.hourlyDistribution,
+        topReusableRepos: payload.topReusableRepos || fallbackData.topReusableRepos
       };
     },
     {
@@ -70,6 +74,7 @@ const Dashboard = () => {
   const usageByEndpoint = data?.usageByEndpoint || fallbackData.usageByEndpoint;
   const recentActivity = data?.recentActivity || fallbackData.recentActivity;
   const hourlyDistribution = data?.hourlyDistribution || fallbackData.hourlyDistribution;
+  const topReusableRepos = data?.topReusableRepos || fallbackData.topReusableRepos;
 
   if (isError) {
     console.error('[Dashboard] Dashboard stats fetch failed', {
@@ -114,18 +119,18 @@ const Dashboard = () => {
       )}
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Total API Calls" value={stats.totalApiCalls || 0} change={stats.apiCallsChange || 0} icon={Activity} tint="#EA803A" />
+        <StatCard title="Saved Tokens" value={stats.totalApiCalls || 0} change={stats.apiCallsChange || 0} icon={Activity} tint="#EA803A" />
         <StatCard title="Active API Keys" value={stats.activeApiKeys || 0} change={stats.apiKeysChange || 0} icon={ArrowRight} tint="#f4b183" />
-        <StatCard title="Documents Processed" value={stats.documentsProcessed || 0} change={stats.documentsChange || 0} icon={Users} tint="#5fd1b3" />
-        <StatCard title="Success Rate" value={`${stats.successRate || 0}%`} change={stats.successRateChange || 0} icon={TrendingUp} tint="#7c9cf5" />
+        <StatCard title="Saved USD" value={`$${stats.documentsProcessed || 0}`} change={stats.documentsChange || 0} icon={Users} tint="#5fd1b3" />
+        <StatCard title="Reuse Hit Rate" value={`${stats.successRate || 0}%`} change={stats.successRateChange || 0} icon={TrendingUp} tint="#7c9cf5" />
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-[1.35fr_.95fr] gap-6">
         <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Request Curve</p>
-              <h3 className="text-lg text-white font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>Daily usage trend</h3>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Savings Curve</p>
+              <h3 className="text-lg text-white font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>Saved tokens over time</h3>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={280}>
@@ -140,8 +145,8 @@ const Dashboard = () => {
         </div>
 
         <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Traffic Mix</p>
-          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Usage by endpoint</h3>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reuse Mix</p>
+          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Runs by reuse hit type</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={usageByEndpoint} dataKey="calls" cx="50%" cy="50%" innerRadius={58} outerRadius={88} paddingAngle={4}>
@@ -172,8 +177,8 @@ const Dashboard = () => {
         <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Automatic Flow</p>
-              <h3 className="text-lg text-white font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>How memory should run before the agent</h3>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Automatic Reuse</p>
+              <h3 className="text-lg text-white font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>How hosted memory cuts repeat tokens</h3>
             </div>
             <Link
               to="/dashboard/agents"
@@ -200,7 +205,7 @@ const Dashboard = () => {
 
         <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
           <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Supported Agents</p>
-          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Clients ready for the same memory layer</h3>
+          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>SDK and MCP clients for the hosted reuse layer</h3>
           <div className="space-y-3">
             {supportedAgents.slice(0, 4).map((agent, index) => {
               const icon = index % 3 === 0 ? Cpu : index % 3 === 1 ? Database : Shield;
@@ -234,8 +239,8 @@ const Dashboard = () => {
 
       <section className="grid grid-cols-1 xl:grid-cols-[1.1fr_.9fr] gap-6">
         <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Activity Log</p>
-          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Recent runtime events</h3>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Recent Runs</p>
+          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Savings proof on recent requests</h3>
           <div className="space-y-2">
             {recentActivity.length > 0 ? recentActivity.map((activity, index) => (
               <div key={`${activity.timestamp}-${index}`} className="rounded-lg border border-[#202020] bg-[#111] px-3 py-3 flex items-center justify-between gap-3">
@@ -245,7 +250,7 @@ const Dashboard = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-white text-sm font-medium truncate">{activity.description}</p>
-                    <p className="text-xs text-zinc-500">{new Date(activity.timestamp).toLocaleString()}</p>
+                    <p className="text-xs text-zinc-500">{new Date(activity.timestamp).toLocaleString()} · {activity.reuseHitType} reuse · {activity.avoidedInputTokens} tokens saved · ${activity.estimatedCostSaved || 0}</p>
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-[0.2em] flex-shrink-0 ${activity.status === 'completed' ? 'bg-[#17301f] text-[#7fe3c8]' : 'bg-[#301717] text-red-300'}`} style={{ fontFamily: 'JetBrains Mono, monospace' }}>
@@ -262,8 +267,8 @@ const Dashboard = () => {
 
         <div className="space-y-6">
           <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Request Window</p>
-            <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Hourly distribution</h3>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Window</p>
+            <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Recent run frequency</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={hourlyDistribution}>
                 <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" />
@@ -273,6 +278,23 @@ const Dashboard = () => {
                 <Bar dataKey="calls" fill="#EA803A" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Top Reusable Repos</p>
+            <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Where the most tokens were avoided</h3>
+            <div className="space-y-2">
+              {topReusableRepos.length > 0 ? topReusableRepos.map((repo) => (
+                <div key={repo.repoId} className="rounded-lg border border-[#202020] bg-[#111] px-3 py-3 flex items-center justify-between gap-3">
+                  <span className="text-zinc-300 truncate">{repo.repoId}</span>
+                  <span className="text-[#f2b07d]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{repo.saved} tokens</span>
+                </div>
+              )) : (
+                <div className="rounded-lg border border-dashed border-[#2a2a2a] px-3 py-6 text-center text-zinc-500 text-sm">
+                  No reusable repo data yet.
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">

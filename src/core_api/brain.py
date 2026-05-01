@@ -1,244 +1,146 @@
-"""
-VelocityBrain Core API - Brain Functions
+"""VelocityBrain Core API - product-facing hosted run and usage endpoints."""
 
-Core brain functions: query, ingest, run agent tasks.
-These endpoints interface with the proprietary core engine.
-"""
+from __future__ import annotations
 
-from typing import Dict, Any, Optional, List
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+import uuid
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from core_api.auth import get_current_user, get_rate_limit_info
-from services.agent_loop import AgentLoop
-from services.memory_engine import MemoryEngine
-from services.retrieval_engine import RetrievalEngine
 from core.logging_config import get_logger
+from services.reuse_service import ReuseService
 
 logger = get_logger("core_api.brain")
 
-# Models
-class QueryRequest(BaseModel):
-    question: str = Field(..., min_length=1, max_length=2000)
-    response_style: str = Field(default="normal", pattern="^(normal|lite|full|ultra)$")
-    max_results: int = Field(default=10, ge=1, le=100)
-    filters: Optional[Dict[str, Any]] = None
 
-class QueryResponse(BaseModel):
-    question: str
-    answer: str
-    sources: List[Dict[str, Any]]
-    confidence: float
-    response_style: str
-    processing_time: float
+class TaskMetadata(BaseModel):
+    workspace_id: str | None = None
+    repo_id: str | None = None
+    branch: str | None = None
+    commit: str | None = None
+    artifact_kind: str | None = None
 
-class IngestRequest(BaseModel):
-    content: str = Field(..., min_length=1, max_length=100000)
-    source: str = Field(default="note", min_length=1, max_length=100)
-    metadata: Optional[Dict[str, Any]] = None
-    tags: Optional[List[str]] = None
-
-class IngestResponse(BaseModel):
-    success: bool
-    document_id: str
-    processing_time: float
-    message: str
 
 class RunRequest(BaseModel):
-    task: str = Field(..., min_length=1, max_length=2000)
+    task: str = Field(..., min_length=1, max_length=4000)
     response_style: str = Field(default="normal", pattern="^(normal|lite|full|ultra)$")
-    context: Optional[Dict[str, Any]] = None
+    metadata: TaskMetadata | None = None
 
-class RunResponse(BaseModel):
-    task: str
+
+class ProductRunResponse(BaseModel):
     result: str
-    steps: List[Dict[str, Any]]
-    confidence: float
-    response_style: str
-    processing_time: float
+    reused: bool
+    reuse_confidence: float
+    tokens_saved: int
+    percent_saved: float
+
+
+class UsageResponse(BaseModel):
+    total_runs: int
+    repeat_rate: float
+    reuse_hit_rate: float
+    avg_token_savings: float
+
+
+def _metadata_dict(metadata: TaskMetadata | None) -> dict[str, Any]:
+    return metadata.model_dump(exclude_none=True) if metadata else {}
+
+
+def _build_task_result(task: str, metadata: dict[str, Any], reuse_lookup: dict[str, Any]) -> str:
+    artifacts = reuse_lookup.get("artifacts", [])
+    if reuse_lookup.get("reused") and artifacts:
+        return artifacts[0].get("normalized_text", "")
+    repo_id = metadata.get("repo_id") or metadata.get("workspace_id") or "unknown-repo"
+    context_paths = metadata.get("context_paths") or []
+    lines = [f"[task]\n{task}", f"[repo]\n{repo_id}"]
+    for path in context_paths[:8]:
+        lines.append(f"[{path}]\nreusable coding context captured for {task}")
+    if not context_paths:
+        lines.append("[context]\nreusable coding context captured for this repo task")
+    return "\n\n".join(lines)
+
+
+def _normalize_product_response(event: dict[str, Any]) -> ProductRunResponse:
+    reuse = event.get("reuse", {})
+    savings = event.get("savings", {})
+    reused = bool(event.get("truth_report", {}).get("reused", reuse.get("reused", False)))
+    reuse_confidence = float(reuse.get("reuse_confidence", 0.0))
+    tokens_saved = int(savings.get("avoided_input_tokens", 0))
+    percent_saved = float(savings.get("saved_percent", 0.0))
+    if tokens_saved < 0:
+        raise AssertionError("tokens_saved must be >= 0")
+    if percent_saved < 0:
+        raise AssertionError("percent_saved must be >= 0")
+    if not 0.0 <= reuse_confidence <= 1.0:
+        raise AssertionError("reuse_confidence must be within [0, 1]")
+    return ProductRunResponse(
+        result=event.get("result", ""),
+        reused=reused,
+        reuse_confidence=reuse_confidence,
+        tokens_saved=tokens_saved,
+        percent_saved=percent_saved,
+    )
+
 
 def create_brain_router() -> APIRouter:
-    """Create brain functions router."""
     router = APIRouter(prefix="/v1", tags=["brain"])
-    
-    # Initialize core services
-    agent_loop = AgentLoop()
-    memory_engine = MemoryEngine()
-    retrieval_engine = RetrievalEngine()
-    
-    @router.post("/query", response_model=QueryResponse)
-    async def query_brain(
-        request: QueryRequest,
-        current_user: Dict[str, Any] = Depends(get_current_user),
-        rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
-    ):
-        """Query the VelocityBrain memory system."""
-        import time
-        start_time = time.time()
-        
-        try:
-            logger.info(f"Query from {rate_info['tier']} user: {request.question[:100]}...")
-            
-            # Use proprietary retrieval engine
-            results = retrieval_engine.query(
-                question=request.question,
-                max_results=request.max_results,
-                filters=request.filters,
-                user_tier=rate_info["tier"]
-            )
-            
-            # Generate response using agent loop
-            answer = agent_loop.process_query(
-                question=request.question,
-                retrieved_context=results,
-                response_style=request.response_style
-            )
-            
-            processing_time = time.time() - start_time
-            
-            return QueryResponse(
-                question=request.question,
-                answer=answer["text"],
-                sources=results.get("sources", []),
-                confidence=answer.get("confidence", 0.0),
-                response_style=request.response_style,
-                processing_time=processing_time
-            )
-            
-        except Exception as e:
-            logger.error(f"Query error: {str(e)}")
-            raise HTTPException(status_code=500, detail="Query processing failed")
-    
-    @router.post("/ingest", response_model=IngestResponse)
-    async def ingest_content(
-        request: IngestRequest,
-        current_user: Dict[str, Any] = Depends(get_current_user),
-        rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
-    ):
-        """Ingest content into VelocityBrain memory."""
-        import time
-        start_time = time.time()
-        
-        try:
-            logger.info(f"Ingest from {rate_info['tier']} user: {request.source}")
-            
-            # Use proprietary memory engine
-            result = memory_engine.ingest(
-                content=request.content,
-                source=request.source,
-                metadata=request.metadata or {},
-                tags=request.tags or [],
-                user_tier=rate_info["tier"]
-            )
-            
-            processing_time = time.time() - start_time
-            
-            return IngestResponse(
-                success=True,
-                document_id=result["document_id"],
-                processing_time=processing_time,
-                message="Content ingested successfully"
-            )
-            
-        except Exception as e:
-            logger.error(f"Ingest error: {str(e)}")
-            raise HTTPException(status_code=500, detail="Content ingestion failed")
-    
-    @router.post("/ingest/file", response_model=IngestResponse)
-    async def ingest_file(
-        file: UploadFile = File(...),
-        source: str = Form(default="file"),
-        metadata: Optional[str] = Form(None),
-        tags: Optional[str] = Form(None),
-        current_user: Dict[str, Any] = Depends(get_current_user),
-        rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
-    ):
-        """Ingest a file into VelocityBrain memory."""
-        import time
-        import json
-        start_time = time.time()
-        
-        try:
-            logger.info(f"File ingest from {rate_info['tier']} user: {file.filename}")
-            
-            # Read file content
-            content = await file.read()
-            
-            # Parse metadata and tags if provided
-            parsed_metadata = {}
-            if metadata:
-                try:
-                    parsed_metadata = json.loads(metadata)
-                except:
-                    logger.warning("Invalid metadata JSON")
-            
-            parsed_tags = []
-            if tags:
-                try:
-                    parsed_tags = json.loads(tags)
-                except:
-                    parsed_tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
-            
-            # Use proprietary memory engine for file processing
-            result = memory_engine.ingest_file(
-                file_content=content,
-                filename=file.filename,
-                source=source,
-                metadata=parsed_metadata,
-                tags=parsed_tags,
-                user_tier=rate_info["tier"]
-            )
-            
-            processing_time = time.time() - start_time
-            
-            return IngestResponse(
-                success=True,
-                document_id=result["document_id"],
-                processing_time=processing_time,
-                message=f"File '{file.filename}' ingested successfully"
-            )
-            
-        except Exception as e:
-            logger.error(f"File ingest error: {str(e)}")
-            raise HTTPException(status_code=500, detail="File ingestion failed")
-    
-    @router.post("/run", response_model=RunResponse)
+    reuse_service = ReuseService()
+
+    @router.post("/run", response_model=ProductRunResponse)
     async def run_agent(
         request: RunRequest,
-        current_user: Dict[str, Any] = Depends(get_current_user),
-        rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
+        current_user: dict[str, Any] = Depends(get_current_user),
+        rate_info: dict[str, Any] = Depends(get_rate_limit_info),
     ):
-        """Run an agent task with VelocityBrain."""
-        import time
-        start_time = time.time()
-        
         try:
-            logger.info(f"Run task from {rate_info['tier']} user: {request.task[:100]}...")
-            
-            # Use proprietary agent loop
-            result = agent_loop.run_task(
-                task=request.task,
-                context=request.context or {},
-                response_style=request.response_style,
-                user_tier=rate_info["tier"]
+            metadata = _metadata_dict(request.metadata)
+            metadata['user_id'] = str(current_user.get('user_id') or current_user.get('api_key') or 'anonymous')
+            metadata['api_key'] = str(current_user.get('api_key') or '')
+            trace_id = f"run-{uuid.uuid4()}"
+            expected_reuse = reuse_service.should_expect_reuse(request.task, metadata)
+            reuse_lookup = reuse_service.retrieve_reuse_context(request.task, metadata=metadata, include_debug=True)
+            result = _build_task_result(request.task, metadata, reuse_lookup)
+            baseline_context = result if not reuse_lookup.get('reused') else f"{result}\n\n{result}"
+            event = reuse_service.record_validation_run(
+                run_id=trace_id,
+                task_text=request.task,
+                artifact_text=result,
+                baseline_prompt=reuse_service.serialize_prompt(task_text=request.task, context_text=baseline_context, reused=False),
+                actual_prompt=reuse_service.serialize_prompt(
+                    task_text=request.task,
+                    context_text=reuse_lookup["artifacts"][0]["normalized_text"] if reuse_lookup.get("artifacts") else result,
+                    reused=bool(reuse_lookup.get('reused')),
+                ),
+                reuse_lookup=reuse_lookup,
+                metadata=metadata,
+                artifact_kind=(request.metadata.artifact_kind if request.metadata and request.metadata.artifact_kind else "answer"),
+                expected_hit_types=["exact", "repo_context", "semantic"] if expected_reuse else [],
+                correct_reuse=True,
             )
-            
-            processing_time = time.time() - start_time
-            
-            return RunResponse(
-                task=request.task,
-                result=result["text"],
-                steps=result.get("steps", []),
-                confidence=result.get("confidence", 0.0),
-                response_style=request.response_style,
-                processing_time=processing_time
-            )
-            
-        except Exception as e:
-            logger.error(f"Run task error: {str(e)}")
+            return _normalize_product_response(event)
+        except Exception as exc:
+            logger.error("Run task error: %s", exc)
             raise HTTPException(status_code=500, detail="Task execution failed")
-    
+
+    @router.get("/usage", response_model=UsageResponse)
+    async def usage(
+        current_user: dict[str, Any] = Depends(get_current_user),
+        rate_info: dict[str, Any] = Depends(get_rate_limit_info),
+    ):
+        try:
+            overview = reuse_service.get_savings_overview()
+            user_id = str(current_user.get('user_id') or current_user.get('api_key') or 'anonymous')
+            user_usage = reuse_service.get_user_usage_summary(user_id)
+            return UsageResponse(
+                total_runs=int(user_usage.get('total_runs', 0)),
+                repeat_rate=float(user_usage.get('repeat_rate', 0.0)),
+                reuse_hit_rate=float(user_usage.get('reuse_hit_rate', 0.0)),
+                avg_token_savings=float(user_usage.get('avg_tokens_saved', 0.0)),
+            )
+        except Exception as exc:
+            logger.error("Usage error: %s", exc)
+            raise HTTPException(status_code=500, detail="Usage lookup failed")
+
     return router

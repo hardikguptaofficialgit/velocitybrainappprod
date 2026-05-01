@@ -1,0 +1,7 @@
+doctor
+  trace_id: doctor-check
+  ok: True
+  - config: PASS
+  - database: PASS
+  - identity_spec: PASS
+  - skills_path: PASS

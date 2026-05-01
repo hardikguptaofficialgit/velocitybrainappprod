@@ -1,297 +1,93 @@
-"""
-VelocityBrain MCP Server
+"""VelocityBrain MCP Server - product-facing run and usage tools only."""
 
-Model Context Protocol server implementation for VelocityBrain.
-"""
+from __future__ import annotations
 
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional
+import os
+from typing import Any
+
 from mcp.server import Server
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
-from mcp.types import (
-    Resource, Tool, TextContent, ImageContent, EmbeddedResource,
-    CallToolRequest, GetResourceRequest, ListResourcesRequest, ListToolsRequest
-)
+from mcp.types import TextContent, Tool
 
 from src.client import VelocityBrainClient
 from src.client.exceptions import VelocityBrainError
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("velocitybrain.mcp")
 
-# Initialize MCP server
 server = Server("velocitybrain")
-
-# Global client instance
-client: Optional[VelocityBrainClient] = None
+client: VelocityBrainClient | None = None
 
 
 def get_client() -> VelocityBrainClient:
-    """Get or create VelocityBrain client."""
     global client
     if client is None:
-        import os
-        
         api_key = os.getenv("VELOCITYBRAIN_API_KEY")
         if not api_key:
             raise ValueError("VELOCITYBRAIN_API_KEY environment variable is required")
-        
         base_url = os.getenv("VELOCITYBRAIN_BASE_URL", "https://api.velocitybrain.ai")
-        
         client = VelocityBrainClient(api_key, base_url)
         logger.info("VelocityBrain client initialized")
-    
     return client
 
 
+def _tool_output(payload: dict[str, Any]) -> list[TextContent]:
+    return [TextContent(type="text", text=json.dumps(payload, indent=2))]
+
+
 @server.list_tools()
-async def handle_list_tools() -> List[Tool]:
-    """List available MCP tools."""
+async def handle_list_tools() -> list[Tool]:
     return [
         Tool(
-            name="query",
-            description="Query VelocityBrain memory system",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "question": {
-                        "type": "string",
-                        "description": "Question to ask VelocityBrain"
-                    },
-                    "response_style": {
-                        "type": "string",
-                        "enum": ["normal", "lite", "full", "ultra"],
-                        "default": "normal",
-                        "description": "Response style"
-                    },
-                    "max_results": {
-                        "type": "integer",
-                        "default": 10,
-                        "minimum": 1,
-                        "maximum": 100,
-                        "description": "Maximum number of results"
-                    }
-                },
-                "required": ["question"]
-            }
-        ),
-        Tool(
-            name="ingest_text",
-            description="Ingest text content into VelocityBrain",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "content": {
-                        "type": "string",
-                        "description": "Text content to ingest"
-                    },
-                    "source": {
-                        "type": "string",
-                        "default": "note",
-                        "description": "Source identifier"
-                    },
-                    "metadata": {
-                        "type": "object",
-                        "description": "Optional metadata"
-                    },
-                    "tags": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Optional tags"
-                    }
-                },
-                "required": ["content"]
-            }
-        ),
-        Tool(
             name="run_agent",
-            description="Run an agent task with VelocityBrain",
+            description="Run a coding-agent task with hosted memory reuse and savings reporting.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "task": {
-                        "type": "string",
-                        "description": "Task to execute"
-                    },
+                    "task": {"type": "string", "description": "Task to execute"},
                     "response_style": {
                         "type": "string",
                         "enum": ["normal", "lite", "full", "ultra"],
                         "default": "normal",
-                        "description": "Response style"
                     },
-                    "context": {
-                        "type": "object",
-                        "description": "Optional context for the task"
-                    }
+                    "metadata": {"type": "object", "description": "Optional repo metadata"},
                 },
-                "required": ["task"]
-            }
+                "required": ["task"],
+            },
         ),
         Tool(
-            name="execute_skill",
-            description="Execute a specific VelocityBrain skill",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "skill_name": {
-                        "type": "string",
-                        "description": "Name of the skill to execute"
-                    },
-                    "parameters": {
-                        "type": "object",
-                        "description": "Parameters for the skill"
-                    },
-                    "response_style": {
-                        "type": "string",
-                        "enum": ["normal", "lite", "full", "ultra"],
-                        "default": "normal",
-                        "description": "Response style"
-                    }
-                },
-                "required": ["skill_name"]
-            }
+            name="usage",
+            description="Return minimal hosted reuse metrics such as hit rate and average token savings.",
+            inputSchema={"type": "object", "properties": {}},
         ),
-        Tool(
-            name="list_skills",
-            description="List available VelocityBrain skills",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "category": {
-                        "type": "string",
-                        "description": "Filter by category"
-                    }
-                }
-            }
-        ),
-        Tool(
-            name="healthz",
-            description="Check VelocityBrain system health",
-            inputSchema={
-                "type": "object",
-                "properties": {}
-            }
-        )
     ]
 
 
 @server.call_tool()
-async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
-    """Handle tool calls."""
+async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     try:
-        client = get_client()
-        
-        if name == "query":
-            result = client.query(
-                question=arguments["question"],
-                response_style=arguments.get("response_style", "normal"),
-                max_results=arguments.get("max_results", 10)
+        vb = get_client()
+        if name == "run_agent":
+            return _tool_output(
+                vb.run(
+                    task=arguments["task"],
+                    response_style=arguments.get("response_style", "normal"),
+                    metadata=arguments.get("metadata"),
+                )
             )
-            
-            return [TextContent(
-                type="text",
-                text=json.dumps(result, indent=2)
-            )]
-        
-        elif name == "ingest_text":
-            result = client.ingest(
-                content=arguments["content"],
-                source=arguments.get("source", "note"),
-                metadata=arguments.get("metadata"),
-                tags=arguments.get("tags")
-            )
-            
-            return [TextContent(
-                type="text",
-                text=json.dumps(result, indent=2)
-            )]
-        
-        elif name == "run_agent":
-            result = client.run(
-                task=arguments["task"],
-                response_style=arguments.get("response_style", "normal"),
-                context=arguments.get("context")
-            )
-            
-            return [TextContent(
-                type="text",
-                text=json.dumps(result, indent=2)
-            )]
-        
-        elif name == "execute_skill":
-            result = client.execute_skill(
-                skill_name=arguments["skill_name"],
-                parameters=arguments.get("parameters", {}),
-                response_style=arguments.get("response_style", "normal")
-            )
-            
-            return [TextContent(
-                type="text",
-                text=json.dumps(result, indent=2)
-            )]
-        
-        elif name == "list_skills":
-            result = client.list_skills(
-                category=arguments.get("category")
-            )
-            
-            return [TextContent(
-                type="text",
-                text=json.dumps(result, indent=2)
-            )]
-        
-        elif name == "healthz":
-            result = client.get_health()
-            
-            return [TextContent(
-                type="text",
-                text=json.dumps(result, indent=2)
-            )]
-        
-        else:
-            raise ValueError(f"Unknown tool: {name}")
-            
-    except VelocityBrainError as e:
-        logger.error(f"Tool error ({name}): {e}")
-        return [TextContent(
-            type="text",
-            text=f"Error: {str(e)}"
-        )]
-    except Exception as e:
-        logger.error(f"Unexpected error ({name}): {e}")
-        return [TextContent(
-            type="text",
-            text=f"Unexpected error: {str(e)}"
-        )]
+        if name == "usage":
+            return _tool_output(vb.get_usage_stats())
+        raise ValueError(f"Unknown tool: {name}")
+    except (VelocityBrainError, ValueError) as exc:
+        logger.error("VelocityBrain MCP error (%s): %s", name, exc)
+        return _tool_output({"error": str(exc)})
 
 
-@server.list_resources()
-async def handle_list_resources() -> List[Resource]:
-    """List available resources."""
-    return []
-
-
-@server.get_resource()
-async def handle_get_resource(uri: str) -> str:
-    """Get resource content."""
-    raise ValueError(f"Resource not found: {uri}")
-
-
-async def main():
-    """Main MCP server entry point."""
-    # Set up logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    
-    logger.info("Starting VelocityBrain MCP server")
-    
-    # Run the server
+async def main() -> None:
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
@@ -299,11 +95,8 @@ async def main():
             InitializationOptions(
                 server_name="velocitybrain",
                 server_version="1.0.0",
-                capabilities={
-                    "tools": {},
-                    "resources": {}
-                }
-            )
+                capabilities={"tools": {}},
+            ),
         )
 
 

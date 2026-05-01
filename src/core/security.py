@@ -160,24 +160,39 @@ class TokenManager:
     
     def __init__(self, secret_key: Optional[str] = None):
         self.secret_key = secret_key or secrets.token_bytes(SecurityConfig.TOKEN_SECRET_LENGTH)
+        self._issued_tokens: Dict[str, SecureToken] = {}
     
     def generate_token(self, actor: str, scopes: List[str], ttl_seconds: int = SecurityConfig.TOKEN_DEFAULT_TTL) -> SecureToken:
         """Generate a secure token."""
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)
         
-        return SecureToken(
+        secure_token = SecureToken(
             token=token,
             actor=actor,
             scopes=scopes,
             expires_at=expires_at
         )
+        self._issued_tokens[token] = secure_token
+        return secure_token
     
     def validate_token(self, token: str, required_scope: Optional[str] = None) -> Optional[SecureToken]:
-        """Validate a token (placeholder for actual implementation)."""
-        # In a real implementation, this would validate against a database or cache
-        # For now, return None to indicate no valid token
-        return None
+        """Validate a previously-issued token."""
+        if not token:
+            return None
+
+        secure_token = self._issued_tokens.get(token)
+        if not secure_token:
+            return None
+
+        if secure_token.is_expired():
+            self._issued_tokens.pop(token, None)
+            return None
+
+        if required_scope and not secure_token.has_scope(required_scope):
+            return None
+
+        return secure_token
 
 
 class RateLimiter:

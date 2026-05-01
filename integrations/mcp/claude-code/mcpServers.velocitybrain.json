@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "velocitybrain": {
-      "command": "velocitybrain",
-      "args": ["serve", "mcp"]
-    }
-  }
-}

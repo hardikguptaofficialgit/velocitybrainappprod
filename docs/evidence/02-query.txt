@@ -1,0 +1,5 @@
+usage: velocitybrain [-h] [--json] [--color] [--no-color]
+                     [--runtime-mode {auto,cloud,self-hosted}]
+                     [--response-style {full,lite,normal,ultra}]
+                     {about,init,setup,login,config,connect,smoke,ingest,put,query,ask,run,act,skills,list-skills,doctor,health,sync,identity,openclaw,status,runtime-status,caveman-commit,caveman-review,caveman-compress,serve,serve-mcp} ...
+velocitybrain: error: unrecognized arguments: What do we know about auth and API key flows in this repo?\ 

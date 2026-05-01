@@ -457,9 +457,9 @@ export default function Landing() {
           <div>
             <Fade delay={100}>
               <h1 className="syne font-extrabold leading-tight mb-4 text-4xl md:text-6xl">
-                Your AI agent is capable
+                Coding agents get smarter
                 <br />
-                <span className="text-zinc-600">but incomplete.</span>
+                <span className="text-zinc-600">and cheaper every run.</span>
               </h1>
             </Fade>
 
@@ -468,7 +468,7 @@ export default function Landing() {
                 <span className="px-font text-base md:text-lg mr-3">
                   Velocity Brain
                 </span>
-                gives it a real brain.
+                stops them from paying for the same tokens twice.
               </h2>
             </Fade>
 
@@ -845,7 +845,7 @@ export default function Landing() {
                   </div>
                 </div>
                 <p className="text-sm text-zinc-300 leading-7 mb-4">
-                  Velocity Brain retrieves context first, passes a smaller package forward, and keeps the next run smarter.
+                  Velocity Brain retrieves reusable coding context first, passes a smaller package forward, and keeps the next run cheaper and smarter.
                 </p>
                 <div className="space-y-3">
                   <div className="bg-[#0a0a0a] rounded-lg p-3">
@@ -875,7 +875,7 @@ export default function Landing() {
             <div>
               <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// access control'}</p>
               <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-4">Scoped. Policy-Gated.</h2>
-              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Velocity Brain is free for everyone for a limited time. Usage limits, scoped authorization, and full audit trails still apply.</p>
+              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Hosted memory, scoped authorization, and per-run savings proof for coding agents. Usage limits and audit trails still apply.</p>
               <div className="space-y-3 mb-8">
                 {[
                   { t:'Full', d:'All tools + destructive ops', c:'#EA803A' },
@@ -917,23 +917,22 @@ export default function Landing() {
           <Fade delay={70}>
             <div>
               <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// mcp tools'}</p>
-              <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-4">One runtime. Clear tool surface.</h2>
-              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Use one MCP server command and keep the same memory workflow across supported clients.</p>
+              <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-4">One hosted runtime. Clear reuse surface.</h2>
+              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Use one MCP server command and keep the same hosted reuse workflow across supported clients.</p>
               <Clay className="overflow-hidden mb-6 border border-[#2a2a2a]">
                 <div className="px-5 py-3 border-b border-[#2a2a2a] flex items-center gap-3 bg-[#111]">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#EA803A]"/>
                   <span className="mono text-sm text-zinc-400">velocity-brain serve mcp</span>
                 </div>
                 <div className="p-5 space-y-3 bg-[#0a0a0a]">
-                  {[['lookup_memory',null],['query',null],['run_agent',null],['ingest_text',null],['caveman_compress',null],['healthz',null],
-                    ['sync_brain','policy-gated'],['put_page','policy-gated'],['delete_page','policy-gated'],
+                  {[['retrieve_reuse_context',null],['query',null],['run_agent',null],['store_artifact',null],['record_reuse_decision',null],['healthz',null],
                   ].map(([name,gate])=>(
                     <div key={name} className="flex items-center justify-between">
                       <span className="mono text-sm text-zinc-300"><span className="text-[#EA803A] mr-2">-</span>{name}</span>
                       {gate && <span className="mono text-xs px-2.5 py-1 rounded border border-red-900/40 text-red-400/80 bg-red-900/10">{gate}</span>}
                     </div>
                   ))}
-                  <div className="mono text-xs text-zinc-500 pt-2">+ shared client helpers and policy-aware actions</div>
+                  <div className="mono text-xs text-zinc-500 pt-2">+ hosted savings reporting on every major run</div>
                 </div>
               </Clay>
 
@@ -985,8 +984,8 @@ export default function Landing() {
         <Fade>
           <div className="text-center mb-10">
             <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// quick start'}</p>
-            <h2 className="syne font-bold text-white text-3xl md:text-4xl">Up in ~30 Minutes</h2>
-            <p className="text-zinc-400 text-base mt-4">Minimal config beyond Postgres + env vars. Automated schema bootstrap.</p>
+            <h2 className="syne font-bold text-white text-3xl md:text-4xl">Hosted setup in minutes</h2>
+            <p className="text-zinc-400 text-base mt-4">Login, connect your MCP client, and start measuring saved tokens per run.</p>
           </div>
         </Fade>
         <Fade delay={50}>
@@ -998,10 +997,10 @@ export default function Landing() {
             <div className="p-8 space-y-6 bg-[#0a0a0a]">
               {[
                 { c:'# 1 · Install', ls:['pip install velocity-brain'] },
-                { c:'# 2 · Configure', ls:['cp .env.example .env'] },
-                { c:'# 3 · Start DB', ls:['docker compose up db -d','docker compose exec -T db psql -U velocity -d velocity_brain -f /docker-entrypoint-initdb.d/01-schema.sql'] },
-                { c:'# 4 · Validate', ls:['velocity-brain init','velocity-brain doctor'] },
-                { c:'# 5 · Core workflows', ls:['velocity-brain ingest --source note --content "Document auth callback edge cases before refactor"','velocity-brain query "What do we know about auth and API key flows in this repo?"','velocity-brain run "Prepare me to review this large codebase before changing auth"'] },
+                { c:'# 2 · Authenticate', ls:['velocity-brain login --api-key vb_live_xxx'] },
+                { c:'# 3 · Connect your agent', ls:['velocity-brain connect codex','velocity-brain serve mcp'] },
+                { c:'# 4 · Validate', ls:['velocity-brain doctor','velocity-brain smoke'] },
+                { c:'# 5 · See savings', ls:['velocity-brain query "Map the auth system in this repo"','velocity-brain run "Prepare a review of the billing flow"'] },
               ].map((b,i)=>(
                 <div key={i}>
                   <TL color="text-zinc-500"><span className="font-bold">{b.c}</span></TL>
@@ -1018,9 +1017,9 @@ export default function Landing() {
         <Fade>
           <Clay accent className="p-12 md:p-16 text-center relative overflow-hidden border border-[#EA803A]/20 bg-[#160a02]">
             <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-6">{'// ready?'}</p>
-            <h2 className="syne font-extrabold text-white mb-6 text-4xl md:text-5xl">Give your agent a real brain.</h2>
+            <h2 className="syne font-extrabold text-white mb-6 text-4xl md:text-5xl">Give your coding agent reusable memory.</h2>
             <p className="text-zinc-400 text-base md:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-              Join developers building reliable, context-aware, production-ready AI agents with <span className="px-font text-[#EA803A] text-xs">Velocity Brain</span>. Free for everyone for a limited time, with usage limits in place.
+              Join developers building coding agents that learn from past work and avoid recomputing the same prompt context with <span className="px-font text-[#EA803A] text-xs">Velocity Brain</span>.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               <a href="/login" className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-black text-base syne"
@@ -1058,7 +1057,7 @@ export default function Landing() {
           </div>
           <div className="mt-10 pt-6 border-t border-[#111] text-center">
             <p className="text-xs text-zinc-600" style={{fontFamily:'DM Sans,sans-serif'}}>
-              © {new Date().getFullYear()} Velocity Brain - Enterprise-Ready AI Agent Memory & Execution Engine · MIT License
+              © {new Date().getFullYear()} Velocity Brain - Hosted Memory and Reuse Layer for Coding Agents · MIT SDK
             </p>
           </div>
         </div>

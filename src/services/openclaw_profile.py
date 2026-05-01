@@ -7,19 +7,8 @@ from src.services.skill_registry import SkillRegistry
 def build_openclaw_profile() -> dict:
     skills = SkillRegistry('skills').list_skills()
     tool_names = [
-        'ingest_text',
-        'query',
         'run_agent',
-        'caveman_commit',
-        'caveman_review',
-        'caveman_compress',
-        'sync_brain',
-        'put_page',
-        'delete_page',
-        'google_workspace_action',
-        'get_identity_spec',
-        'list_skills',
-        'healthz',
+        'usage',
     ]
     return {
         'name': 'velocitybrain',
@@ -30,7 +19,7 @@ def build_openclaw_profile() -> dict:
         },
         'defaults': {
             'destructive_tools_allowed': False,
-            'preferred_modes': ['healthz', 'list_skills', 'query', 'run_agent'],
+            'preferred_modes': ['usage', 'run_agent'],
             'traceability': True,
         },
         'capabilities': {
@@ -41,9 +30,7 @@ def build_openclaw_profile() -> dict:
             'response_styles': sorted(ALLOWED_RESPONSE_STYLES),
         },
         'recommended_smoke_flow': [
-            'healthz',
-            'list_skills',
-            'query',
+            'usage',
             'run_agent',
         ],
     }

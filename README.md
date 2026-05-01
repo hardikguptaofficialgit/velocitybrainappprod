@@ -3,24 +3,21 @@
 </p>
 
 <p align="center">
-  <strong>Enterprise-Ready AI Agent Memory & Execution Engine</strong><br/>
-  CLI-native. API-capable. MCP-ready. Production-hardened.
+  <strong>Hosted Memory and Reuse Layer for Coding Agents</strong><br/>
+  CLI-native. MCP-ready. Built to avoid paying for the same tokens twice.
 </p>
 
 ## Velocity Brain
 
-Your AI agent is capable but incomplete. Velocity Brain gives it a real brain.
+Coding agents get smarter and cheaper every time they run.
 
-Velocity Brain is a **production-ready** local-first memory and execution runtime for agents. It stores memory in Postgres, retrieves internal context before action, and runs deterministic workflows through CLI, API, and MCP interfaces with enterprise-grade security, monitoring, and reliability.
+Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.
 
-### Current Access Model
+### Product Shape
 
-Velocity Brain is currently **free for everyone for a limited time**.
-
-- **All product features are available** during the current access window
-- **Usage limits still apply** across the dashboard, API, and generated API keys
-- **Policy gates and audit logging remain enforced** for sensitive or destructive operations
-- **Internal tier fields still exist for compatibility**, but the current user-facing model is limited-time free access
+- **Product**: hosted memory + reuse layer for coding agents
+- **Open source**: SDK + MCP bridge + integrations
+- **Core value**: less repeated prompt context, lower token cost, faster repeated runs
 
 ### Production Highlights
 
@@ -32,12 +29,11 @@ Velocity Brain is currently **free for everyone for a limited time**.
 - **Extensive Testing**: Security tests, integration tests, database integrity tests
 
 Core value:
-- **Brain-first retrieval before action**
-- **Persistent memory and timeline model**
-- **JSON skillpack for planning, execution, enrichment, and maintenance**
-- **MCP tools for compatible clients**
-- **Policy gates and auditability for destructive actions**
-- **Enterprise-grade security and monitoring**
+- **Reusable coding memory instead of repeated prompt context**
+- **Hosted retrieval before work**
+- **Per-run savings reporting**
+- **MCP tools for compatible coding clients**
+- **Open-source distribution layer with proprietary hosted reuse core**
 
 ## What Velocity Brain Does
 
@@ -207,7 +203,31 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
-## Quick Start (Local)
+## Quick Start (Hosted)
+
+### 1) Install and authenticate
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install velocitybrain
+velocitybrain login --api-key vb_live_xxx
+velocitybrain doctor
+velocitybrain doctor --verbose
+velocitybrain smoke
+```
+
+### 2) Connect your MCP client
+
+```powershell
+velocitybrain connect codex
+velocitybrain connect codex --apply
+```
+
+Velocity Brain runs as a local MCP bridge that forwards requests to the hosted backend. No local DB or Docker setup is required in hosted mode.
+
+## Legacy Local / Self-Hosted (Dev-Only)
 
 ### 1) Configure environment
 
@@ -273,14 +293,17 @@ For detailed production deployment instructions, see [**Production Deployment Gu
 - `query`: **keyword + hybrid retrieval from internal memory tables** with input validation
 - `run`: **intent detection + deterministic plan + simulated execution + local writeback** with security checks
 
-When connected through MCP, external clients (Claude Code/Codex/etc.) call these tools, but Velocity Brain itself remains local-first with **enterprise-grade security**.
+When connected through MCP, external clients (Claude Code/Codex/etc.) call these tools. In hosted mode the local CLI acts as a thin bridge to the proprietary hosted reuse backend. Self-hosted mode remains legacy/dev-only.
 
 ## CLI Reference
 
 ```powershell
 velocitybrain about
 velocitybrain init --bootstrap-schema
+velocitybrain connect codex
+velocitybrain smoke
 velocitybrain doctor
+velocitybrain doctor --verbose
 velocitybrain ingest --source note --content "..."
 velocitybrain ingest --source notes --org-file ./notes/daily.org
 velocitybrain query "..."
@@ -358,12 +381,14 @@ codex mcp add velocitybrain -- velocitybrain serve mcp
 
 Basic Codex flow:
 
-1. Start the local runtime with `velocitybrain serve mcp`
-2. Register the MCP server in Codex with `codex mcp add velocitybrain -- velocitybrain serve mcp`
-3. Keep the repository `AGENTS.md` file so Codex knows to consult Velocity Brain automatically for internal knowledge lookups
-4. Restart Codex if needed so it picks up the new MCP server
-5. Ask normal questions like `What do we know about auth and API key flows in this repo?` or `Prepare me to review this large codebase before changing auth`
-6. Use `response_style` when you want shorter or denser outputs
+1. For hosted mode, run `velocitybrain login --api-key vb_live_xxx`
+2. Start the MCP bridge with `velocitybrain serve mcp`
+3. Register the MCP server in Codex with `velocitybrain connect codex --apply`
+4. Keep the repository `AGENTS.md` file so Codex knows to consult Velocity Brain automatically for internal knowledge lookups
+5. Restart Codex if needed so it picks up the new MCP server
+6. Ask normal questions like `What do we know about auth and API key flows in this repo?` or `Prepare me to review this large codebase before changing auth`
+7. Use `velocitybrain smoke` when you want a quick end-to-end hosted verification
+8. Use `response_style` when you want shorter or denser outputs
 
 - OpenClaw / Gemini CLI / Cline / Antigravity / any MCP-capable client:
 Use the same `mcpServers` JSON config in that client's MCP settings.
@@ -757,6 +782,6 @@ MIT
 
 ---
 
-**Velocity Brain** - Enterprise-Ready AI Agent Memory & Execution Engine
+**Velocity Brain** - Hosted Memory and Reuse Layer for Coding Agents
 
 🚀 **Production-Hardened** • 🔒 **Enterprise-Secure** • 📊 **Fully-Monitored** •   **Thoroughly-Tested**

@@ -1,0 +1,8 @@
+smoke
+  trace_id: smoke-self-hosted
+  runtime_mode: self-hosted
+  ok: True
+  steps_passed: 3/3
+  - doctor: PASS | local checks
+  - skills: PASS | 72 skills visible
+  - query: PASS | Hardik Gupta: Prepare me for meeting with Hardik Gupta tomorrow

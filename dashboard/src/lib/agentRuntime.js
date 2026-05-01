@@ -5,8 +5,8 @@ export const supportedAgents = [
     status: 'Ready',
     surface: 'MCP',
     setup: 'claude mcp add velocitybrain -- velocitybrain serve mcp',
-    summary: 'Repo-aware coding with memory lookup before action.',
-    strengths: ['Repo-aware coding', 'Fast memory retrieval', 'Great planning handoff']
+    summary: 'Hosted reuse for coding workflows with less repeated prompt context.',
+    strengths: ['Memory reuse', 'Saved tokens per run', 'Repo-scoped context recall']
   },
   {
     id: 'codex',
@@ -14,8 +14,8 @@ export const supportedAgents = [
     status: 'Ready',
     surface: 'MCP',
     setup: 'codex mcp add velocitybrain -- velocitybrain serve mcp',
-    summary: 'Strong fit for edit-heavy workflows that need prepared context.',
-    strengths: ['Automatic repo memory lookups', 'Background retrieval before action', 'Token-efficient coding']
+    summary: 'Strong fit for repeated repo analysis and edit-heavy coding loops.',
+    strengths: ['Automatic reuse', 'Background retrieval before action', 'Token-efficient coding']
   },
   {
     id: 'gemini-cli',
@@ -23,8 +23,8 @@ export const supportedAgents = [
     status: 'Ready',
     surface: 'MCP',
     setup: 'velocitybrain serve mcp',
-    summary: 'Good for mixed planning, research, and execution flows.',
-    strengths: ['Cross-tool interoperability', 'Simple JSON config', 'Good for mixed task flows']
+    summary: 'Good for hosted coding-memory workflows across clients.',
+    strengths: ['Cross-tool interoperability', 'Simple JSON config', 'Reuse-aware prompts']
   },
   {
     id: 'openclaw',
@@ -32,8 +32,8 @@ export const supportedAgents = [
     status: 'Profile Export',
     surface: 'MCP',
     setup: 'velocitybrain openclaw',
-    summary: 'Exports an OpenClaw-ready profile and capability summary.',
-    strengths: ['Profile export', 'Capability discovery endpoints', 'Smoke-flow ready']
+    summary: 'Exports an OpenClaw-ready profile for the hosted reuse layer.',
+    strengths: ['Profile export', 'Capability discovery endpoints', 'Savings-aware smoke flow']
   },
   {
     id: 'cline',
@@ -41,8 +41,8 @@ export const supportedAgents = [
     status: 'Ready',
     surface: 'MCP',
     setup: 'velocitybrain serve mcp',
-    summary: 'Lightweight MCP wiring with the same shared memory layer.',
-    strengths: ['Simple MCP wiring', 'Shared tool surface', 'Same security defaults']
+    summary: 'Lightweight MCP wiring for the same hosted memory and savings layer.',
+    strengths: ['Simple MCP wiring', 'Shared tool surface', 'Same hosted defaults']
   }
 ];
 
@@ -97,40 +97,40 @@ export const promptLifecycle = [
   {
     step: '1',
     title: 'Prompt arrives',
-    description: 'The user talks to the agent normally.'
+    description: 'The user asks the coding agent to inspect or change a repo.'
   },
   {
     step: '2',
-    title: 'Velocity Brain runs first',
-    description: 'Background retrieval pulls only the repo and memory context that matters.'
+    title: 'Reuse lookup runs first',
+    description: 'Hosted retrieval checks for repo maps, prior answers, plans, and debug traces that can be reused.'
   },
   {
     step: '3',
-    title: 'Agent executes with prepared context',
-    description: 'The agent answers or edits with a smaller, cleaner context package.'
+    title: 'Agent runs with smaller context',
+    description: 'Only the relevant coding context is injected instead of replaying the full history.'
   },
   {
     step: '4',
-    title: 'Important results are written back',
-    description: 'Useful decisions and findings can be saved for the next run.'
+    title: 'Savings and artifacts are written back',
+    description: 'Useful outputs become reusable memory artifacts and the saved tokens are tracked.'
   }
 ];
 
 export const valuePillars = [
   {
-    title: 'Background retrieval',
+    title: 'Hosted retrieval',
     description: 'The model does not start cold.'
   },
   {
-    title: 'Context compression',
+    title: 'Context reuse',
     description: 'Only the useful context gets forwarded.'
   },
   {
     title: 'Cross-agent consistency',
-    description: 'Different agents can share one memory layer.'
+    description: 'Different agents can share one hosted memory layer.'
   },
   {
-    title: 'Writeback memory loop',
+    title: 'Writeback savings loop',
     description: 'Good runs improve the next session instead of vanishing in chat.'
   }
 ];

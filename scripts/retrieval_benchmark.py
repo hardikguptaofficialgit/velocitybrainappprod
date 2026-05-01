@@ -9,9 +9,31 @@ from src.services.evaluation_service import EvaluationService
 from src.services.memory_engine import MemoryEngine
 
 DEFAULT_DATASET = Path('data/retrieval_benchmark.json')
+FALLBACK_DATASET = [
+    {
+        "question": "What do I know about Hardik Gupta?",
+        "expected_slugs": ["hardik-gupta"],
+        "seed_content": "Hardik Gupta is associated with Velocity Brain product strategy and repository direction.",
+        "source": "benchmark"
+    },
+    {
+        "question": "Prepare me for meeting with Raj Patel.",
+        "expected_slugs": ["raj-patel"],
+        "seed_content": "Raj Patel is a stakeholder referenced in planning conversations and meeting prep workflows.",
+        "source": "benchmark"
+    },
+    {
+        "question": "What do we know about Velocity Brain auth flow?",
+        "expected_slugs": ["velocity-brain-auth-flow"],
+        "seed_content": "Velocity Brain auth flows include backend API key validation, Firebase-backed user sessions, and protected API routes.",
+        "source": "benchmark"
+    }
+]
 
 
 def load_cases(dataset_path: Path) -> list[dict]:
+    if not dataset_path.exists():
+        return list(FALLBACK_DATASET)
     return json.loads(dataset_path.read_text(encoding='utf-8'))
 
 

@@ -29,7 +29,22 @@ router.post('/log', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Unauthorized usage log request' });
         }
 
-        const { apiKeyId, userId, endpoint, method, statusCode, responseTimeMs, requestSize, responseSize } = req.body;
+        const {
+            apiKeyId,
+            userId,
+            endpoint,
+            method,
+            statusCode,
+            responseTimeMs,
+            requestSize,
+            responseSize,
+            reuseHitType,
+            artifactsUsed,
+            avoidedInputTokens,
+            estimatedCostSaved,
+            estimatedLatencySavedMs,
+            repoId
+        } = req.body;
 
         const now = new Date().toISOString();
         await db.collection(COLLECTIONS.USAGE_LOGS).add({
@@ -41,6 +56,12 @@ router.post('/log', async (req, res) => {
             response_time_ms: responseTimeMs,
             request_size: requestSize || 0,
             response_size: responseSize || 0,
+            reuse_hit_type: reuseHitType || 'none',
+            artifacts_used: artifactsUsed || 0,
+            avoided_input_tokens: avoidedInputTokens || 0,
+            estimated_cost_saved: estimatedCostSaved || 0,
+            estimated_latency_saved_ms: estimatedLatencySavedMs || 0,
+            repo_id: repoId || 'default-workspace',
             created_at: now
         });
 
@@ -77,6 +98,9 @@ router.get('/', authenticate, async (req, res) => {
         const avgResponseTime = dailyUsage.length > 0
             ? Math.round(dailyUsage.reduce((sum, log) => sum + (log.response_time_ms || 0), 0) / dailyUsage.length)
             : 0;
+        const savedTokensToday = dailyUsage.reduce((sum, log) => sum + (log.avoided_input_tokens || 0), 0);
+        const savedCostToday = dailyUsage.reduce((sum, log) => sum + (log.estimated_cost_saved || 0), 0);
+        const reuseHitsToday = dailyUsage.filter(log => (log.reuse_hit_type || 'none') !== 'none').length;
 
         const errorCount = dailyUsage.filter(log => log.status_code >= 400).length;
         const errorRate = dailyUsage.length > 0
@@ -159,6 +183,9 @@ router.get('/', authenticate, async (req, res) => {
                 peakHour: peakHourEntry.calls > 0 ? peakHourEntry.hour : 'N/A',
                 avgPerMin,
                 resetIn: formatResetIn(now),
+                savedTokensToday,
+                savedCostToday: Number(savedCostToday.toFixed(6)),
+                reuseHitRate: dailyUsage.length > 0 ? Number(((reuseHitsToday / dailyUsage.length) * 100).toFixed(1)) : 0,
                 accessMessage: ACCESS_POLICY.publicAccessMessage
             },
             dailyUsage: dailyTrend,
@@ -167,7 +194,10 @@ router.get('/', authenticate, async (req, res) => {
             recentActivity: dailyUsage.slice(-5).map(log => ({
                 description: `${log.method} ${log.endpoint}`,
                 status: log.status_code >= 400 ? 'failed' : 'completed',
-                timestamp: log.created_at
+                timestamp: log.created_at,
+                reuseHitType: log.reuse_hit_type || 'none',
+                avoidedInputTokens: log.avoided_input_tokens || 0,
+                estimatedCostSaved: log.estimated_cost_saved || 0
             }))
         });
     } catch (error) {

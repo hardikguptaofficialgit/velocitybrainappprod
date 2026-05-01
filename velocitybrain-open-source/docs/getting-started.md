@@ -1,68 +1,30 @@
-# Getting Started with VelocityBrain
+# VelocityBrain Client Quick Start
 
-## Installation
+Install the public client:
 
-### From PyPI
 ```bash
 pip install velocitybrain-client
 ```
 
-### From Source
-```bash
-git clone https://github.com/velocitybrain/velocitybrain-client.git
-cd velocitybrain-client
-pip install -e .
-```
-
-## Configuration
-
-Set your API key:
+Set credentials:
 
 ```bash
-export VELOCITYBRAIN_API_KEY="your_api_key_here"
+export VELOCITYBRAIN_API_KEY="vb_live_xxx"
 ```
 
-Or create a config file:
+Run a hosted task:
+
 ```bash
-mkdir -p ~/.velocitybrain
-echo '{"api_key": "your_api_key_here"}' > ~/.velocitybrain/config.json
+velocitybrain run "Map the hosted auth and API key flow in this repo."
 ```
 
-## Quick Start
+Use the Python client:
 
-### CLI Usage
-```bash
-# Query your memory
-velocitybrain query "What do I know about AI?"
-
-# Ingest content
-velocitybrain ingest --content "Important information"
-
-# Run agent task
-velocitybrain run "Summarize recent activities"
-```
-
-### Python SDK
 ```python
-from src.client import VelocityBrainClient
+from velocitybrain_client import VelocityBrainClient
 
-with VelocityBrainClient(api_key="your_key") as client:
-    result = client.query("What do I know about AI?")
-    print(result["answer"])
+with VelocityBrainClient(api_key="vb_live_xxx") as client:
+    result = client.run("Map the hosted auth and API key flow in this repo.")
+    print(result)
 ```
 
-### MCP Server
-```bash
-# Start MCP server
-velocitybrain-mcp
-
-# Configure with your AI assistant
-# See integrations/ directory for examples
-```
-
-## Next Steps
-
-- Browse available skills: `velocitybrain skills --list`
-- Read the API documentation
-- Join our community Discord
-- Contribute skills on GitHub

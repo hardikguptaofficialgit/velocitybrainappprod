@@ -6,6 +6,7 @@ from typing import Any
 from src.core.config import settings
 from src.services.compliance_service import ComplianceService
 from src.services.openclaw_profile import build_openclaw_profile
+from src.services.reuse_service import ReuseService
 from src.services.skill_registry import SkillRegistry
 
 
@@ -57,5 +58,6 @@ def build_runtime_status(audit_limit: int = 5) -> dict[str, Any]:
             'available': audit_available,
             **audit_summary,
         },
+        'savings': ReuseService().get_savings_overview(),
         'generated_at': datetime.now(timezone.utc).isoformat(),
     }

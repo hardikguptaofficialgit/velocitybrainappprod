@@ -1,0 +1,8 @@
+Name           Command                                                                           Args                                                       Env  Cwd  Status   Auth       
+browser        npx                                                                               -y @modelcontextprotocol/server-browser                    -    -    enabled  Unsupported
+excalidraw     node                                                                              C:\Disk E\FED\backend\excalidraw-mcp-server\dist\index.js  -    -    enabled  Unsupported
+velocitybrain  C:\Users\hardi\AppData\Local\Programs\Python\Python313\Scripts\velocitybrain.exe  serve mcp                                                  -    -    enabled  Unsupported
+
+Name    Url                         Bearer Token Env Var  Status   Auth         
+figma   https://mcp.figma.com/mcp   -                     enabled  OAuth        
+linear  https://mcp.linear.app/mcp  -                     enabled  Not logged in

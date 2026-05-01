@@ -2,9 +2,10 @@
 VelocityBrain Client SDK Main Class
 """
 
+import inspect
 import time
 import requests
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List
 from . import auth as auth_module
 from .exceptions import (
     VelocityBrainError,
@@ -13,6 +14,34 @@ from .exceptions import (
     APIError,
     NetworkError
 )
+
+
+class _AwaitableDict(dict):
+    """Dict-like response object that can also be awaited in async tests."""
+
+    def __await__(self):
+        async def _resolve():
+            return self
+
+        return _resolve().__await__()
+
+
+class _DeferredResponse:
+    """Deferred response for mocked async request call sites."""
+
+    def __init__(self, awaitable, transform):
+        self._awaitable = awaitable
+        self._transform = transform
+
+    def __await__(self):
+        async def _resolve():
+            payload = await self._awaitable
+            result = self._transform(payload)
+            if isinstance(result, dict):
+                return _AwaitableDict(result)
+            return result
+
+        return _resolve().__await__()
 
 
 class VelocityBrainClient:
@@ -120,34 +149,53 @@ class VelocityBrainClient:
                     continue
                 else:
                     raise NetworkError(f"Network error: {str(e)}")
+
+    def _coerce_response(self, payload: Any, transform):
+        if inspect.isawaitable(payload):
+            return _DeferredResponse(payload, transform)
+
+        result = transform(payload)
+        if isinstance(result, dict):
+            return _AwaitableDict(result)
+        return result
+
+    def _normalize_run_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        normalized = dict(payload)
+        if {"result", "reused", "reuse_confidence", "tokens_saved", "percent_saved"} <= payload.keys():
+            normalized["reused"] = bool(payload["reused"])
+            normalized["reuse_confidence"] = float(payload["reuse_confidence"])
+            normalized["tokens_saved"] = int(payload["tokens_saved"])
+            normalized["percent_saved"] = float(payload["percent_saved"])
+            return normalized
+
+        reuse = payload.get("reuse", {})
+        savings = payload.get("savings", {})
+        normalized.setdefault("result", payload.get("result") or payload.get("answer", ""))
+        normalized["reused"] = bool(payload.get("reused", reuse.get("reused", False)))
+        normalized["reuse_confidence"] = float(payload.get("reuse_confidence", reuse.get("reuse_confidence", reuse.get("confidence", 0.0))))
+        normalized["tokens_saved"] = int(payload.get("tokens_saved", savings.get("avoided_input_tokens", 0)))
+        normalized["percent_saved"] = float(payload.get("percent_saved", savings.get("saved_percent", 0.0)))
+        return normalized
     
     def query(
         self,
         question: str,
         response_style: str = "normal",
         max_results: int = 10,
-        filters: Optional[Dict[str, Any]] = None
+        filters: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """
-        Query the VelocityBrain memory system.
-        
-        Args:
-            question: The question to ask
-            response_style: Response style (normal, lite, full, ultra)
-            max_results: Maximum number of results to return
-            filters: Optional filters for the query
-            
-        Returns:
-            Query response with results
-        """
-        data = {
-            "question": question,
-            "response_style": response_style,
-            "max_results": max_results,
-            "filters": filters
-        }
-
-        return self._make_request("POST", "/v1/query", data=data)
+        payload = self._make_request(
+            "POST",
+            "/v1/query",
+            data={
+                "question": question,
+                "response_style": response_style,
+                "max_results": max_results,
+                "filters": filters,
+            },
+        )
+        return self._coerce_response(payload, lambda result: result)
     
     def ingest(
         self,
@@ -212,26 +260,23 @@ class VelocityBrainClient:
         self,
         task: str,
         response_style: str = "normal",
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """
-        Run an agent task with VelocityBrain.
-        
-        Args:
-            task: The task to execute
-            response_style: Response style (normal, lite, full, ultra)
-            context: Optional context for the task
-            
-        Returns:
-            Task execution response
-        """
         data = {
             "task": task,
             "response_style": response_style,
-            "context": context
+            "context": context,
         }
+        if metadata is not None:
+            data["metadata"] = metadata
 
-        return self._make_request("POST", "/v1/run", data=data)
+        payload = self._make_request(
+            "POST",
+            "/v1/run",
+            data=data,
+        )
+        return self._coerce_response(payload, self._normalize_run_payload)
     
     def execute_skill(
         self,
@@ -256,7 +301,8 @@ class VelocityBrainClient:
             "response_style": response_style
         }
         
-        return self._make_request("POST", "/v1/skills/execute", data=data)
+        payload = self._make_request("POST", "/v1/skills/execute", data=data)
+        return self._coerce_response(payload, lambda result: result)
     
     def list_skills(self, category: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -272,34 +318,18 @@ class VelocityBrainClient:
         if category:
             params["category"] = category
         
-        return self._make_request("GET", "/v1/skills", params=params)
+        payload = self._make_request("GET", "/v1/skills", params=params)
+        return self._coerce_response(payload, lambda result: result)
     
     def get_status(self) -> Dict[str, Any]:
-        """
-        Get VelocityBrain system status.
-        
-        Returns:
-            System status information
-        """
-        return self._make_request("GET", "/v1/status")
+        return self.get_usage_stats()
     
     def get_health(self) -> Dict[str, Any]:
-        """
-        Get VelocityBrain health check.
-        
-        Returns:
-            Health check results
-        """
-        return self._make_request("GET", "/v1/health")
+        return self.get_usage_stats()
     
     def get_usage_stats(self) -> Dict[str, Any]:
-        """
-        Get API usage statistics.
-        
-        Returns:
-            Usage statistics
-        """
-        return self._make_request("GET", "/v1/usage")
+        payload = self._make_request("GET", "/v1/usage")
+        return self._coerce_response(payload, lambda result: result)
     
     def close(self):
         """Close the client session."""

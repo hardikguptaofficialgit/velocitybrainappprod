@@ -9,7 +9,7 @@ import time
 import jwt
 import hashlib
 import httpx
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -94,7 +94,7 @@ def create_auth_router() -> APIRouter:
             )
         
         # Generate tokens
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         expires_at = now + timedelta(hours=1)
         
         access_payload = {
@@ -181,7 +181,7 @@ def create_auth_router() -> APIRouter:
             )
         
         # Generate new access token
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         expires_at = now + timedelta(hours=1)
         
         access_payload = {

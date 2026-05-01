@@ -14,6 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from core_api.auth import get_current_user, get_rate_limit_info
 from monitoring.health_monitor import HealthMonitor
 from services.metrics_service import MetricsService
+from services.reuse_service import ReuseService
 from core.logging_config import get_logger
 
 logger = get_logger("core_api.monitoring")
@@ -31,6 +32,7 @@ class StatusResponse(BaseModel):
     version: str
     environment: str
     services: Dict[str, str]
+    savings_summary: Dict[str, Any]
 
 class UsageStatsResponse(BaseModel):
     api_calls_today: int
@@ -39,6 +41,7 @@ class UsageStatsResponse(BaseModel):
     queries_executed: int
     tasks_completed: int
     tier_limits: Dict[str, int]
+    savings_summary: Dict[str, Any]
 
 def create_monitoring_router() -> APIRouter:
     """Create monitoring router."""
@@ -47,6 +50,7 @@ def create_monitoring_router() -> APIRouter:
     # Initialize monitoring services
     health_monitor = HealthMonitor()
     metrics_service = MetricsService()
+    reuse_service = ReuseService()
     
     @router.get("/health", response_model=HealthCheckResponse)
     async def health_check():
@@ -81,14 +85,15 @@ def create_monitoring_router() -> APIRouter:
                 uptime=status_info["uptime"],
                 version=status_info["version"],
                 environment=status_info["environment"],
-                services=status_info["services"]
+                services=status_info["services"],
+                savings_summary=reuse_service.get_savings_overview(),
             )
             
         except Exception as e:
             logger.error(f"Status error: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to get status")
     
-    @router.get("/usage", response_model=UsageStatsResponse)
+    @router.get("/usage/internal", response_model=UsageStatsResponse, include_in_schema=False)
     async def get_usage_stats(
         current_user: Dict[str, Any] = Depends(get_current_user),
         rate_info: Dict[str, Any] = Depends(get_rate_limit_info)
@@ -112,7 +117,8 @@ def create_monitoring_router() -> APIRouter:
                 documents_ingested=usage["documents_ingested"],
                 queries_executed=usage["queries_executed"],
                 tasks_completed=usage["tasks_completed"],
-                tier_limits=tier_limits
+                tier_limits=tier_limits,
+                savings_summary=reuse_service.get_savings_overview(),
             )
             
         except Exception as e:

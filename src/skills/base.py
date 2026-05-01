@@ -7,7 +7,7 @@ Base class for creating VelocityBrain skills.
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 class SkillResult(BaseModel):
@@ -25,7 +25,7 @@ class BaseSkill(ABC):
     
     def __init__(self):
         self._name = self.__class__.__name__.lower().replace('skill', '')
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(UTC)
 
     @property
     def name(self) -> str:
@@ -144,7 +144,7 @@ class BaseSkill(ABC):
 - Skill: {self.name}
 - Category: {self.category}
 - Version: {self.version}
-- Executed at: {datetime.utcnow().isoformat()}
+- Executed at: {datetime.now(UTC).isoformat()}
 """
         
         elif response_style == "ultra":
@@ -160,7 +160,7 @@ class BaseSkill(ABC):
 - **Tags**: {', '.join(self.tags)}
 
 ## Execution Details
-- **Timestamp**: {datetime.utcnow().isoformat()}
+- **Timestamp**: {datetime.now(UTC).isoformat()}
 - **Response Style**: {response_style}
 
 ## Results

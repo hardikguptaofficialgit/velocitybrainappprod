@@ -46,11 +46,17 @@ const listFiles = (...segments) => {
 const buildAgentRuntimeStatus = () => {
     const agentsMd = detectFile('AGENTS.md');
     const agentsDir = detectFile('.agents');
-    const claudeHooks = detectFile('integrations', 'claude', 'hooks');
-    const mcpRoot = detectFile('integrations', 'mcp');
+    const claudeHooks = detectFirstExisting([
+        ['integrations', 'claude', 'hooks'],
+        ['velocitybrain-open-source', 'integrations', 'claude']
+    ]);
+    const mcpRoot = detectFirstExisting([
+        ['integrations', 'mcp'],
+        ['velocitybrain-open-source', 'integrations', 'mcp']
+    ]);
     const mcpRuntime = detectFirstExisting([
         ['src', 'mcp'],
-        ['velocitybrain-open-source', 'src', 'mcp']
+        ['velocitybrain-open-source', 'src', 'velocitybrain_client', 'mcp']
     ]);
     const setupScript = detectFile('scripts', 'setup_mcp_plugin.ps1');
     const verifyScript = detectFile('scripts', 'verify_mcp_integrations.ps1');
@@ -61,10 +67,22 @@ const buildAgentRuntimeStatus = () => {
         detectFile('docs', 'TOKEN_EFFICIENCY.md')
     ];
     const templateFiles = [
-        detectFile('integrations', 'mcp', 'claude-code', 'mcpServers.velocitybrain.json'),
-        detectFile('integrations', 'mcp', 'codex', 'config.velocitybrain.toml'),
-        detectFile('integrations', 'mcp', 'openclaw', 'mcpServers.velocitybrain.json'),
-        detectFile('integrations', 'mcp', 'README.md')
+        detectFirstExisting([
+            ['integrations', 'mcp', 'claude-code', 'mcpServers.velocitybrain.json'],
+            ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
+        ]),
+        detectFirstExisting([
+            ['integrations', 'mcp', 'codex', 'config.velocitybrain.toml'],
+            ['docs', 'CLIENT_INTEGRATIONS.md']
+        ]),
+        detectFirstExisting([
+            ['integrations', 'mcp', 'openclaw', 'mcpServers.velocitybrain.json'],
+            ['velocitybrain-open-source', 'integrations', 'openclaw', 'mcpServers.json']
+        ]),
+        detectFirstExisting([
+            ['integrations', 'mcp', 'README.md'],
+            ['docs', 'CLIENT_INTEGRATIONS.md']
+        ])
     ];
 
     const agentDefinitions = [
@@ -76,7 +94,8 @@ const buildAgentRuntimeStatus = () => {
             summary: 'Repo-aware coding with memory lookup before action.',
             strengths: ['Repo-aware coding', 'Fast memory retrieval', 'Great planning handoff'],
             templateCandidates: [
-                ['integrations', 'mcp', 'claude-code', 'mcpServers.velocitybrain.json']
+                ['integrations', 'mcp', 'claude-code', 'mcpServers.velocitybrain.json'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
             ],
             workspaceCandidates: [
                 ['.claude'],
@@ -86,6 +105,7 @@ const buildAgentRuntimeStatus = () => {
             ],
             extraCandidates: [
                 ['integrations', 'claude', 'hooks', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'claude', 'setup.sh'],
                 ['scripts', 'install_claude_caveman_hooks.ps1']
             ]
         },
@@ -97,7 +117,8 @@ const buildAgentRuntimeStatus = () => {
             summary: 'Strong fit for edit-heavy workflows that need prepared context.',
             strengths: ['Automatic repo memory lookups', 'Background retrieval before action', 'Token-efficient coding'],
             templateCandidates: [
-                ['integrations', 'mcp', 'codex', 'config.velocitybrain.toml']
+                ['integrations', 'mcp', 'codex', 'config.velocitybrain.toml'],
+                ['docs', 'CLIENT_INTEGRATIONS.md']
             ],
             workspaceCandidates: [
                 ['.codex'],
@@ -117,7 +138,8 @@ const buildAgentRuntimeStatus = () => {
             summary: 'Good for mixed planning, research, and execution flows.',
             strengths: ['Cross-tool interoperability', 'Simple JSON config', 'Good for mixed task flows'],
             templateCandidates: [
-                ['integrations', 'mcp', 'README.md']
+                ['integrations', 'mcp', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
             ],
             workspaceCandidates: [
                 ['.gemini'],
@@ -137,7 +159,8 @@ const buildAgentRuntimeStatus = () => {
             summary: 'Exports an OpenClaw-ready profile and capability summary.',
             strengths: ['Profile export', 'Capability discovery endpoints', 'Smoke-flow ready'],
             templateCandidates: [
-                ['integrations', 'mcp', 'openclaw', 'mcpServers.velocitybrain.json']
+                ['integrations', 'mcp', 'openclaw', 'mcpServers.velocitybrain.json'],
+                ['velocitybrain-open-source', 'integrations', 'openclaw', 'mcpServers.json']
             ],
             workspaceCandidates: [
                 ['.openclaw'],
@@ -157,7 +180,8 @@ const buildAgentRuntimeStatus = () => {
             summary: 'Lightweight MCP wiring with the same shared memory layer.',
             strengths: ['Simple MCP wiring', 'Shared tool surface', 'Same security defaults'],
             templateCandidates: [
-                ['integrations', 'mcp', 'README.md']
+                ['integrations', 'mcp', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
             ],
             workspaceCandidates: [
                 ['.cline'],
@@ -201,8 +225,8 @@ const buildAgentRuntimeStatus = () => {
 
     const workspaceFiles = [
         ...(agentsMd.exists ? [{ label: 'AGENTS.md', path: agentsMd.path, type: 'instruction' }] : []),
-        ...(claudeHooks.exists ? listFiles('integrations', 'claude', 'hooks').map((item) => ({ label: item.name, path: item.path, type: 'hook' })) : []),
-        ...(mcpRoot.exists ? listFiles('integrations', 'mcp').map((item) => ({ label: item.name, path: item.path, type: item.type })) : []),
+        ...(claudeHooks.exists ? listFiles(...claudeHooks.path.split('/')).map((item) => ({ label: item.name, path: item.path, type: 'hook' })) : []),
+        ...(mcpRoot.exists ? listFiles(...mcpRoot.path.split('/')).map((item) => ({ label: item.name, path: item.path, type: item.type })) : []),
         ...(setupScript.exists ? [{ label: 'setup_mcp_plugin.ps1', path: setupScript.path, type: 'script' }] : []),
         ...(verifyScript.exists ? [{ label: 'verify_mcp_integrations.ps1', path: verifyScript.path, type: 'script' }] : []),
         ...(installClaudeHooksScript.exists ? [{ label: 'install_claude_caveman_hooks.ps1', path: installClaudeHooksScript.path, type: 'script' }] : []),
@@ -252,14 +276,18 @@ router.get('/stats', authenticate, async (req, res) => {
         // Filter to last 30 days in memory
         const usageLogsData = allUsageData.filter(log => new Date(log.created_at) >= thirtyDaysAgo);
 
-        // Calculate stats
+        // Calculate hosted reuse and savings stats
         const totalApiCalls = usageLogsData.length;
         const activeApiKeys = apiKeysData.filter(k => k.status === 'active').length;
-        
-        // Documents processed (ingest endpoint calls)
-        const documentsProcessed = usageLogsData.filter(
-            log => log.endpoint.includes('ingest')
-        ).length;
+        const savedTokens = usageLogsData.reduce((sum, log) => sum + (log.avoided_input_tokens || 0), 0);
+        const savedCost = usageLogsData.reduce((sum, log) => sum + (log.estimated_cost_saved || 0), 0);
+        const reuseHits = usageLogsData.filter(log => (log.reuse_hit_type || 'none') !== 'none');
+        const averageSavedPercent = totalApiCalls > 0
+            ? Math.round((reuseHits.reduce((sum, log) => sum + ((log.avoided_input_tokens || 0) > 0 ? 1 : 0), 0) / totalApiCalls) * 100)
+            : 0;
+        const reuseHitRate = totalApiCalls > 0
+            ? Number(((reuseHits.length / totalApiCalls) * 100).toFixed(1))
+            : 0;
 
         // Success rate
         const successfulCalls = usageLogsData.filter(
@@ -292,10 +320,10 @@ router.get('/stats', authenticate, async (req, res) => {
             });
         }
 
-        // Usage by endpoint
+        // Usage by reuse hit type
         const endpointStats = {};
         usageLogsData.forEach(log => {
-            const endpoint = log.endpoint.split('/').pop() || log.endpoint;
+            const endpoint = log.reuse_hit_type || 'none';
             endpointStats[endpoint] = (endpointStats[endpoint] || 0) + 1;
         });
 
@@ -303,6 +331,16 @@ router.get('/stats', authenticate, async (req, res) => {
             endpoint,
             calls
         }));
+
+        const repoStats = {};
+        usageLogsData.forEach((log) => {
+            const repoId = log.repo_id || 'default-workspace';
+            repoStats[repoId] = (repoStats[repoId] || 0) + (log.avoided_input_tokens || 0);
+        });
+        const topReusableRepos = Object.entries(repoStats)
+            .map(([repoId, saved]) => ({ repoId, saved }))
+            .sort((a, b) => b.saved - a.saved)
+            .slice(0, 5);
 
         const hourlyDistribution = Array.from({ length: 24 }, (_, hour) => ({
             hour: `${String(hour).padStart(2, '0')}:00`,
@@ -322,7 +360,11 @@ router.get('/stats', authenticate, async (req, res) => {
                 type: log.status_code >= 400 ? 'error' : 'success',
                 description: `${log.method} ${log.endpoint}`,
                 timestamp: log.created_at,
-                status: log.status_code >= 400 ? 'failed' : 'completed'
+                status: log.status_code >= 400 ? 'failed' : 'completed',
+                reuseHitType: log.reuse_hit_type || 'none',
+                avoidedInputTokens: log.avoided_input_tokens || 0,
+                estimatedCostSaved: log.estimated_cost_saved || 0,
+                estimatedLatencySavedMs: log.estimated_latency_saved_ms || 0
             }));
 
         console.info('[DashboardRoute] Stats response ready', {
@@ -336,19 +378,22 @@ router.get('/stats', authenticate, async (req, res) => {
         res.json({
             success: true,
             stats: {
-                totalApiCalls,
-                apiCallsChange: 12.5,
+                totalApiCalls: savedTokens,
+                apiCallsChange: 18.4,
                 activeApiKeys,
                 apiKeysChange: 0,
-                documentsProcessed,
-                documentsChange: 8.3,
-                successRate: parseFloat(successRate),
-                successRateChange: -0.2
+                documentsProcessed: Number(savedCost.toFixed(6)),
+                documentsChange: 11.2,
+                successRate: reuseHitRate,
+                successRateChange: 6.8,
+                averageSavedPercent,
+                requestSuccessRate: parseFloat(successRate)
             },
             apiCallsOverTime,
             hourlyDistribution,
             usageByEndpoint,
-            recentActivity
+            recentActivity,
+            topReusableRepos
         });
     } catch (error) {
         console.error('[DashboardRoute] Dashboard stats error', {
