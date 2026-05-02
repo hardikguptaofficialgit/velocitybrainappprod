@@ -86,3 +86,37 @@ def test_main_app_exposes_query_contract(monkeypatch):
     assert payload["confidence"] == 0.93
     assert payload["sources"][0]["slug"] == "auth-flow"
     assert payload["response_style"] == "lite"
+
+
+def test_main_app_query_gracefully_degrades_when_retrieval_fails(monkeypatch):
+    client = _client()
+
+    async def _fake_validate(_: str):
+        return {
+            "tier": "pro",
+            "rate_limit": 10000,
+            "user_id": "user-query-fallback",
+        }
+
+    monkeypatch.setattr("src.core_api.auth.validate_api_key_with_backend", _fake_validate)
+
+    auth_response = client.post("/v1/auth/authorize", json={"api_key": "vb_test_key"})
+    assert auth_response.status_code == 200
+    token = auth_response.json()["access_token"]
+
+    def _boom(self, query, limit=10, org_key=None):
+        raise RuntimeError("db unavailable")
+
+    monkeypatch.setattr("src.core_api.brain.RetrievalEngine.hybrid_search", _boom)
+
+    response = client.post(
+        "/v1/query",
+        json={"question": "What do we know about auth?", "response_style": "lite", "max_results": 3},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["answer"]
+    assert payload["confidence"] == 0.0
+    assert payload["sources"] == []

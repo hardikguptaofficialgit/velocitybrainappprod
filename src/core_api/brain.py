@@ -112,6 +112,19 @@ def _normalize_query_response(payload: dict[str, Any]) -> QueryResponse:
     )
 
 
+def _empty_query_payload(response_style: str, *, reason: str) -> QueryResponse:
+    payload = apply_response_style(
+        {
+            "answer": "The internal brain does not currently contain sufficient data for this question.",
+            "confidence": 0.0,
+            "sources": [],
+            "reasoning_summary": reason,
+        },
+        response_style,
+    )
+    return _normalize_query_response(payload)
+
+
 def create_brain_router() -> APIRouter:
     router = APIRouter(prefix="/v1", tags=["brain"])
     reuse_service = ReuseService()
@@ -126,19 +139,20 @@ def create_brain_router() -> APIRouter:
         try:
             filters = request.filters or {}
             org_key = filters.get("org_key")
-            hits = retrieval.hybrid_search(request.question, limit=request.max_results, org_key=org_key)
+            try:
+                hits = retrieval.hybrid_search(request.question, limit=request.max_results, org_key=org_key)
+            except Exception as exc:
+                logger.warning("Query retrieval unavailable, returning empty hosted response: %s", exc)
+                return _empty_query_payload(
+                    request.response_style,
+                    reason="Brain lookup backend is temporarily unavailable, so a safe empty response was returned instead of hallucinating.",
+                )
 
             if not hits:
-                payload = apply_response_style(
-                    {
-                        "answer": "The internal brain does not currently contain sufficient data for this question.",
-                        "confidence": 0.0,
-                        "sources": [],
-                        "reasoning_summary": "Brain-first lookup completed with zero hits. No hallucinated answer returned.",
-                    },
+                return _empty_query_payload(
                     request.response_style,
+                    reason="Brain-first lookup completed with zero hits. No hallucinated answer returned.",
                 )
-                return _normalize_query_response(payload)
 
             top = hits[0]
             payload = apply_response_style(
