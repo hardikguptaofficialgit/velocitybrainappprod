@@ -64,7 +64,7 @@ class VelocityBrainClient:
             max_retries: Maximum number of retries for failed requests
         """
         self.api_key = api_key
-        self.auth = auth_module.AuthManager(api_key, base_url)
+        self.auth = auth_module.AuthManager(api_key, base_url, timeout=timeout)
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
         self.max_retries = max_retries

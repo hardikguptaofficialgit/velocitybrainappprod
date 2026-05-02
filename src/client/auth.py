@@ -6,15 +6,16 @@ import time
 import jwt
 import requests
 from typing import Optional, Dict, Any
-from .exceptions import AuthenticationError, APIError
+from .exceptions import AuthenticationError, APIError, NetworkError
 
 
 class AuthManager:
     """Manages authentication with VelocityBrain API."""
     
-    def __init__(self, api_key: str, base_url: str = "https://api.velocitybrain.ai"):
+    def __init__(self, api_key: str, base_url: str = "https://api.velocitybrain.ai", timeout: int = 30):
         self.api_key = api_key
         self.base_url = base_url.rstrip('/')
+        self.timeout = timeout
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._token_expires_at: Optional[float] = None
@@ -25,7 +26,8 @@ class AuthManager:
             response = requests.post(
                 f"{self.base_url}/v1/auth/authorize",
                 json={"api_key": self.api_key},
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
+                timeout=self.timeout,
             )
             
             if response.status_code == 401:
@@ -46,7 +48,7 @@ class AuthManager:
             return data
             
         except requests.RequestException as e:
-            raise APIError(f"Network error during authentication: {str(e)}")
+            raise NetworkError(f"Network error during authentication: {str(e)}")
     
     def get_access_token(self) -> str:
         """Get a valid access token, refreshing if necessary."""
@@ -64,7 +66,8 @@ class AuthManager:
             response = requests.post(
                 f"{self.base_url}/v1/auth/refresh",
                 json={"refresh_token": self._refresh_token},
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
+                timeout=self.timeout,
             )
             
             if not response.ok:
