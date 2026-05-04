@@ -2,6 +2,7 @@ export const supportedAgents = [
   {
     id: 'claude-code',
     name: 'Claude Code',
+    icon: 'https://svgl.app/library/claude-ai-icon.svg',
     status: 'Ready',
     surface: 'MCP',
     setup: 'claude mcp add velocitybrain -- velocitybrain serve mcp',
@@ -11,6 +12,7 @@ export const supportedAgents = [
   {
     id: 'codex',
     name: 'OpenAI Codex',
+    icon: 'https://svgl.app/library/openai_dark.svg',
     status: 'Ready',
     surface: 'MCP',
     setup: 'codex mcp add velocitybrain -- velocitybrain serve mcp',
@@ -18,8 +20,19 @@ export const supportedAgents = [
     strengths: ['Automatic reuse', 'Background retrieval before action', 'Token-efficient coding']
   },
   {
+    id: 'hermes',
+    name: 'Hermes Agent',
+    icon: 'https://hermes-agent.nousresearch.com/docs/img/logo.png',
+    status: 'Ready',
+    surface: 'MCP',
+    setup: 'velocitybrain connect hermes --apply',
+    summary: 'Native Hermes MCP wiring with a tighter tool surface for memory-first agent workflows.',
+    strengths: ['Native MCP support', 'Tool allowlisting', 'Good for chat and long-running agent flows']
+  },
+  {
     id: 'gemini-cli',
     name: 'Gemini CLI',
+    icon: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_1920x1920_d13d3bcde5f6c17d4f6ef49f4a1e5d80.png',
     status: 'Ready',
     surface: 'MCP',
     setup: 'velocitybrain serve mcp',
@@ -29,6 +42,7 @@ export const supportedAgents = [
   {
     id: 'openclaw',
     name: 'OpenClaw',
+    icon: 'https://svgl.app/library/openai.svg',
     status: 'Profile Export',
     surface: 'MCP',
     setup: 'velocitybrain openclaw',
@@ -38,6 +52,7 @@ export const supportedAgents = [
   {
     id: 'cline',
     name: 'Cline',
+    icon: 'https://svgl.app/library/visual-studio-code.svg',
     status: 'Ready',
     surface: 'MCP',
     setup: 'velocitybrain serve mcp',
@@ -52,23 +67,25 @@ export const bundledAgentRuntimeStatus = {
     agentsDirectoryPresent: false,
     claudeHooksPresent: true,
     mcpRuntimePresent: true,
-    mcpTemplatesPresent: 4,
+    mcpTemplatesPresent: 5,
     integrationDocsPresent: 3,
     setupScriptsPresent: 3,
     workspaceConfigCount: 0,
-    readyAgentCount: 5
+    readyAgentCount: 6
   },
   agents: supportedAgents.map((agent) => ({
     ...agent,
     status: 'Template ready',
     templateReady: true,
     workspaceConfigured: false,
-    extraReadyCount: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' ? 2 : 1,
-    readinessScore: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' ? 3 : 2,
+    extraReadyCount: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' || agent.id === 'hermes' ? 2 : 1,
+    readinessScore: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' || agent.id === 'hermes' ? 3 : 2,
     template: agent.id === 'claude-code'
       ? { path: 'integrations/mcp/claude-code/mcpServers.velocitybrain.json' }
       : agent.id === 'codex'
         ? { path: 'integrations/mcp/codex/config.velocitybrain.toml' }
+        : agent.id === 'hermes'
+          ? { path: 'velocitybrain-open-source/integrations/hermes/config.velocitybrain.yaml' }
         : agent.id === 'openclaw'
           ? { path: 'integrations/mcp/openclaw/mcpServers.velocitybrain.json' }
           : { path: 'integrations/mcp/README.md' },
@@ -77,6 +94,8 @@ export const bundledAgentRuntimeStatus = {
       ? [{ path: 'integrations/claude/hooks/README.md' }, { path: 'scripts/install_claude_caveman_hooks.ps1' }]
       : agent.id === 'codex'
         ? [{ path: 'AGENTS.md' }, { path: 'scripts/setup_mcp_plugin.ps1' }]
+        : agent.id === 'hermes'
+          ? [{ path: 'docs/CLIENT_INTEGRATIONS.md' }, { path: 'scripts/setup_mcp_plugin.ps1' }]
         : agent.id === 'openclaw'
           ? [{ path: 'identity.spec.json' }, { path: 'scripts/verify_mcp_integrations.ps1' }]
           : [{ path: 'docs/CLIENT_INTEGRATIONS.md' }]
@@ -87,6 +106,7 @@ export const bundledAgentRuntimeStatus = {
     { label: 'hooks', path: 'integrations/claude/hooks', type: 'hook' },
     { label: 'claude-code', path: 'integrations/mcp/claude-code', type: 'directory' },
     { label: 'codex', path: 'integrations/mcp/codex', type: 'directory' },
+    { label: 'hermes', path: 'velocitybrain-open-source/integrations/hermes', type: 'directory' },
     { label: 'openclaw', path: 'integrations/mcp/openclaw', type: 'directory' },
     { label: 'setup_mcp_plugin.ps1', path: 'scripts/setup_mcp_plugin.ps1', type: 'script' },
     { label: 'verify_mcp_integrations.ps1', path: 'scripts/verify_mcp_integrations.ps1', type: 'script' }

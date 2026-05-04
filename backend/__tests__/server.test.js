@@ -8,12 +8,16 @@ jest.mock('../config/firebase', () => {
     const state = {
         firebaseInitialized: true,
         users: [],
+        workspaces: [],
+        userSettings: [],
         apiKeys: [],
         usageLogs: []
     };
 
     const collectionMap = {
         users: 'users',
+        workspaces: 'workspaces',
+        user_settings: 'userSettings',
         api_keys: 'apiKeys',
         usage_logs: 'usageLogs'
     };
@@ -142,6 +146,8 @@ jest.mock('../config/firebase', () => {
         db,
         COLLECTIONS: {
             USERS: 'users',
+            WORKSPACES: 'workspaces',
+            USER_SETTINGS: 'user_settings',
             API_KEYS: 'api_keys',
             USAGE_LOGS: 'usage_logs'
         },
@@ -154,6 +160,8 @@ jest.mock('../config/firebase', () => {
         },
         __setMockData(data) {
             state.users = data.users || [];
+            state.workspaces = data.workspaces || [];
+            state.userSettings = data.userSettings || [];
             state.apiKeys = data.apiKeys || [];
             state.usageLogs = data.usageLogs || [];
             state.firebaseInitialized = data.firebaseInitialized ?? state.firebaseInitialized;
@@ -166,7 +174,10 @@ jest.mock('../middleware/auth', () => {
         id: 'user-1',
         email: 'user@example.com',
         name: 'Test User',
-        tier: 'free'
+        tier: 'free',
+        onboardingCompleted: false,
+        workspaceId: '',
+        workspaceIds: []
     };
 
     return {
@@ -212,7 +223,10 @@ describe('Backend API', () => {
             id: 'user-1',
             email: 'user@example.com',
             name: 'Test User',
-            tier: 'free'
+            tier: 'free',
+            onboardingCompleted: false,
+            workspaceId: '',
+            workspaceIds: []
         });
     });
 
@@ -246,6 +260,17 @@ describe('Backend API', () => {
         expect(response.statusCode).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.user.email).toBe('user@example.com');
+    });
+
+    test('settings route returns persisted user settings payload', async () => {
+        const response = await request(app)
+            .get('/api/settings')
+            .set('Authorization', 'Bearer test-token');
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.user.email).toBe('user@example.com');
+        expect(response.body.settings.notifications.emailAlerts).toBe(true);
     });
 
     test('api key routes can create and list keys', async () => {

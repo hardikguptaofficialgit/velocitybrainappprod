@@ -1,1037 +1,1141 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { GLSLHills } from '../components/ui/glsl-hills';
+import React, { useEffect, useRef, useState } from 'react';
+import Dialog from '../components/ui/Dialog';
 import {
   ArrowRight,
-  Cpu,
   Database,
-  Gear,
   Github as GithubBrand,
-  Key,
   Lightning,
   List,
-  Package,
-  Pulse,
   ShieldCheck,
-  Star,
-  TerminalWindow,
   X,
 } from '../components/Icons';
-import { promptLifecycle, supportedAgents } from '../lib/agentRuntime';
+import { supportedAgents } from '../lib/agentRuntime';
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   FONT STRATEGY
-   - "Press Start 2P"  -> pixel / brand name only
-   - "Syne"            -> display headings
-   - "DM Sans"         -> body copy
-   - "JetBrains Mono"  -> code / mono
-───────────────────────────────────────────────────────────────────────────── */
-
-const Terminal = ({ content }) => (
-  <div className="absolute inset-0 w-full h-full bg-[#0b0b0b] font-mono text-[13px] leading-relaxed text-zinc-300 flex flex-col">
-    {/* header */}
-    <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#222] bg-[#111] flex-shrink-0">
-      <div className="flex items-center gap-2">
-        {['#ff5f56', '#ffbd2e', '#27c93f'].map((c) => (
-          <div key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
-        ))}
-        <span className="text-xs text-zinc-500 ml-2">
-          velocity-brain - bash - 80x24
-        </span>
-      </div>
-      <div className="flex items-center gap-3 text-[10px] text-zinc-600">
-        <span>UTF-8</span>
-        <span>LF</span>
-      </div>
-    </div>
-
-    {/* body */}
-    <div className="flex-1 p-5 space-y-1.5 overflow-hidden flex items-center justify-center">
-      <div className="w-full max-w-lg space-y-1.5">
-        {content.map(([cls, txt], i) => (
-          <div key={i} className={`flex ${cls}`}>
-            <span className="whitespace-pre-wrap break-words">{txt}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    {/* footer */}
-    <div className="flex items-center justify-between px-4 py-1.5 border-t border-[#222] bg-[#0a0a0a] flex-shrink-0">
-      <div className="flex items-center gap-4 text-[10px] text-zinc-600">
-        <span className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-          connected
-        </span>
-        <span>postgres:5432</span>
-      </div>
-      <div className="text-[10px] text-zinc-600">
-        <span className="text-[#EA803A]">velocity-brain</span> v0.1.0
-      </div>
-    </div>
-  </div>
-);
-
-const ImageComparisonSlider = ({
-  beforeContent,
-  afterContent
-}) => {
-  const [pos, setPos] = useState(50);
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef(null);
-
-  const updatePosition = useCallback((clientX) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
-    setPos((x / rect.width) * 100);
-  }, []);
-
-  const handlePointerDown = (e) => {
-    setIsDragging(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    updatePosition(e.clientX);
-  };
-
-  const handlePointerMove = (e) => {
-    if (!isDragging) return;
-    updatePosition(e.clientX);
-  };
-
-  const handlePointerUp = (e) => {
-    setIsDragging(false);
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-  };
-
-  const handlePointerLeave = () => {
-    setIsDragging(false);
-  };
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative w-full overflow-hidden rounded-2xl border border-[#2a2a2a] select-none"
-      style={{
-        aspectRatio: '16/6',
-        boxShadow: '6px 6px 0 rgba(234,128,58,0.15)',
-        cursor: isDragging ? 'grabbing' : 'ew-resize',
-        touchAction: 'none'
-      }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-    >
-      {/* AFTER */}
-      <Terminal content={afterContent} />
-
-      {/* BEFORE (Masked with clip-path to prevent squishing) */}
-      <div
-        className="absolute inset-0 overflow-hidden pointer-events-none"
-        style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}
-      >
-        <Terminal content={beforeContent} />
-      </div>
-
-      {/* DIVIDER */}
-      <div
-        className="absolute top-0 bottom-0 w-[2px] bg-[#EA803A] pointer-events-none"
-        style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}
-      >
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-[#EA803A]"
-          style={{
-            boxShadow: '3px 3px 0 #c4612a',
-            border: '2px solid rgba(255,255,255,0.15)'
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-            <path d="M8 5l-6 7 6 7M16 5l6 7-6 7" />
-          </svg>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ══════════════════════  INTERSECTION FADE  ════════════════════════════════ */
 const Fade = ({ children, delay = 0, className = '' }) => {
   const [visible, setVisible] = useState(false);
   const ref = useRef();
+
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.06 });
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.08 }
+    );
+
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
   }, []);
+
   return (
-    <div ref={ref}
-      className={`transition-all duration-700 ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}>
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      } ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
       {children}
     </div>
   );
 };
 
-/* ══════════════════════  DOODLE ICONS WRAPPERS  ═══════════════════════════ */
-const IDB = (p) => <Database size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const IShield = (p) => <ShieldCheck size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const IZap = (p) => <Lightning size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const ICpu = (p) => <Cpu size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const IActivity = (p) => <Pulse size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const IArrow = (p) => <ArrowRight size={p.size || 20} color="#ffffff" weight="duotone" {...p} />;
-const ITerm = (p) => <TerminalWindow size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const IGear = (p) => <Gear size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const IBox = (p) => <Package size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-const IKey = (p) => <Key size={p.size || 24} color="#ffffff" weight="duotone" {...p} />;
-
-/* ══════════════════════  CLAY CARD  ════════════════════════════════════════ */
-const Clay = ({ children, className = '', accent = false, style = {} }) => (
-  <div className={`rounded-xl border ${accent ? 'border-[#EA803A]/30 bg-[#130a02]' : 'border-[#2a2a2a] bg-[#0e0e0e]'} ${className}`}
-    style={{ boxShadow: accent ? '4px 4px 0 #EA803A14' : '4px 4px 0 #00000060', ...style }}>
+const Clay = ({ children, className = '', accent = false }) => (
+  <div
+    className={`rounded-2xl border ${
+      accent
+        ? 'border-[#EA803A]/25 bg-[#160b03]'
+        : 'border-[#232323] bg-[#0e0e0e]'
+    } ${className}`}
+    style={{ boxShadow: accent ? '3px 3px 0 rgba(234,128,58,0.06)' : '3px 3px 0 rgba(0,0,0,0.2)' }}
+  >
     {children}
   </div>
 );
 
-/* ══════════════════════  FLOW ARROW  ═══════════════════════════════════════ */
-const FlowArrow = () => (
-  <div className="flex items-center justify-center flex-shrink-0 mx-2">
-    <svg width="32" height="12" viewBox="0 0 32 12" fill="none">
-      <line x1="0" y1="6" x2="24" y2="6" stroke="#EA803A55" strokeWidth="2" strokeDasharray="4 4"/>
-      <polyline points="20,2 28,6 20,10" stroke="#EA803A" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  </div>
+const TL = ({ children, color = 'text-zinc-400' }) => (
+  <p className={`${color} text-[11px] md:text-xs leading-relaxed`} style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+    {children}
+  </p>
 );
 
-/* ══════════════════════  TERMINAL LINE  ════════════════════════════════════ */
-const TL = ({ children, color = 'text-zinc-400', indent = false }) => (
-  <p className={`${color} text-sm leading-relaxed ${indent ? 'pl-4' : ''}`} style={{ fontFamily: 'JetBrains Mono, monospace' }}>{children}</p>
-);
+const launchTargets = [
+  {
+    name: 'ChatGPT',
+    icon: 'https://svgl.app/library/openai_dark.svg',
+    description: 'A planned surface for bringing the same memory layer into the chat tools people already use every day.',
+  },
+  {
+    name: 'Claude',
+    icon: 'https://svgl.app/library/claude-ai-icon.svg',
+    description: 'A planned connector surface so long-running conversations can reuse the right context instead of drifting across sessions.',
+  },
+];
 
-/* ══════════════════════  SKILL BADGE  ══════════════════════════════════════ */
-const SkillBadge = ({ name, cat }) => {
-  const cols = { ingestion: '#3b82f6', query: '#10b981', execution: '#f59e0b', maintenance: '#8b5cf6', brain: '#EA803A' };
-  const c = cols[cat] || '#EA803A';
-  return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium" style={{ borderColor: `${c}40`, background: `${c}10`, color: `${c}ee`, fontFamily: 'JetBrains Mono, monospace' }}>
-      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c }}/>
-      {name}
-    </div>
-  );
+const launchUseCases = [
+  {
+    title: 'User A logs calories today',
+    description: 'For example, User A logs breakfast and dinner into ChatGPT or Claude today, but later the assistant forgets those entries were for today, mixes the date, or loses the running total.',
+  },
+  {
+    title: 'Daily workflows reset too often',
+    description: 'Meal tracking, task follow-ups, habits, notes, and recurring routines often fall apart because the assistant does not keep clean structured memory across sessions.',
+  },
+  {
+    title: 'Thousands of use cases have the same problem',
+    description: 'The same pattern shows up in thousands of everyday use cases: health logs, study notes, project memory, personal preferences, follow-ups, plans, and anything else that needs reliable continuity.',
+  },
+];
+
+const timelinePhases = [
+  {
+    phase: 'Shipping now',
+    date: 'Current product',
+    title: 'Memory and reuse for coding agents',
+    description: 'The shipped product today is a hosted memory, retrieval, and reuse layer for coding agents and engineering teams.',
+    items: ['Memory layer', 'MCP integrations', 'Repo-aware retrieval', 'Savings tracking'],
+  },
+  {
+    phase: 'Near-term roadmap',
+    date: 'Planned',
+    title: 'Broader chat and assistant surfaces',
+    description: 'Next we want to bring the same memory and continuity layer into mainstream assistant products and recurring user workflows.',
+    items: ['Cross-session context', 'Shared personal memory', 'Assistant integrations', 'Cleaner onboarding'],
+  },
+  {
+    phase: 'Longer-term roadmap',
+    date: 'Exploration',
+    title: 'A broader company brain layer',
+    description: 'Long term, Velocity Brain can expand from coding workflows into shared operating memory for teams and eventually wider AI automation.',
+    items: ['Team memory', 'Workflow continuity', 'Safer execution context', 'Company brain'],
+  },
+];
+
+const proofPoints = [
+  {
+    Icon: Database,
+    title: 'Memory before generation',
+    description: 'Give your AI the right memory, facts, and context before the model starts reasoning.',
+  },
+  {
+    Icon: Lightning,
+    title: 'Reuse across runs',
+    description: 'Stop paying your AI to rediscover the same decisions, history, and structure every session.',
+  },
+  {
+    Icon: ShieldCheck,
+    title: 'Full stack control',
+    description: 'Shared context, safer workflows, and one brain layer across tools, agents, and models.',
+  },
+];
+
+const integrationCardThemes = {
+  'claude-code': {
+    badge: 'border-[#9b6bff22] bg-[#9b6bff0f] text-[#ceb8ff]',
+    setup: 'bg-[#0d0b14] border-[#2a203f]',
+    keyword: 'text-[#b794ff]',
+    hexColor: '#9b6bff',
+  },
+  codex: {
+    badge: 'border-[#EA803A22] bg-[#EA803A12] text-[#f2b07d]',
+    setup: 'bg-[#120d09] border-[#3a2618]',
+    keyword: 'text-[#f2b07d]',
+    hexColor: '#EA803A',
+  },
+  hermes: {
+    badge: 'border-[#40c4aa22] bg-[#40c4aa12] text-[#98f0dc]',
+    setup: 'bg-[#091311] border-[#1a3a34]',
+    keyword: 'text-[#7fe3c8]',
+    hexColor: '#40c4aa',
+  },
+  'gemini-cli': {
+    badge: 'border-[#5d89ff22] bg-[#5d89ff10] text-[#bdd0ff]',
+    setup: 'bg-[#09101a] border-[#1c2d47]',
+    keyword: 'text-[#9cb8ff]',
+    hexColor: '#5d89ff',
+  },
 };
 
-/* ══════════════════════  MAIN LANDING  ═════════════════════════════════════ */
+const agentIconFallbacks = {
+  'claude-code': 'https://svgl.app/library/claude-ai-icon.svg',
+  codex: 'https://svgl.app/library/openai_dark.svg',
+  hermes: 'https://hermes-agent.nousresearch.com/docs/img/logo.png',
+  'gemini-cli': 'https://svgl.app/library/gemini.svg',
+  openclaw: 'https://svgl.app/library/openai.svg',
+  cline: 'https://svgl.app/library/visual-studio-code.svg',
+};
+
+const howItWorks = [
+  {
+    step: '01',
+    title: 'Connect your agent',
+    description: 'Install Velocity Brain once and plug it into Codex, Claude, or other MCP-aware clients.',
+  },
+  {
+    step: '02',
+    title: 'Retrieve context first',
+    description: 'Before a task runs, Velocity Brain looks up the most useful repo memory and prior work.',
+  },
+  {
+    step: '03',
+    title: 'Reuse and improve',
+    description: 'The next run starts with a better context package, lower waste, and a more consistent result.',
+  },
+];
+
+const announcementLayers = [
+  {
+    id: 'company-brain',
+    eyebrow: 'New',
+    title: 'Company Brain for engineering teams is taking shape.',
+    cta: 'Open page',
+    href: '/company-brain',
+    accent: '#EA803A',
+  },
+  {
+    id: 'launch',
+    eyebrow: 'Roadmap',
+    title: 'Planned assistant integrations beyond coding tools.',
+    cta: 'Launch notes',
+    onClick: 'launch',
+    accent: '#EA803A',
+  },
+  {
+    id: 'unique',
+    eyebrow: 'Why unique',
+    title: 'Why we are unique from current agents: one shared brain layer across tools, tasks, and workflows.',
+    cta: 'Read comparison',
+    href: '/research/why-velocitybrain-is-different',
+    accent: '#7fe3c8',
+  },
+  {
+    id: 'workflow',
+    eyebrow: 'How it works',
+    title: 'Memory runs before generation, reuse happens before waste, and each new session starts ahead.',
+    cta: 'Docs',
+    href: '/docs',
+    accent: '#5d89ff',
+  },
+];
+
+const comparisonHighlights = [
+  {
+    name: 'Mem0',
+    focus: 'Memory API and retrieval',
+    difference: 'Velocity Brain adds timing, reuse, and workflow continuity so memory shows up when it matters, not only when asked.',
+    accent: '#EA803A',
+  },
+  {
+    name: 'Zep',
+    focus: 'Long-term memory',
+    difference: 'Velocity Brain is built around memory plus workflow timing, so the right context shows up before action instead of only sitting in storage.',
+    accent: '#5d89ff',
+  },
+  {
+    name: 'Letta',
+    focus: 'Stateful agent runtime',
+    difference: 'Velocity Brain acts as a shared brain layer across many assistants and tools instead of asking teams to consolidate around one agent runtime.',
+    accent: '#f2b07d',
+  },
+  {
+    name: 'Hyperspell',
+    focus: 'Workplace memory across tools',
+    difference: 'Velocity Brain stays closer to live agent execution, repo work, and recurring user state like today, this task, and this handoff.',
+    accent: '#7fe3c8',
+  },
+  {
+    name: 'Hermes',
+    focus: 'One autonomous agent with memory',
+    difference: 'Velocity Brain is built as a shared brain layer that can sit behind many agents instead of forcing one new default agent.',
+    accent: '#5d89ff',
+  },
+];
+
+const researchFeature = {
+  href: '/research/why-velocitybrain-is-different',
+  category: 'Comparison',
+  title: 'Why Velocity Brain is different from today’s memory and agent products',
+  summary:
+    'A deeper look at why we position Velocity Brain as a shared memory and reuse layer instead of only a memory API, one agent, or a thin retrieval add-on.',
+  displayTitle: "Why Velocity Brain is different from today's memory and agent products",
+  readTime: '5 min read',
+  points: ['Memory plus timing', 'Shared across agents', 'Less repeated context spend'],
+};
+
+const simplifiedAgents = supportedAgents.slice(0, 4);
+
 export default function Landing() {
-  const { user, firebaseUser, loading } = useAuth();
   const [navScrolled, setNavScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState('query');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [githubStars, setGithubStars] = useState(null);
+  const [launchModalOpen, setLaunchModalOpen] = useState(false);
+  const [timelineModalOpen, setTimelineModalOpen] = useState(false);
+  const [HillsComponent, setHillsComponent] = useState(null);
+  const [copiedSetup, setCopiedSetup] = useState('');
+  const [activeAnnouncement, setActiveAnnouncement] = useState(0);
 
   useEffect(() => {
-    const onScroll = () => { setNavScrolled(window.scrollY > 50); };
+    const onScroll = () => setNavScrolled(window.scrollY > 30);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-    fetch('https://api.github.com/repos/hardikguptaofficialgit/velocitybrainos')
-      .then(res => res.json())
-      .then(data => setGithubStars(data.stargazers_count))
-      .catch(() => setGithubStars(0));
+    if (typeof window === 'undefined') return undefined;
+    if (window.innerWidth < 768) return undefined;
+
+    let cancelled = false;
+    const loadHills = () => {
+      import('../components/ui/glsl-hills')
+        .then((module) => {
+          if (!cancelled) {
+            setHillsComponent(() => module.GLSLHills);
+          }
+        })
+        .catch(() => {});
+    };
+
+    const idleHandle = window.requestIdleCallback
+      ? window.requestIdleCallback(loadHills, { timeout: 1200 })
+      : window.setTimeout(loadHills, 250);
+
+    return () => {
+      cancelled = true;
+      if (window.cancelIdleCallback && typeof idleHandle === 'number') {
+        window.cancelIdleCallback(idleHandle);
+      } else {
+        window.clearTimeout(idleHandle);
+      }
+    };
   }, []);
 
-  const cliTabs = {
-    query: {
-      cmd: 'velocity-brain query "What do we know about auth and API keys in this repo?"',
-      lines: [
-        ['text-[#EA803A]', '⚙ Brain lookup: 6 repo traces found'],
-        ['text-zinc-400', '  Modules: auth, API keys, usage, dashboard'],
-        ['text-zinc-400', '  Notes: Firebase session sync, CORS, key quotas'],
-        ['text-green-400', '✓ Prepared context package ready']
-      ]
-    },
-    ingest: {
-      cmd: 'velocity-brain ingest --source note --content "Frontend auth syncs through /api/auth/firebase-session"',
-      lines: [
-        ['text-[#EA803A]', '⚙ Signal detected: architecture-note'],
-        ['text-zinc-400', '  Repo memory updated: auth flow'],
-        ['text-zinc-400', '  Related entities linked: backend, dashboard'],
-        ['text-green-400', '✓ Memory updated in 43ms']
-      ]
-    },
-    run: {
-      cmd: 'velocity-brain run "Prepare me to refactor auth in this large codebase"',
-      lines: [
-        ['text-[#EA803A]', '⚙ Brain lookup -> 6 traces found'],
-        ['text-[#EA803A]', '⚙ Plan: [modules, risks, sequence]'],
-        ['text-zinc-400', '  Preparing the agent before edits...'],
-        ['text-green-400', '✓ Done · Audit logged']
-      ]
-    },
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setActiveAnnouncement((current) => (current + 1) % announcementLayers.length);
+    }, 3600);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const copySetupCommand = async (agentId, command) => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopiedSetup(agentId);
+      window.setTimeout(() => setCopiedSetup(''), 1400);
+    } catch (_error) {
+      setCopiedSetup('');
+    }
+  };
+
+  const handleAnnouncementAction = (announcement) => {
+    if (announcement.onClick === 'launch') {
+      setLaunchModalOpen(true);
+      return;
+    }
+    if (announcement.onClick === 'timeline') {
+      setTimelineModalOpen(true);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#080808] text-white" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-
-      {/* ── Global CSS ─────────────────────────────── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
         ::selection{background:#EA803A;color:#000}
         .px-font{font-family:'Press Start 2P',cursive}
         .syne{font-family:'Syne',sans-serif}
         .mono{font-family:'JetBrains Mono',monospace}
-        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:6px}
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:#0a0a0a}
+        ::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:6px}
+        .announcement-card {
+          will-change: transform, opacity;
+        }
+        @keyframes announcement-progress {
+          from { transform: scaleX(0); opacity: 0.55; }
+          to { transform: scaleX(1); opacity: 1; }
+        }
       `}</style>
 
-      {/* ── NAV ─────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 px-5">
-        <div className="w-full transition-all duration-500"
+      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-3 px-4 md:px-5">
+        <div
+          className="w-full transition-all duration-400"
           style={{
-            maxWidth: navScrolled ? 900 : 1200,
-            background: navScrolled ? 'rgba(8,8,8,.95)' : 'transparent',
-            backdropFilter: navScrolled ? 'blur(16px)' : 'none',
-            borderRadius: navScrolled ? 16 : 0,
-            border: navScrolled ? '1px solid #222' : '1px solid transparent',
-            boxShadow: navScrolled ? '4px 4px 0 #00000055' : 'none',
-            padding: navScrolled ? '12px 24px' : '0 24px',
-          }}>
+            maxWidth: navScrolled ? 800 : 960,
+            background: navScrolled ? 'rgba(8,8,8,0.92)' : 'transparent',
+            backdropFilter: navScrolled ? 'blur(12px)' : 'none',
+            borderRadius: navScrolled ? 14 : 0,
+            border: navScrolled ? '1px solid #1f1f1f' : '1px solid transparent',
+            boxShadow: navScrolled ? '2px 2px 0 rgba(0,0,0,0.2)' : 'none',
+            padding: navScrolled ? '8px 16px' : '0 16px',
+          }}
+        >
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-              <img src="/logo.png" alt="Velocity Brain" className="w-8 h-8 rounded-lg flex-shrink-0"/>
-              <span className="px-font text-white hidden sm:block" style={{ fontSize: 12 }}>Velocity Brain</span>
+            <div
+              className="flex items-center gap-2.5 cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              <img src="/logo.png" alt="Velocity Brain" className="w-6 h-6 rounded flex-shrink-0" />
+              <span className="px-font text-white hidden sm:block" style={{ fontSize: 10 }}>
+                Velocity Brain
+              </span>
             </div>
-            {/* Links - Desktop */}
-            <div className="hidden md:flex items-center gap-6">
-              <a href="https://github.com/hardikguptaofficialgit/velocitybrainos" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors">
-                <GithubBrand width={16} height={16} />
-                <span>GitHub</span>
-                {githubStars !== null && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EA803A]/10 border border-[#EA803A]/30 text-[#EA803A] text-xs font-medium">
-                    <Star size={10} weight="duotone" />
-                    {githubStars}
-                  </span>
-                )}
-              </a>
-              {[['Docs','/docs'],['CLI','/docs/cli'],['MCP','/docs/mcp'],['Security','/docs/security'],['API','/docs/api']].map(([l,p])=>(
-                <a key={l} href={p} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">{l}</a>
-              ))}
-            </div>
-            {/* Actions - Desktop */}
+
             <div className="hidden md:flex items-center gap-4">
-              {!loading && user ? (
-                <>
-                  <a href="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-zinc-300 bg-[#111] hover:border-[#EA803A66] transition-colors">
-                    {firebaseUser?.photoURL ? (
-                      <img src={firebaseUser.photoURL} alt="Avatar" className="w-6 h-6 rounded-full" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-[#EA803A] flex items-center justify-center text-xs text-black font-bold">
-                        {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
-                      </div>
-                    )}
-                    <span>{user.name || user.email}</span>
-                  </a>
-                </>
-              ) : (
-                <>
-                  <a href="/login" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">Sign In</a>
-                  <a href="/login" className="px-5 py-2 rounded-xl text-sm font-bold text-black"
-                    style={{ background:'#EA803A', boxShadow:'2px 2px 0 #c4612a' }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#f0965a'}
-                    onMouseLeave={e=>e.currentTarget.style.background='#EA803A'}>
-                    Start Now
-                  </a>
-                </>
-              )}
+              <a href="/docs" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+                Docs
+              </a>
+              <a href="/research" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+                Research
+              </a>
+              <a href="/company-brain" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+                Company Brain
+              </a>
+              <button
+                type="button"
+                onClick={() => setTimelineModalOpen(true)}
+                className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                Timeline
+              </button>
+              <a
+                href="https://github.com/hardikguptaofficialgit/velocitybrainos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-[12px] font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                <GithubBrand width={13} height={13} />
+                <span>GitHub</span>
+              
+              </a>
             </div>
-            {/* Mobile menu button */}
-            <button className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-[#333] bg-[#111]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X size={20} weight="duotone" color="#ffffff" /> : <List size={20} weight="duotone" color="#ffffff" />}
+
+            <div className="hidden md:flex items-center gap-3">
+              <a href="/login" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+                Sign In
+              </a>
+              <a
+                href="/login"
+                className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-black"
+                style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f0965a')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#EA803A')}
+              >
+                Start Now
+              </a>
+            </div>
+
+            <button
+              className="group md:hidden flex items-center justify-center w-8 h-8 rounded border border-[#333] bg-[#111]"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <span className="transition-transform duration-300 ease-out group-hover:rotate-180">
+                  <X size={16} weight="duotone" color="#ffffff" />
+                </span>
+              ) : (
+                <List size={16} weight="duotone" color="#ffffff" />
+              )}
             </button>
           </div>
         </div>
-        {/* Mobile menu */}
+
         {mobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 mt-2 mx-4 p-4 rounded-xl border border-[#222] bg-[#0a0a0a] backdrop-blur-xl" style={{ boxShadow: '4px 4px 0 #00000040' }}>
-            <div className="flex flex-col gap-4">
-              <a href="https://github.com/hardikguptaofficialgit/velocitybrainos" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>
-                <GithubBrand width={16} height={16} />
-                <span>GitHub</span>
-                {githubStars !== null && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EA803A]/10 border border-[#EA803A]/30 text-[#EA803A] text-xs font-medium">
-                    <Star size={10} weight="duotone" />
-                    {githubStars}
-                  </span>
-                )}
+          <div
+            className="md:hidden absolute top-full left-0 right-0 mt-2 mx-4 p-4 rounded-xl border border-[#222] bg-[#0a0a0a] backdrop-blur-xl"
+            style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}
+          >
+            <div className="flex flex-col gap-2.5">
+              <a
+                href="/docs"
+                className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Docs
               </a>
-              {[['Docs','/docs'],['CLI','/docs/cli'],['MCP','/docs/mcp'],['Security','/docs/security'],['API','/docs/api']].map(([l,p])=>(
-                <a key={l} href={p} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>{l}</a>
-              ))}
-              <div className="h-px bg-[#222]"/>
-              {!loading && user ? (
-                <>
-                  <div className="flex items-center gap-3 px-3 py-2">
-                    {firebaseUser?.photoURL ? (
-                      <img src={firebaseUser.photoURL} alt="Avatar" className="w-8 h-8 rounded-full" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#EA803A] flex items-center justify-center text-sm text-black font-bold">
-                        {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">{user.name || user.email}</p>
-                    </div>
-                  </div>
-                  <a href="/dashboard" className="w-full px-5 py-2.5 rounded-xl text-sm font-bold text-black text-center"
-                    style={{ background:'#EA803A', boxShadow:'2px 2px 0 #c4612a' }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#f0965a'}
-                    onMouseLeave={e=>e.currentTarget.style.background='#EA803A'}
-                    onClick={() => setMobileMenuOpen(false)}>
-                    Go to Dashboard
-                  </a>
-                </>
-              ) : (
-                <>
-                  <a href="/login" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Sign In</a>
-                  <a href="/login" className="w-full px-5 py-2.5 rounded-xl text-sm font-bold text-black text-center"
-                    style={{ background:'#EA803A', boxShadow:'2px 2px 0 #c4612a' }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#f0965a'}
-                    onMouseLeave={e=>e.currentTarget.style.background='#EA803A'}
-                    onClick={() => setMobileMenuOpen(false)}>
-                    Start Now
-                  </a>
-                </>
-              )}
+              <a
+                href="/research"
+                className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Research
+              </a>
+              <a
+                href="/company-brain"
+                className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Company Brain
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setTimelineModalOpen(true);
+                }}
+                className="text-left text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
+              >
+                Timeline
+              </button>
+              <a
+                href="https://github.com/hardikguptaofficialgit/velocitybrainos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <GithubBrand width={14} height={14} />
+                <span>GitHub</span>
+              </a>
+              <div className="h-px bg-[#222] my-1" />
+              <a
+                href="/login"
+                className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign In
+              </a>
+              <a
+                href="/login"
+                className="w-full px-4 py-2 rounded-lg text-[13px] font-bold text-black text-center mt-1"
+                style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Start Now
+              </a>
             </div>
           </div>
         )}
       </nav>
 
-      {/* ══════════  HERO  ══════════════════════════════════════════════════ */}
-      {/* Set to min-h-screen, shifted text down with pt-40 md:pt-56, pushed terminal out of view */}
-      <section className="relative min-h-screen flex flex-col items-center justify-start overflow-hidden pt-40 md:pt-56 pb-12">
-        <div className="absolute inset-0 z-0" style={{ zIndex: 0 }}>
-          <GLSLHills width="100%" height="100%" cameraZ={125} planeSize={256} speed={0.35} />
+      <Dialog
+        isOpen={launchModalOpen}
+        onClose={() => setLaunchModalOpen(false)}
+        eyebrow="Coming soon"
+        title={
+          <>
+            Stop losing context
+            <br />
+            in ChatGPT and Claude.
+          </>
+        }
+        maxWidth="max-w-xl"
+        footer={
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <a
+              href="/docs"
+              className="w-full sm:w-auto px-4 py-2 rounded-lg text-[13px] font-bold text-black text-center syne"
+              style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
+            >
+              Explore Docs
+            </a>
+            <button
+              type="button"
+              onClick={() => setLaunchModalOpen(false)}
+              className="w-full sm:w-auto px-4 py-2 rounded-lg text-[13px] font-bold text-zinc-300 border border-[#2a2a2a] bg-[#121212] text-center syne"
+            >
+              Close
+            </button>
+          </div>
+        }
+      >
+        <p className="text-zinc-400 text-[13px] leading-relaxed mb-5">
+          Chat interfaces are great to talk to, but they are still weak at keeping long-running memory clean and reliable.
+          The same thing happens again and again: you log something, update something, or explain something today, and the assistant later forgets the date, loses the structure, or makes you repeat yourself.
+        </p>
+
+        <div className="rounded-xl border border-[#EA803A]/20 bg-[#160c04] p-3.5 mb-5">
+          <h4 className="syne text-sm font-bold text-white mb-2">What Velocity Brain fixes</h4>
+          <div className="space-y-2">
+            {launchUseCases.map((item) => (
+              <div key={item.title} className="rounded-lg border border-[#2a1b12] bg-[#0f0a07] px-3 py-2">
+                <p className="text-[12px] font-bold text-white mb-0.5">{item.title}</p>
+                <p className="text-[12px] leading-relaxed text-zinc-400">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {launchTargets.map((target) => (
+            <div key={target.name} className="rounded-xl border border-[#232323] bg-[#101010] p-3.5">
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2d2d2d] bg-[#181818]">
+                  <img src={target.icon} alt={`${target.name} logo`} className="h-4 w-4 object-contain" />
+                </div>
+                <div>
+                  <p className="mono text-[8px] uppercase tracking-[0.2em] text-zinc-500">Coming soon</p>
+                  <h4 className="syne text-sm font-bold text-white">{target.name}</h4>
+                </div>
+              </div>
+              <p className="text-[12px] leading-relaxed text-zinc-400">{target.description}</p>
+            </div>
+          ))}
+        </div>
+      </Dialog>
+
+      <Dialog
+        isOpen={timelineModalOpen}
+        onClose={() => setTimelineModalOpen(false)}
+        eyebrow="Roadmap"
+        title="The roadmap for Velocity Brain"
+        maxWidth="max-w-xl"
+        footer={
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <a
+              href="/docs"
+              className="w-full sm:w-auto px-4 py-2 rounded-lg text-[13px] font-bold text-black text-center syne"
+              style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
+            >
+              Read the docs
+            </a>
+            <button
+              type="button"
+              onClick={() => setTimelineModalOpen(false)}
+              className="w-full sm:w-auto px-4 py-2 rounded-lg text-[13px] font-bold text-zinc-300 border border-[#2a2a2a] bg-[#121212] text-center syne"
+            >
+              Close
+            </button>
+          </div>
+        }
+      >
+        <p className="text-zinc-400 text-[13px] leading-relaxed mb-5">
+          Velocity Brain ships today as a memory and reuse layer for coding agents. The roadmap below shows the broader surfaces we want to support next, but they are roadmap items, not already-live product claims.
+        </p>
+
+        <div className="space-y-3">
+          {timelinePhases.map((phase) => (
+            <div key={`${phase.phase}-${phase.title}`} className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-3 rounded-xl border border-[#232323] bg-[#101010] p-3.5">
+              <div>
+                <div className="inline-flex rounded-full border border-[#EA803A]/30 bg-[#EA803A]/10 px-2 py-0.5 mono text-[8px] uppercase tracking-[0.2em] text-[#f2b07d]">
+                  {phase.phase}
+                </div>
+                <p className="mono mt-1.5 text-[10px] text-zinc-500">
+                  {phase.date}
+                </p>
+              </div>
+              <div>
+                <h4 className="syne text-base font-bold text-white mb-1">{phase.title}</h4>
+                <p className="text-[12px] leading-relaxed text-zinc-400 mb-2.5">{phase.description}</p>
+                <div className="flex flex-wrap gap-1">
+                  {phase.items.map((item) => (
+                    <div key={item} className="rounded-md border border-[#1f1f1f] bg-[#0b0b0b] px-2 py-0.5 text-[10px] text-zinc-300">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Dialog>
+
+      <section className="relative min-h-[70vh] flex flex-col items-center justify-start overflow-hidden pt-20 md:pt-28 pb-0">
+        <div className="absolute inset-0 z-0">
+          {HillsComponent ? (
+            <HillsComponent width="100%" height="100%" cameraZ={125} planeSize={256} speed={0.35} floatingLogoSrc="/logo.png" />
+          ) : (
+            <div
+              className="h-full w-full"
+              style={{
+                background:
+                  'radial-gradient(circle at 20% 20%, rgba(234,128,58,0.12), transparent 35%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.04), transparent 28%), linear-gradient(180deg, #0d0d0d 0%, #080808 70%)',
+              }}
+            />
+          )}
         </div>
 
         <div
           className="absolute inset-0 z-0 pointer-events-none"
           style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 0%, rgba(8,8,8,0.9) 100%)",
+            background: 'radial-gradient(ellipse 80% 60% at 50% 50%, transparent 0%, rgba(8,8,8,0.92) 100%)',
           }}
         />
 
         <div
-          className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-0"
-          style={{ background: "linear-gradient(transparent,#080808)" }}
+          className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none z-0"
+          style={{ background: 'linear-gradient(transparent,#080808)' }}
         />
 
-        {/* Corner decorations */}
-        {[
-          ["top-20 left-8", "M0 24L0 0L24 0"],
-          ["top-20 right-8", "M24 24L24 0L0 0"],
-        ].map(([pos, d], i) => (
+        <div className="relative z-10 max-w-2xl mx-auto px-4 text-center w-full mb-10">
+        <Fade delay={60}>
+  <div className="mx-auto mb-3 max-w-xl">
+    <div className="relative h-[34px] overflow-hidden rounded-full border border-white/10 bg-[rgba(10,10,10,0.78)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      {announcementLayers.map((announcement, index) => {
+        const isActive = index === activeAnnouncement;
+
+        const cardInner = (
           <div
-            key={i}
-            className={`absolute ${pos} opacity-30 pointer-events-none`}
-            style={{ color: "#EA803A" }}
+            className="announcement-card absolute inset-0 flex items-center justify-between gap-3 px-3"
+            style={{
+              zIndex: isActive ? 2 : 1,
+              opacity: isActive ? 1 : 0,
+              pointerEvents: isActive ? 'auto' : 'none',
+              transform: isActive ? 'translateY(0)' : 'translateY(9px)',
+              transition: 'opacity 320ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+              background: 'linear-gradient(90deg, rgba(255,255,255,0.015), rgba(255,255,255,0.04), rgba(255,255,255,0.015))',
+            }}
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d={d} />
-            </svg>
+            <div
+              className="absolute inset-x-0 bottom-0 h-px origin-left"
+              style={{
+                background: `linear-gradient(90deg, ${announcement.accent}, transparent)`,
+                animation: isActive ? 'announcement-progress 3600ms linear' : 'none',
+              }}
+            />
+
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="shrink-0 rounded-full border px-1.5 py-[1px] text-[7px] uppercase tracking-[0.18em]"
+                style={{
+                  color: announcement.accent,
+                  borderColor: `${announcement.accent}30`,
+                  background: `${announcement.accent}10`,
+                }}
+              >
+                {announcement.eyebrow}
+              </span>
+
+              <p className="truncate text-[10px] text-zinc-200">
+                {announcement.title}
+              </p>
+            </div>
+
+            <div className="flex h-4 w-4 shrink-0 items-center justify-center text-white/75">
+              <ArrowRight size={9} stroke="currentColor" />
+            </div>
           </div>
-        ))}
+        );
 
-        <div className="relative z-10 max-w-4xl mx-auto px-6 text-center w-full flex flex-col flex-1">
-          <div>
-            <Fade delay={100}>
-              <h1 className="syne font-extrabold leading-tight mb-4 text-4xl md:text-6xl">
-                Coding agents get smarter
-                <br />
-                <span className="text-zinc-600">and cheaper every run.</span>
-              </h1>
-            </Fade>
+        if (!isActive) return <div key={announcement.id}>{cardInner}</div>;
 
-            <Fade delay={200}>
-              <h2 className="syne font-bold text-[#EA803A] mb-6 text-xl md:text-2xl">
-                <span className="px-font text-base md:text-lg mr-3">
-                  Velocity Brain
-                </span>
-                stops them from paying for the same tokens twice.
-              </h2>
-            </Fade>
+        if (announcement.href) {
+          return (
+            <a key={announcement.id} href={announcement.href} className="absolute inset-0">
+              {cardInner}
+            </a>
+          );
+        }
 
-            <Fade delay={360}>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                <a
-                  href="/login"
-                  className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-black text-base flex items-center justify-center gap-2 syne"
-                  style={{ background: "#EA803A", boxShadow: "4px 4px 0 #c4612a" }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#f0965a")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "#EA803A")
-                  }
-                >
-                  Get Started Free <IArrow size={18} stroke="#000000" />
-                </a>
-
-                <a
-                  href="/docs/cli"
-                  className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-zinc-300 text-base flex items-center justify-center gap-2 border border-[#333] bg-[#111] syne"
-                  style={{ boxShadow: "4px 4px 0 #000" }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.borderColor = "#EA803A66")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.borderColor = "#333")
-                  }
-                >
-                  <ITerm size={18} /> View CLI Demo
-                </a>
-              </div>
-            </Fade>
-          </div>
-
-          {/* Inline mini terminal preview - Pushed down heavily to hide from first view */}
-          <div className="mt-[30vh] md:mt-[40vh] mb-10 w-full">
-            <Fade delay={440}>
-              <Clay className="text-left overflow-hidden max-w-2xl mx-auto border border-[#2a2a2a]">
-                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#2a2a2a] bg-[#111]">
-                  {["#FF5F56", "#FFBD2E", "#27C93F"].map((c) => (
-                    <div
-                      key={c}
-                      className="w-3 h-3 rounded-full"
-                      style={{ background: c }}
-                    />
-                  ))}
-                  <span className="mono text-xs text-zinc-500 ml-3">
-                    Velocity Brain
-                  </span>
-                </div>
-
-                <div className="p-4 space-y-2 bg-[#0a0a0a]">
-                  <TL color="text-zinc-400">
-                    $ velocity-brain ingest --source note --content "Auth middleware now writes usage events before API key validation"
-                  </TL>
-                  <TL color="text-[#EA803A]" indent>
-                    ⚙ Signal detected - entity-mention
-                  </TL>
-                  <TL color="text-zinc-500" indent>
-                    Repo memory updated: auth and usage pipeline
-                  </TL>
-                  <TL color="text-green-400" indent>
-                    ✓ Memory updated · 43ms · Audit logged
-                  </TL>
-                </div>
-              </Clay>
-            </Fade>
-          </div>
-        </div>
-      </section>
-      
-      {/* ══════════  STATS  ════════════════════════════════════════════════ */}
-      <section className="max-w-6xl mx-auto px-6 pb-20 mt-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-          {[
-            { v:'65', l:'JSON Skills', s:'Validated + extensible' },
-            { v:'~30m', l:'Setup Time', s:'Local brain running' },
-            { v:'100%', l:'Production-Ready', s:'Docker · SSL · Redis' },
-            { v:'13', l:'MCP Tools', s:'Policy-gated ops' },
-          ].map((s,i)=>(
-            <Fade key={i} delay={i*55}>
-              <Clay accent className="p-6 text-center border border-[#EA803A]/20 bg-[#150a04]">
-                <p className="syne font-extrabold text-white mb-1 text-4xl md:text-5xl">{s.v}</p>
-                <p className="text-[#EA803A] font-bold text-sm uppercase tracking-wider mb-1" style={{ fontFamily:'DM Sans,sans-serif' }}>{s.l}</p>
-                <p className="text-zinc-500 text-sm">{s.s}</p>
-              </Clay>
-            </Fade>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════  IMAGE COMPARISON  ══════════════════════════════════════ */}
-      <section className="max-w-6xl mx-auto px-6 pb-24">
-        <Fade>
-          <div className="text-center mb-8">
-            <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// before vs after'}</p>
-            <h2 className="syne font-bold text-white text-3xl md:text-4xl">What Velocity Brain Actually Fixes</h2>
-          </div>
-        </Fade>
-       <Fade delay={60}>
-  <ImageComparisonSlider
-  beforeContent={[
-    ['text-zinc-500', '> debug auth flow across large repo'],
-    ['text-zinc-400', '● Attempting to reconstruct context...'],
-    ['text-zinc-400', ''],
-    ['text-zinc-400', 'No prepared repo memory'],
-    ['text-zinc-400', 'Scanning scattered files and notes...'],
-    ['text-zinc-400', 'Reading partial docs, guessing module boundaries'],
-    ['text-zinc-400', ''],
-    ['text-red-400', 'Fragmented understanding'],
-    ['text-red-400', 'Repeated prompt setup'],
-    ['text-red-400', ''],
-    ['text-red-400', '✗ Slow repo onboarding · Weak handoff'],
-    ['text-red-400', '95k tokens · Repeated context · Inefficient']
-  ]}
-  afterContent={[
-    ['text-zinc-500', '> debug auth flow across large repo'],
-    ['text-zinc-400', '● Executing with prepared repo context'],
-    ['text-[#EA803A]', ''],
-    ['text-[#EA803A]', '✦ Velocity Brain MCP engaged'],
-    ['text-[#EA803A]', 'Related modules, notes, and prior decisions loaded'],
-    ['text-[#EA803A]', ''],
-    ['text-zinc-400', 'Auth architecture assembled'],
-    ['text-zinc-400', 'Preparing the agent before edits...'],
-    ['text-zinc-400', ''],
-    ['text-green-400', '✓ Faster codebase understanding'],
-    ['text-green-400', '✓ Cleaner debugging path'],
-    ['text-green-400', '✓ Better agent handoff'],
-    ['text-green-400', ''],
-    ['text-green-400', '42k tokens · Context-aware · Deterministic']
-  ]}
-/>
+        return (
+          <button
+            key={announcement.id}
+            onClick={() => handleAnnouncementAction(announcement)}
+            className="absolute inset-0 w-full"
+          >
+            {cardInner}
+          </button>
+        );
+      })}
+    </div>
+  </div>
 </Fade>
-      
-      </section>
+          <Fade delay={120}>
+            <h1 className="syne font-extrabold leading-[0.95] tracking-[-0.03em] mb-3 text-4xl sm:text-5xl md:text-6xl">
+              Your AI should not
+              <br />
+              <span
+                className="inline-block text-transparent"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(180deg, #ffb06e 0%, #EA803A 42%, #d96522 100%), repeating-linear-gradient(135deg, rgba(0,0,0,0.34) 0 2px, transparent 2px 12px), repeating-linear-gradient(45deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 18px)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: '2px 2px 0 rgba(0,0,0,0.28)',
+                }}
+              >
+                restart from zero.
+              </span>
+            </h1>
+          </Fade>
 
-      {/* ══════════  FLOWCHART  ════════════════════════════════════════════ */}
-      <section className="py-20" style={{ background:'#050505', borderTop:'1px solid #1a1a1a', borderBottom:'1px solid #1a1a1a' }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <Fade>
-            <div className="text-center mb-12">
-              <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// intelligence routing'}</p>
-              <h2 className="syne font-bold text-white text-3xl md:text-4xl">Brain-First. Every Request.</h2>
-              <p className="text-zinc-500 text-base md:text-lg mt-4 max-w-2xl mx-auto">Memory retrieval happens before any synthesis or external action. Always.</p>
+          <Fade delay={240}>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 mb-5">
+              <a
+                href="/login"
+                className="w-full sm:w-auto px-5 py-2 rounded-xl font-bold text-black text-[13px] flex items-center justify-center gap-1.5 syne"
+                style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f0965a')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#EA803A')}
+              >
+                Start Free <ArrowRight size={14} stroke="#000000" />
+              </a>
+
+              <a
+                href={researchFeature.href}
+                className="w-full sm:w-auto px-5 py-2 rounded-xl font-bold text-zinc-300 text-[13px] flex items-center justify-center gap-1.5 border border-[#333] bg-[#111] syne"
+                style={{ boxShadow: '2px 2px 0 #000' }}
+              >
+                <ArrowRight size={14} stroke="#ffffff" /> Why we're different
+              </a>
             </div>
           </Fade>
-
-          <Fade delay={60}>
-            <Clay className="p-8 md:p-10 border border-[#2a2a2a]">
-              {/* Main flow row */}
-              <div className="flex items-center justify-center flex-wrap gap-2 mb-8">
-                {[
-                  { label:'Signal', sub:'intent', Icon:IZap },
-                  null,
-                  { label:'Brain Lookup', sub:'memory first', Icon:IDB },
-                  null,
-                  { label:'Route', sub:'skill dispatch', Icon:IGear },
-                  null,
-                  { label:'Execute', sub:'deterministic', Icon:ICpu },
-                  null,
-                  { label:'Audit', sub:'policy-gated', Icon:IShield },
-                  null,
-                  { label:'Write-back', sub:'memory grows', Icon:IActivity },
-                ].map((node,i)=>
-                  node === null
-                    ? <FlowArrow key={i}/>
-                    : (
-                      <div key={i} className="flex flex-col items-center gap-3 px-2">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center border border-[#333] bg-[#111]">
-                          <node.Icon size={26} />
-                        </div>
-                        <div className="text-center">
-                          <div className="syne font-bold text-white text-sm mb-1">{node.label}</div>
-                          <div className="text-zinc-500 text-xs">{node.sub}</div>
-                        </div>
-                      </div>
-                    )
-                )}
-              </div>
-
-              {/* Category grid */}
-              <div className="mt-12 pt-8 border-t border-[#2a2a2a]">
-                <p className="text-center mono text-xs text-zinc-500 uppercase tracking-widest mb-6">Skill categories</p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
-                  {[
-                    { label:'Always-on', Icon:IZap, desc:'Core system ops' },
-                    { label:'Brain Ops', Icon:IDB, desc:'Memory & retrieval' },
-                    { label:'Ingestion', Icon:IBox, desc:'Text, PDF, Org, OCR' },
-                    { label:'Execution', Icon:ICpu, desc:'Tasks, cron, connectors' },
-                    { label:'Maintenance', Icon:IGear, desc:'Health & cleanup' },
-                  ].map((cat,i)=>(
-                    <div key={i} className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-[#222] bg-[#0c0c0c]">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#1a1a1a] border border-[#333]">
-                        <cat.Icon size={22} />
-                      </div>
-                      <div className="text-center">
-                        <div className="syne font-bold text-white text-sm mb-1">{cat.label}</div>
-                        <div className="text-zinc-500 text-xs">{cat.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Identity spec layer note */}
-              <div className="mt-8 pt-6 border-t border-[#2a2a2a] flex items-center justify-center flex-wrap">
-                <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-[#EA803A]/30 bg-[#1a0e05]">
-                  <IKey size={20} />
-                  <span className="mono text-xs md:text-sm text-zinc-400"><span className="text-[#EA803A] font-bold">identity.spec.json</span> - sits above runtime defaults. Describes agent identity &amp; policy posture.</span>
-                </div>
-              </div>
-            </Clay>
-          </Fade>
-        </div>
-      </section>
-
-      {/* ══════════  FEATURES  ═════════════════════════════════════════════ */}
-      <section className="max-w-6xl mx-auto px-6 py-24">
-        <Fade>
-          <div className="text-center mb-12">
-            <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// architecture'}</p>
-            <h2 className="syne font-bold text-white text-3xl md:text-4xl">Production-Hardened by Default</h2>
-          </div>
-        </Fade>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[
-            { Icon:IDB, title:'Brain-First Lookup Protocol', tag:'retrieval',
-              desc:'All workflows begin with internal retrieval. The runtime prefers existing knowledge before synthesis or external calls. Citations, compiled truth, and entity data stay consistent across every session.' },
-            { Icon:IShield, title:'Enterprise Security Built-in', tag:'security',
-              desc:'SQL injection prevention, XSS protection, JWT auth with scope-based authorization, configurable rate limiting, structured audit logging, and policy gates on all destructive operations.' },
-            { Icon:IActivity, title:'Full Observability Layer', tag:'monitoring',
-              desc:'Health checks across DB, filesystem, memory, and external deps. Prometheus metrics, Grafana dashboards, structured JSON logs. Real-time alerts on degradation, auth failures, and policy violations.' },
-            { Icon:ICpu, title:'65 JSON-Defined Skills', tag:'skills',
-              desc:'Deterministic ingestion, enrichment, execution, and maintenance skills. Each includes metadata, workflow steps, validation rules, and security checks. Extend without touching the router. Ever.' },
-          ].map((f,i)=>(
-            <Fade key={i} delay={i*55}>
-              <Clay className="p-8 h-full border border-[#2a2a2a]">
-                <div className="flex items-start gap-5">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 bg-[#111] border border-[#333]">
-                    <f.Icon size={26} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3 mb-3 flex-wrap">
-                      <h3 className="syne font-bold text-white text-lg">{f.title}</h3>
-                      <span className="mono text-xs px-2.5 py-1 rounded-md border border-[#333] text-zinc-300 bg-[#1a1a1a]">{f.tag}</span>
-                    </div>
-                    <p className="text-zinc-400 text-sm md:text-base leading-relaxed">{f.desc}</p>
-                  </div>
-                </div>
-              </Clay>
-            </Fade>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════  CLI TABS  ═════════════════════════════════════════════ */}
-      <section className="py-24" style={{ background:'#050505', borderTop:'1px solid #1a1a1a', borderBottom:'1px solid #1a1a1a' }}>
-        <div className="max-w-4xl mx-auto px-6">
-          <Fade>
-            <div className="text-center mb-10">
-              <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// cli reference'}</p>
-              <h2 className="syne font-bold text-white text-3xl md:text-4xl">Three Core Workflows</h2>
-            </div>
-          </Fade>
-          <Fade delay={60}>
-            <Clay className="overflow-hidden border border-[#2a2a2a]">
-              <div className="flex items-center gap-2 p-2 border-b border-[#2a2a2a] bg-[#111]">
-                {[['query','Query Brain'],['ingest','Ingest'],['run','Run Agent']].map(([k,l])=>(
-                  <button key={k} onClick={()=>setActiveTab(k)}
-                    className="px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 mono"
-                    style={activeTab===k ? { background:'#EA803A', color:'#000', boxShadow:'3px 3px 0 #c4612a' } : { color:'#888' }}
-                    onMouseEnter={e=>{if(activeTab!==k)e.currentTarget.style.color='#fff'}}
-                    onMouseLeave={e=>{if(activeTab!==k)e.currentTarget.style.color='#888'}}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-              <div className="p-8 min-h-[200px] bg-[#0a0a0a]">
-                <TL color="text-zinc-300"><span className="text-zinc-600 font-bold">$</span> {cliTabs[activeTab].cmd}</TL>
-                <div className="mt-5 space-y-2">
-                  {cliTabs[activeTab].lines.map(([cls,txt],i)=><TL key={i} color={cls} indent>{txt}</TL>)}
-                </div>
-              </div>
-            </Clay>
-
-            {/* Output styles */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              {[['normal','default output'],['lite','concise logging'],['full','detailed JSON'],['ultra','max compression']].map(([style,desc])=>(
-                <Clay key={style} className="p-4 text-center border border-[#222]">
-                  <p className="mono text-[#EA803A] text-xs md:text-sm font-bold mb-1">--{style}</p>
-                  <p className="text-zinc-500 text-xs md:text-sm">{desc}</p>
-                </Clay>
-              ))}
-            </div>
-          </Fade>
-        </div>
-      </section>
-
-      {/* ══════════  INSTALLATION  ═══════════════════════════════════════ */}
-      <section className="py-24" style={{ background:'#050505', borderTop:'1px solid #1a1a1a', borderBottom:'1px solid #1a1a1a' }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <Fade>
-            <div className="text-center mb-12">
-              <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// installation'}</p>
-              <h2 className="syne font-bold text-white text-3xl md:text-4xl">Connect once. Use it across your agents.</h2>
-              <p className="text-zinc-500 text-base md:text-lg mt-4 max-w-2xl mx-auto">Velocity Brain should run before the agent thinks, not force users through a manual memory workflow.</p>
-            </div>
-          </Fade>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {supportedAgents.map((agent, index) => (
-              <Fade key={agent.id} delay={60 + (index * 40)}>
-                <Clay className="p-6 h-full border border-[#2a2a2a]">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="syne font-bold text-white text-lg">{agent.name}</h3>
-                      <p className="text-zinc-500 text-sm mt-1">{agent.summary}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="rounded-full border border-[#EA803A33] bg-[#EA803A14] px-2.5 py-1 mono text-[10px] text-[#f2b07d]">
-                        {agent.surface}
-                      </span>
-                      <span className="rounded-full border border-[#17301f] bg-[#13261d] px-2.5 py-1 mono text-[10px] text-[#7fe3c8]">
-                        {agent.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 mono text-xs text-zinc-400">
-                    <p className="text-[#EA803A] mb-2"># Quick setup</p>
-                    <code>{agent.setup}</code>
-                  </div>
-                </Clay>
-              </Fade>
-            ))}
-          </div>
 
           <Fade delay={300}>
-            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-6 mt-8">
-              <Clay className="p-6 border border-[#2a2a2a]">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#111] border border-[#333]">
-                    <Cpu size={22} />
-                  </div>
-                  <div>
-                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">Automatic flow</p>
-                    <h3 className="syne font-bold text-white text-xl">What should happen on each prompt</h3>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {promptLifecycle.map((item) => (
-                    <div key={item.step} className="rounded-xl border border-[#222] bg-[#0a0a0a] p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-[#EA803A] text-black mono text-sm font-bold flex items-center justify-center">
-                          {item.step}
-                        </div>
-                        <p className="syne text-sm font-bold text-white">{item.title}</p>
-                      </div>
-                      <p className="text-sm text-zinc-500 leading-6">{item.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </Clay>
-
-              <Clay className="p-6 h-full border border-[#EA803A]/30 bg-[#130a02]">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#EA803A]/10 border border-[#EA803A]/30">
-                    <IZap size={22} />
-                  </div>
-                  <div>
-                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-[#f2b07d]">Product promise</p>
-                    <h3 className="syne font-bold text-white text-xl">Talk to the agent normally</h3>
-                  </div>
-                </div>
-                <p className="text-sm text-zinc-300 leading-7 mb-4">
-                  Velocity Brain retrieves reusable coding context first, passes a smaller package forward, and keeps the next run cheaper and smarter.
-                </p>
-                <div className="space-y-3">
-                  <div className="bg-[#0a0a0a] rounded-lg p-3">
-                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1">Without Velocity Brain</p>
-                    <p className="text-sm text-zinc-400">Long prompts, repeated setup, and more wasted tokens.</p>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-3">
-                    <p className="mono text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1">With Velocity Brain</p>
-                    <p className="text-sm text-zinc-400">Shorter prompts, retrieval first, and less context waste.</p>
-                  </div>
-                  <a href="/docs/integrations" className="inline-flex items-center gap-2 text-sm font-medium text-[#EA803A] hover:text-white transition-colors">
-                    View integration docs <IArrow size={16} stroke="#EA803A" />
-                  </a>
-                </div>
-              </Clay>
+            <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-[11px] mono text-zinc-500 mb-6">
+              <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">CLI-first</span>
+              <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">MCP-native</span>
+              <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">Model-agnostic</span>
             </div>
           </Fade>
-        </div>
-      </section>
 
-      {/* ══════════  ACCESS CONTROL + MCP SPLIT  ══════════════════════════ */}
-      <section className="max-w-6xl mx-auto px-6 py-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-
-          {/* Access tiers */}
-          <Fade>
-            <div>
-              <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// access control'}</p>
-              <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-4">Scoped. Policy-Gated.</h2>
-              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Hosted memory, scoped authorization, and per-run savings proof for coding agents. Usage limits and audit trails still apply.</p>
-              <div className="space-y-3 mb-8">
-                {[
-                  { t:'Full', d:'All tools + destructive ops', c:'#EA803A' },
-                  { t:'Work', d:'Task, memory & execution', c:'#f0965a' },
-                  { t:'Family', d:'Read-only + safe ingestion', c:'#f5b07a' },
-                  { t:'None', d:'Public identity only (locked)', c:'#3a3a3a' },
-                ].map(({ t,d,c })=>(
-                  <Clay key={t} className="flex items-center gap-4 px-5 py-4 border border-[#222]">
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background:c }}/>
-                    <span className="syne text-white text-base font-bold w-20">{t}</span>
-                    <span className="text-zinc-500 text-sm">{d}</span>
-                  </Clay>
+          <Fade delay={360}>
+            <Clay className="max-w-lg mx-auto overflow-hidden text-left rounded-xl">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-[#2a2a2a] bg-[#111]">
+                {['#FF5F56', '#FFBD2E', '#27C93F'].map((c) => (
+                  <div key={c} className="w-2 h-2 rounded-full" style={{ background: c }} />
                 ))}
+                <span className="mono text-[10px] text-zinc-500 ml-1.5">Velocity Brain</span>
               </div>
 
-              {/* Entity memory model diagram */}
-              <Clay className="p-6 border border-[#222]">
-                <p className="mono text-sm text-zinc-500 uppercase tracking-widest mb-5">Entity memory model</p>
-                {[
-                  { label:'Entity Page', color:'#EA803A', desc:'Name · type · compiled truth' },
-                  { label:'Timeline Events', color:'#f59e0b', desc:'Dated evidence entries' },
-                  { label:'Relationships', color:'#3b82f6', desc:'Cross-entity links' },
-                  { label:'Citations', color:'#10b981', desc:'Source + confidence score' },
-                ].map((row,i,arr)=>(
-                  <div key={i}>
-                    <div className="flex items-center gap-4 py-2">
-                      <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background:row.color }}/>
-                      <span className="syne text-white text-sm font-bold">{row.label}</span>
-                      <span className="text-zinc-500 text-xs md:text-sm ml-auto">{row.desc}</span>
-                    </div>
-                    {i<arr.length-1 && <div className="w-0.5 h-6 bg-[#2a2a2a] ml-[3px]"/>}
-                  </div>
-                ))}
-              </Clay>
-            </div>
-          </Fade>
-
-          {/* MCP tools */}
-          <Fade delay={70}>
-            <div>
-              <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// mcp tools'}</p>
-              <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-4">One hosted runtime. Clear reuse surface.</h2>
-              <p className="text-zinc-400 text-base mb-8 leading-relaxed">Use one MCP server command and keep the same hosted reuse workflow across supported clients.</p>
-              <Clay className="overflow-hidden mb-6 border border-[#2a2a2a]">
-                <div className="px-5 py-3 border-b border-[#2a2a2a] flex items-center gap-3 bg-[#111]">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#EA803A]"/>
-                  <span className="mono text-sm text-zinc-400">velocity-brain serve mcp</span>
-                </div>
-                <div className="p-5 space-y-3 bg-[#0a0a0a]">
-                  {[['retrieve_reuse_context',null],['query',null],['run_agent',null],['store_artifact',null],['record_reuse_decision',null],['healthz',null],
-                  ].map(([name,gate])=>(
-                    <div key={name} className="flex items-center justify-between">
-                      <span className="mono text-sm text-zinc-300"><span className="text-[#EA803A] mr-2">-</span>{name}</span>
-                      {gate && <span className="mono text-xs px-2.5 py-1 rounded border border-red-900/40 text-red-400/80 bg-red-900/10">{gate}</span>}
-                    </div>
-                  ))}
-                  <div className="mono text-xs text-zinc-500 pt-2">+ hosted savings reporting on every major run</div>
-                </div>
-              </Clay>
-
-              {/* Config snippet */}
-              <Clay className="overflow-hidden border border-[#2a2a2a]">
-                <div className="px-5 py-3 border-b border-[#2a2a2a] bg-[#111]">
-                  <span className="mono text-xs text-zinc-500">claude / codex / gemini mcpServers config</span>
-                </div>
-                <div className="p-5 bg-[#0a0a0a]">
-                  {[['text-zinc-500','{'],['text-zinc-400','  "mcpServers": {'],['text-zinc-300','    "velocity-brain": {'],['text-[#EA803A]','      "command": "velocity-brain",'],['text-[#EA803A]','      "args": ["serve", "mcp"]'],['text-zinc-300','    }'],['text-zinc-400','  }'],['text-zinc-500','}']].map(([cls,txt],i)=><TL key={i} color={cls}>{txt}</TL>)}
-                </div>
-              </Clay>
-            </div>
-          </Fade>
-        </div>
-      </section>
-
-      {/* ══════════  SKILL BADGES  ═════════════════════════════════════════ */}
-      <section className="py-20" style={{ background:'#050505', borderTop:'1px solid #1a1a1a' }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <Fade>
-            <div className="text-center mb-10">
-              <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// skill library'}</p>
-              <h2 className="syne font-bold text-white text-3xl md:text-4xl">65 JSON-Defined Skills</h2>
-              <p className="text-zinc-400 text-base mt-4 max-w-2xl mx-auto">Each skill has metadata, workflow steps, validation rules, and security checks. Load from <span className="mono text-zinc-300 bg-[#111] px-2 py-1 rounded">skills/**/*.json</span> - extend without touching the router.</p>
-            </div>
-          </Fade>
-          <Fade delay={50}>
-            <Clay className="p-8 border border-[#2a2a2a]">
-              <div className="flex flex-wrap gap-3">
-                {[['ingest-note','ingestion'],['ingest-article','ingestion'],['ingest-pdf','ingestion'],['ingest-video','ingestion'],['ingest-audio','ingestion'],['ingest-org','ingestion'],['brain-query','brain'],['brain-enrich','brain'],['brain-compile','brain'],['brain-relate','brain'],['brain-recall','brain'],['exec-email','execution'],['exec-calendar','execution'],['exec-task','execution'],['exec-cron','execution'],['exec-gworkspace','execution'],['exec-message','execution'],['query-semantic','query'],['query-hybrid','query'],['query-entity','query'],['query-timeline','query'],['query-citation','query'],['maint-health','maintenance'],['maint-backup','maintenance'],['maint-prune','maintenance'],['maint-reindex','maintenance'],['maint-metrics','maintenance'],['caveman-commit','brain'],['caveman-review','brain'],['caveman-compress','brain'],['sync-repo','execution'],['identity-spec','brain'],['skill-list','query']].map(([n,c])=><SkillBadge key={n} name={n} cat={c}/>)}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#333] text-sm text-zinc-500 italic bg-[#111]" style={{ fontFamily:'JetBrains Mono,monospace' }}>+32 more...</div>
-              </div>
-              <div className="flex flex-wrap gap-6 mt-8 pt-6 border-t border-[#2a2a2a]">
-                {[['ingestion','#3b82f6'],['query','#10b981'],['execution','#f59e0b'],['maintenance','#8b5cf6'],['brain','#EA803A']].map(([cat,c])=>(
-                  <div key={cat} className="flex items-center gap-2.5">
-                    <div className="w-3 h-3 rounded-full" style={{background:c}}/>
-                    <span className="mono text-sm capitalize" style={{color:`${c}ee`}}>{cat}</span>
-                  </div>
-                ))}
+              <div className="p-3 bg-[#0a0a0a] space-y-1">
+                <TL color="text-zinc-300">$ velocitybrain query "Map auth and API key flow in this repo"</TL>
+                <TL color="text-[#EA803A]">Found reusable context from prior runs</TL>
+                <TL color="text-zinc-500">Modules: auth, usage, API keys, dashboard</TL>
+                <TL color="text-green-400">Prepared a smaller context package for the agent</TL>
               </div>
             </Clay>
           </Fade>
         </div>
       </section>
 
-      {/* ══════════  QUICK START  ══════════════════════════════════════════ */}
-      <section className="max-w-4xl mx-auto px-6 py-24">
+      <section className="max-w-5xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {proofPoints.map((item, index) => (
+            <Fade key={item.title} delay={index * 60}>
+              <Clay className="p-4 h-full rounded-[16px]">
+               
+                <h3 className="syne text-base font-bold text-white mb-1.5">{item.title}</h3>
+                <p className="text-[13px] text-zinc-400 leading-relaxed">{item.description}</p>
+              </Clay>
+            </Fade>
+          ))}
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto px-4 pb-12">
         <Fade>
-          <div className="text-center mb-10">
-            <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-3">{'// quick start'}</p>
-            <h2 className="syne font-bold text-white text-3xl md:text-4xl">Hosted setup in minutes</h2>
-            <p className="text-zinc-400 text-base mt-4">Login, connect your MCP client, and start measuring saved tokens per run.</p>
-          </div>
-        </Fade>
-        <Fade delay={50}>
-          <Clay className="overflow-hidden border border-[#2a2a2a]">
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-[#2a2a2a] bg-[#111]">
-              {['#FF5F56','#FFBD2E','#27C93F'].map(c=><div key={c} className="w-3 h-3 rounded-full" style={{background:c}}/>)}
-              <span className="mono text-sm text-zinc-500 ml-3">bash - velocity-brain</span>
-            </div>
-            <div className="p-8 space-y-6 bg-[#0a0a0a]">
-              {[
-                { c:'# 1 · Install', ls:['pip install velocity-brain'] },
-                { c:'# 2 · Authenticate', ls:['velocity-brain login --api-key vb_live_xxx'] },
-                { c:'# 3 · Connect your agent', ls:['velocity-brain connect codex','velocity-brain serve mcp'] },
-                { c:'# 4 · Validate', ls:['velocity-brain doctor','velocity-brain smoke'] },
-                { c:'# 5 · See savings', ls:['velocity-brain query "Map the auth system in this repo"','velocity-brain run "Prepare a review of the billing flow"'] },
-              ].map((b,i)=>(
-                <div key={i}>
-                  <TL color="text-zinc-500"><span className="font-bold">{b.c}</span></TL>
-                  {b.ls.map((l,j)=><TL key={j} color="text-zinc-300"><span className="text-[#EA803A] mr-2">$</span>{l}</TL>)}
+          <Clay accent className="overflow-hidden rounded-[20px]">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+              <div className="p-5 md:p-6 border-b lg:border-b-0 lg:border-r border-[#2a2a2a]">
+                <p className="mono text-[#EA803A] text-[10px] uppercase tracking-widest mb-2">Why we're unique</p>
+                <h2 className="syne font-bold text-white text-xl md:text-2xl mb-3">
+                  We are not just another memory wrapper.
+                </h2>
+                <p className="text-zinc-300 text-[13px] md:text-sm leading-relaxed mb-5">
+                  Mem0, Zep, Letta, Hyperspell, and Hermes each solve part of the continuity problem. Velocity Brain is being built as the layer that sits behind the workflow, decides when memory should run, and keeps reuse practical across many agents.
+                </p>
+                <div className="space-y-2.5">
+                  {comparisonHighlights.map((item) => (
+                    <div key={item.name} className="rounded-xl border border-[#1f1f1f] bg-[#0b0b0b] p-3">
+                      <div className="flex items-center justify-between gap-3 mb-1.5">
+                        <p className="syne text-sm font-bold text-white">{item.name}</p>
+                        <span
+                          className="mono rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.18em]"
+                          style={{ color: item.accent, borderColor: `${item.accent}35`, background: `${item.accent}12` }}
+                        >
+                          {item.focus}
+                        </span>
+                      </div>
+                      <p className="text-[12px] leading-relaxed text-zinc-400">{item.difference}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div className="p-5 md:p-6 bg-[#090909]">
+                <p className="mono text-[#7fe3c8] text-[10px] uppercase tracking-widest mb-2">Research blog</p>
+                <div className="rounded-[18px] border border-[#1f1f1f] bg-[linear-gradient(180deg,#111,#0a0a0a)] p-5 flex flex-col gap-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex w-fit rounded-full border border-[#7fe3c8]/30 bg-[#7fe3c8]/10 px-2.5 py-1 mono text-[9px] uppercase tracking-[0.18em] text-[#9debd9]">
+                      {researchFeature.category}
+                    </span>
+                    <span className="mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                      {researchFeature.readTime}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="syne text-xl font-bold text-white mb-3 max-w-[13ch] md:max-w-[16ch]">
+                      {researchFeature.displayTitle || researchFeature.title}
+                    </h3>
+                    <p className="text-[13px] leading-relaxed text-zinc-400">
+                      {researchFeature.summary}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-[#1b3b34] bg-[linear-gradient(180deg,rgba(127,227,200,0.08),rgba(8,15,13,0.85))] p-4">
+                    <p className="mono text-[10px] uppercase tracking-[0.18em] text-[#7fe3c8] mb-3">
+                      What the piece covers
+                    </p>
+                    <div className="space-y-2.5">
+                      {researchFeature.points.map((point) => (
+                        <div key={point} className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-black/20 px-3 py-2">
+                          <span className="h-2 w-2 rounded-full bg-[#7fe3c8]" />
+                          <span className="text-[12px] text-zinc-200">{point}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <a
+                    href={researchFeature.href}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#7fe3c8]/30 bg-[#7fe3c8]/10 px-4 py-2.5 text-[13px] font-bold text-[#baf4e7] transition-colors hover:bg-[#7fe3c8]/15"
+                  >
+                    Read the full comparison <ArrowRight size={14} stroke="currentColor" />
+                  </a>
+                </div>
+              </div>
             </div>
           </Clay>
         </Fade>
       </section>
 
-      {/* ══════════  CTA  ══════════════════════════════════════════════════ */}
-      <section className="max-w-5xl mx-auto px-6 pb-32">
+      <section className="py-12 border-y border-[#1a1a1a]" style={{ background: '#050505' }}>
+        <div className="max-w-5xl mx-auto px-4">
+          <Fade>
+            <div className="text-center mb-8">
+              <p className="mono text-[#EA803A] text-[10px] uppercase tracking-widest mb-1.5">How it works</p>
+              <h2 className="syne font-bold text-white text-xl md:text-2xl">
+                A simpler brain layer for AI work
+              </h2>
+              <p className="text-zinc-500 text-[13px] md:text-sm mt-2 max-w-lg mx-auto">
+                Connect the AI, retrieve context first, then reuse what has already been learned instead of starting from zero every time.
+              </p>
+            </div>
+          </Fade>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {howItWorks.map((item, index) => (
+              <Fade key={item.step} delay={index * 70}>
+                <Clay accent className="p-5 h-full rounded-[16px]">
+                  <div className="w-8 h-8 rounded-lg bg-[#EA803A] text-black mono text-[11px] font-bold flex items-center justify-center mb-3">
+                    {item.step}
+                  </div>
+                  <h3 className="syne text-base font-bold text-white mb-1.5">{item.title}</h3>
+                  <p className="text-[13px] text-zinc-300 leading-relaxed">{item.description}</p>
+                </Clay>
+              </Fade>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto px-4 py-12">
         <Fade>
-          <Clay accent className="p-12 md:p-16 text-center relative overflow-hidden border border-[#EA803A]/20 bg-[#160a02]">
-            <p className="mono text-[#EA803A] text-sm uppercase tracking-widest mb-6">{'// ready?'}</p>
-            <h2 className="syne font-extrabold text-white mb-6 text-4xl md:text-5xl">Give your coding agent reusable memory.</h2>
-            <p className="text-zinc-400 text-base md:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-              Join developers building coding agents that learn from past work and avoid recomputing the same prompt context with <span className="px-font text-[#EA803A] text-xs">Velocity Brain</span>.
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-5 items-start">
+            <Clay className="p-5 md:p-6 rounded-[16px]">
+              <p className="mono text-[#EA803A] text-[10px] uppercase tracking-widest mb-1.5">Why teams use it</p>
+              <h2 className="syne font-bold text-white text-xl md:text-2xl mb-3">
+                Built for teams already using AI seriously
+              </h2>
+              <p className="text-zinc-400 text-[13px] md:text-sm leading-relaxed mb-5">
+                The problem is not just model quality. The problem is that every run starts too close to zero.
+                Velocity Brain gives teams a shared brain layer so their agents and assistants can start with prior knowledge instead of rebuilding it from scratch.
+              </p>
+              <div className="space-y-2.5">
+                {[
+                  'Clearer handoffs across sessions and teammates',
+                  'Smaller prompts and less repeated setup work',
+                  'More consistent answers from the same codebase',
+                  'A better path from experimentation to production use',
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-2.5 rounded-lg border border-[#1f1f1f] bg-[#0b0b0b] px-3 py-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#EA803A] mt-1.5 flex-shrink-0" />
+                    <p className="text-[12px] text-zinc-300">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </Clay>
+
+            <Clay className="overflow-hidden rounded-[16px]">
+              <div className="px-3 py-2.5 border-b border-[#2a2a2a] bg-[#111]">
+                <p className="mono text-[10px] text-zinc-400">Quick setup</p>
+              </div>
+              <div className="p-4 bg-[#0a0a0a] space-y-3">
+                <div>
+                  <TL color="text-zinc-500"># 1 Install</TL>
+                  <TL color="text-zinc-300">$ pip install velocitybrain</TL>
+                </div>
+                <div>
+                  <TL color="text-zinc-500"># 2 Login</TL>
+                  <TL color="text-zinc-300">$ velocitybrain login --api-key vb_live_xxx</TL>
+                </div>
+                <div>
+                  <TL color="text-zinc-500"># 3 Connect your agent</TL>
+                  <TL color="text-zinc-300">$ velocitybrain connect codex</TL>
+                  <TL color="text-zinc-300">$ velocitybrain serve mcp</TL>
+                </div>
+                <div>
+                  <TL color="text-zinc-500"># 4 Verify it works</TL>
+                  <TL color="text-zinc-300">$ velocitybrain doctor</TL>
+                  <TL color="text-zinc-300">$ velocitybrain smoke</TL>
+                </div>
+              </div>
+            </Clay>
+          </div>
+        </Fade>
+      </section>
+
+      <section className="py-12 border-y border-[#1a1a1a]" style={{ background: '#050505' }}>
+        <div className="max-w-5xl mx-auto px-4">
+          <Fade>
+            <div className="text-center mb-8">
+              <p className="mono text-[#EA803A] text-[10px] uppercase tracking-widest mb-1.5">Integrations</p>
+              <h2 className="syne font-bold text-white text-xl md:text-2xl">
+                Connect once, use it across your agent stack
+              </h2>
+              <p className="text-zinc-500 text-[13px] md:text-sm mt-2 max-w-lg mx-auto">
+                Velocity Brain is meant to sit behind the agents your team already uses, not force a brand new workflow.
+              </p>
+            </div>
+          </Fade>
+
+          {/* Changed from lg:grid-cols-4 to md:grid-cols-2 for significantly wider cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {simplifiedAgents.map((agent, index) => (
+              <Fade key={agent.id} delay={index * 60} className="h-full">
+                {(() => {
+                  const theme = integrationCardThemes[agent.id] || {
+                    badge: 'border-[#2a2a2a] bg-[#111] text-zinc-400',
+                    setup: 'bg-[#0a0a0a] border-[#1e1e1e]',
+                    keyword: 'text-[#EA803A]',
+                    hexColor: '#EA803A',
+                  };
+
+                  const tokens = agent.setup.split(' ');
+
+                  return (
+                    <div className="relative h-full overflow-hidden rounded-[20px] p-[1px] flex bg-[#1a1a1a] shadow-[0_6px_16px_rgba(0,0,0,0.2)]">
+                      {/* Spinning Border Element */}
+                      <div
+                        className="absolute inset-[-100%] animate-[spin_4s_linear_infinite] pointer-events-none"
+                        style={{
+                          background: `conic-gradient(from 90deg at 50% 50%, transparent 0%, ${theme.hexColor} 50%, transparent 100%)`,
+                        }}
+                      />
+                      
+                      {/* Inner Card Element (Removed left border bar, reduced internal padding) */}
+                      <div className="relative z-10 flex w-full flex-col overflow-hidden rounded-[19px] bg-[#0f0f0f] p-5 transition-all duration-200">
+                        <div className="absolute inset-x-0 top-0 h-8 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] pointer-events-none" />
+                        
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 mb-2.5">
+                                <div
+                                  className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
+                                    agent.id === 'hermes'
+                                      ? 'border-[#d9d9d9] bg-white'
+                                      : 'border-[#262626] bg-[#161616]'
+                                  }`}
+                                >
+                                  <img
+                                    src={agent.icon}
+                                    alt={`${agent.name} logo`}
+                                    className="h-4 w-4 object-contain"
+                                    loading="lazy"
+                                    onError={(event) => {
+                                      const fallback = agentIconFallbacks[agent.id];
+                                      if (fallback && event.currentTarget.src !== fallback) {
+                                        event.currentTarget.src = fallback;
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <h3 className="syne text-base font-bold tracking-tight text-white leading-tight">{agent.name}</h3>
+                                  <span className={`inline-block mt-0.5 rounded border px-1 py-[2px] mono text-[7px] uppercase tracking-[0.15em] ${theme.badge}`}>
+                                    {agent.surface}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-[13px] leading-relaxed text-zinc-400 mt-1.5">{agent.summary}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-1.5">
+                            {(agent.strengths || []).slice(0, 2).map((strength) => (
+                              <span
+                                key={strength}
+                                className="rounded-md border border-[#212121] bg-[#121212] px-2 py-0.5 text-[10px] text-zinc-400"
+                              >
+                                {strength}
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="mt-auto pt-5">
+                            <div className={`rounded-xl border p-3 ${theme.setup}`}>
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <p className="mono text-[9px] uppercase tracking-[0.15em] text-zinc-500">Setup</p>
+                                <button
+                                  type="button"
+                                  onClick={() => copySetupCommand(agent.id, agent.setup)}
+                                  className="rounded border border-[#2a2a2a] bg-[#101010] px-2 py-0.5 mono text-[9px] uppercase tracking-[0.14em] text-zinc-400 transition-colors hover:border-[#3a3a3a] hover:text-white"
+                                >
+                                  {copiedSetup === agent.id ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+
+                              <code className="block text-[10px] leading-relaxed text-zinc-300 break-words">
+                                {tokens.map((token, tokenIndex) => {
+                                  const highlight =
+                                    token === 'mcp' ||
+                                    token === 'add' ||
+                                    token === 'serve' ||
+                                    token === 'connect' ||
+                                    token === 'velocitybrain';
+
+                                  return (
+                                    <span
+                                      key={`${agent.id}-${token}-${tokenIndex}`}
+                                      className={highlight ? theme.keyword : 'text-zinc-300'}
+                                    >
+                                      {token}
+                                      {tokenIndex < tokens.length - 1 ? ' ' : ''}
+                                    </span>
+                                  );
+                                })}
+                              </code>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </Fade>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-3xl mx-auto px-4 py-12">
+        <Fade>
+          <Clay accent className="p-6 md:p-8 text-center rounded-[20px]">
+            <p className="mono text-[#EA803A] text-[10px] uppercase tracking-widest mb-3">Ready</p>
+            <h2 className="syne font-extrabold text-white mb-3 text-2xl md:text-3xl">
+              Make your AI work compound.
+            </h2>
+            <p className="text-zinc-300 text-[13px] md:text-sm mb-6 max-w-lg mx-auto leading-relaxed">
+              Velocity Brain helps your AI start with better context, reuse prior work, and waste less money rediscovering the same information over and over again.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-              <a href="/login" className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-black text-base syne"
-                style={{background:'#EA803A',boxShadow:'4px 4px 0 #c4612a'}}
-                onMouseEnter={e=>e.currentTarget.style.background='#f0965a'}
-                onMouseLeave={e=>e.currentTarget.style.background='#EA803A'}>
-                Start Building Now
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href="/login"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-black text-[13px] syne"
+                style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f0965a')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#EA803A')}
+              >
+                Start Free
               </a>
-              <a href="/docs" className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-zinc-300 text-base border border-[#333] bg-[#111] syne"
-                style={{boxShadow:'4px 4px 0 #000'}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor='#EA803A66'}
-                onMouseLeave={e=>e.currentTarget.style.borderColor='#333'}>
+              <a
+                href="/docs"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-zinc-300 text-[13px] border border-[#333] bg-[#111] syne"
+                style={{ boxShadow: '2px 2px 0 #000' }}
+              >
                 Read the Docs
               </a>
             </div>
@@ -1039,30 +1143,40 @@ export default function Landing() {
         </Fade>
       </section>
 
-      {/* ══════════  FOOTER  ═══════════════════════════════════════════════ */}
-      <footer style={{borderTop:'1px solid #1a1a1a',background:'#040404'}}>
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'#EA803A',boxShadow:'2px 2px 0 #c4612a'}}>
-                <span className="px-font text-black" style={{fontSize:8}}>VB</span>
-              </div>
-              <span className="px-font text-white" style={{fontSize:12}}>Velocity Brain</span>
+      <footer style={{ borderTop: '1px solid #1a1a1a', background: '#040404' }}>
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="Velocity Brain" className="w-6 h-6 rounded flex-shrink-0" />
+              <span className="px-font text-white" style={{ fontSize: 10 }}>
+                Velocity Brain
+              </span>
             </div>
-            <div className="flex flex-wrap justify-center gap-6 md:gap-8">
-              {[['Documentation','/docs'],['CLI Reference','/docs/cli'],['MCP Setup','/docs/mcp'],['Security','/docs/security'],['Privacy','/privacy'],['Terms','/terms']].map(([l,p])=>(
-                <a key={l} href={p} className="text-sm font-medium text-zinc-500 hover:text-[#EA803A] transition-colors" style={{fontFamily:'DM Sans,sans-serif'}}>{l}</a>
+            <div className="flex flex-wrap justify-center gap-4 md:gap-5">
+              {[
+                ['Documentation', '/docs'],
+                ['CLI Reference', '/docs/cli'],
+                ['MCP Setup', '/docs/mcp'],
+                ['Privacy', '/privacy'],
+                ['Terms', '/terms'],
+              ].map(([label, path]) => (
+                <a
+                  key={label}
+                  href={path}
+                  className="text-[12px] font-medium text-zinc-500 hover:text-[#EA803A] transition-colors"
+                >
+                  {label}
+                </a>
               ))}
             </div>
           </div>
-          <div className="mt-10 pt-6 border-t border-[#111] text-center">
-            <p className="text-xs text-zinc-600" style={{fontFamily:'DM Sans,sans-serif'}}>
-              © {new Date().getFullYear()} Velocity Brain - Hosted Memory and Reuse Layer for Coding Agents · MIT SDK
+          <div className="mt-6 pt-4 border-t border-[#111] text-center">
+            <p className="text-[10px] text-zinc-600">
+              (c) {new Date().getFullYear()} Velocity Brain. Full stack brain for your AI.
             </p>
           </div>
         </div>
       </footer>
-
     </div>
   );
 }

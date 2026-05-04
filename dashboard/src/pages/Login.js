@@ -71,7 +71,7 @@ export default function Login() {
             <span className="text-xs text-zinc-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Systems Normal</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#111] border border-[#2a2a2a]">
-            <span className="text-xs text-zinc-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>v2.4.0-stable</span>
+            <span className="text-xs text-zinc-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>MCP-ready</span>
           </div>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function Login() {
               Welcome back
             </h2>
             <p className="text-zinc-500 text-sm">
-              Sign in to access your workspace. Access is currently limited to approved accounts.
+              Sign in to access your workspace. New accounts will go through a quick onboarding flow before entering the dashboard.
             </p>
           </div>
 

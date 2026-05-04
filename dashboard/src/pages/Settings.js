@@ -1,45 +1,219 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { User, Bell, Shield, Globe, Cpu } from '../components/Icons';
-import { supportedAgents } from '../lib/agentRuntime';
-import BlobLoader from '../components/BlobLoader';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 
-const Settings = () => {
-  const { user } = useAuth();
+import AvatarPicker from '../components/AvatarPicker';
+import BlobLoader from '../components/BlobLoader';
+import MinimalSelect from '../components/MinimalSelect';
+import RoleField from '../components/RoleField';
+import { Bell, Cpu, Globe, Settings as SettingsIcon, Shield, User } from '../components/Icons';
+import { useAuth } from '../contexts/AuthContext';
+import { supportedAgents } from '../lib/agentRuntime';
+import { curatedAvatarOptions, defaultCuratedAvatar } from '../lib/avatars';
+import { resolveApiUrl } from '../lib/api';
+import { getErrorMessage } from '../lib/network';
+
+const tabs = [
+  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'workspace', label: 'Workspace', icon: SettingsIcon },
+  { id: 'agents', label: 'Agent Integrations', icon: Cpu },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'security', label: 'Security', icon: Shield },
+  { id: 'api', label: 'API Settings', icon: Globe }
+];
+
+const companySizes = ['1-10', '11-50', '51-200', '201-1000', '1000+'];
+const timezones = ['UTC', 'Asia/Calcutta', 'America/Los_Angeles', 'America/New_York', 'Europe/London', 'Europe/Berlin'];
+
+const SaveButton = ({ saving, children }) => (
+  <button
+    type="submit"
+    disabled={saving}
+    className="inline-flex min-w-[148px] items-center justify-center rounded-xl bg-[#EA803A] px-5 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+    style={{ fontFamily: 'Syne, sans-serif' }}
+  >
+    {saving ? 'Saving...' : children}
+  </button>
+);
+
+export default function Settings() {
+  const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
-  const [notifications, setNotifications] = useState({
-    emailAlerts: true,
-    usageWarnings: true,
-    monthlyReports: false,
-    productUpdates: true
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [savingKey, setSavingKey] = useState('');
+  const [workspace, setWorkspace] = useState(null);
+  const [settings, setSettings] = useState({
+    notifications: {
+      emailAlerts: true,
+      usageWarnings: true,
+      monthlyReports: false,
+      productUpdates: true
+    },
+    api: {
+      responseStyle: 'normal',
+      webhookUrl: '',
+      allowedOrigins: []
+    }
+  });
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    title: '',
+    company: '',
+    avatarUrl: defaultCuratedAvatar
+  });
+  const [workspaceForm, setWorkspaceForm] = useState({
+    name: '',
+    industry: '',
+    companySize: '',
+    website: '',
+    description: '',
+    primaryUseCase: '',
+    timezone: 'UTC',
+    imageUrl: defaultCuratedAvatar
   });
 
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'agents', label: 'Agent Integrations', icon: Cpu },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'api', label: 'API Settings', icon: Globe }
-  ];
+  const initials = useMemo(() => {
+    const label = workspace?.name || user?.name || user?.email || 'W';
+    return label.charAt(0).toUpperCase();
+  }, [workspace?.name, user?.name, user?.email]);
 
-  const handleNotificationChange = (key) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSettings = async () => {
+      try {
+        const response = await axios.get(resolveApiUrl('/api/settings'));
+        if (!mounted) return;
+        const payload = response.data;
+        setWorkspace(payload.workspace);
+        setSettings(payload.settings);
+        setProfileForm({
+          name: payload.user?.name || '',
+          title: payload.user?.title || '',
+          company: payload.user?.company || '',
+          avatarUrl: payload.user?.avatarUrl || defaultCuratedAvatar
+        });
+        setWorkspaceForm({
+          name: payload.workspace?.name || '',
+          industry: payload.workspace?.settings?.industry || '',
+          companySize: payload.workspace?.settings?.companySize || '',
+          website: payload.workspace?.settings?.website || '',
+          description: payload.workspace?.settings?.description || '',
+          primaryUseCase: payload.workspace?.settings?.primaryUseCase || '',
+          timezone: payload.workspace?.settings?.timezone || 'UTC',
+          imageUrl: payload.workspace?.imageUrl || defaultCuratedAvatar
+        });
+      } catch (err) {
+        if (!mounted) return;
+        setError(getErrorMessage(err, 'Failed to load settings.'));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadSettings();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const setBanner = (message) => {
+    setSuccess(message);
+    setError('');
   };
 
-  if (!user) {
-    return <div className="min-h-[60vh] flex items-center justify-center">
-      <BlobLoader size={72} label="" />
-    </div>;
+  const setFailure = (message) => {
+    setError(message);
+    setSuccess('');
+  };
+
+  const handleProfileSubmit = async (event) => {
+    event.preventDefault();
+    setSavingKey('profile');
+    try {
+      const response = await axios.patch(resolveApiUrl('/api/settings/profile'), profileForm);
+      updateUser(response.data.user);
+      setBanner('Profile saved.');
+    } catch (err) {
+      setFailure(getErrorMessage(err, 'Failed to save profile.'));
+    } finally {
+      setSavingKey('');
+    }
+  };
+
+  const handleWorkspaceSubmit = async (event) => {
+    event.preventDefault();
+    setSavingKey('workspace');
+    try {
+      const response = await axios.patch(resolveApiUrl('/api/settings/workspace'), workspaceForm);
+      setWorkspace(response.data.workspace);
+      setWorkspaceForm((current) => ({
+        ...current,
+        imageUrl: response.data.workspace?.imageUrl || current.imageUrl
+      }));
+      setBanner('Workspace settings saved.');
+    } catch (err) {
+      setFailure(getErrorMessage(err, 'Failed to save workspace settings.'));
+    } finally {
+      setSavingKey('');
+    }
+  };
+
+  const handleNotificationsSubmit = async (event) => {
+    event.preventDefault();
+    setSavingKey('notifications');
+    try {
+      const response = await axios.patch(resolveApiUrl('/api/settings/notifications'), settings.notifications);
+      setSettings(response.data.settings);
+      setBanner('Notification preferences saved.');
+    } catch (err) {
+      setFailure(getErrorMessage(err, 'Failed to save notifications.'));
+    } finally {
+      setSavingKey('');
+    }
+  };
+
+  const handleApiSubmit = async (event) => {
+    event.preventDefault();
+    setSavingKey('api');
+    try {
+      const response = await axios.patch(resolveApiUrl('/api/settings/api'), {
+        responseStyle: settings.api.responseStyle,
+        webhookUrl: settings.api.webhookUrl,
+        allowedOrigins: settings.api.allowedOrigins
+      });
+      setSettings(response.data.settings);
+      setBanner('API settings saved.');
+    } catch (err) {
+      setFailure(getErrorMessage(err, 'Failed to save API settings.'));
+    } finally {
+      setSavingKey('');
+    }
+  };
+
+  if (!user || loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <BlobLoader size={72} label="" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Settings</h1>
       <div className="rounded-xl border border-[#EA803A]/30 bg-[#130a02] px-4 py-3 text-sm text-zinc-300">
-        Velocity Brain is currently free for everyone for a limited time. Every workspace has access to the full product, with usage limits and policy controls still enforced.
+        Workspace settings are now persisted to the backend, including onboarding data, notification defaults, API preferences, and curated avatar choices.
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      {(error || success) && (
+        <div className={`rounded-xl border px-4 py-3 text-sm ${error ? 'border-red-900/40 bg-red-950/20 text-red-300' : 'border-emerald-900/40 bg-emerald-950/20 text-emerald-300'}`}>
+          {error || success}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-6 lg:flex-row">
         <div className="lg:w-56 flex-shrink-0">
           <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-3">
             <nav className="space-y-1">
@@ -47,10 +221,10 @@ const Settings = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors w-full ${
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     activeTab === tab.id
                       ? 'bg-[#EA803A] text-black'
-                      : 'text-zinc-400 hover:text-white hover:bg-[#111]'
+                      : 'text-zinc-400 hover:bg-[#111] hover:text-white'
                   }`}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -63,86 +237,195 @@ const Settings = () => {
 
         <div className="flex-1">
           {activeTab === 'profile' && (
-            <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Profile Information</h2>
+            <form onSubmit={handleProfileSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
+              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Profile information</h2>
 
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 bg-[#EA803A] rounded-full flex items-center justify-center">
-                  <span className="text-black text-lg font-medium" style={{ fontFamily: 'Syne, sans-serif' }}>
-                    {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase()}
-                  </span>
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-[#EA803A]">
+                  {profileForm.avatarUrl ? (
+                    <img src={profileForm.avatarUrl} alt="Profile avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-xl font-medium text-black" style={{ fontFamily: 'Syne, sans-serif' }}>
+                      {(user?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div>
-                  <button className="px-4 py-1.5 rounded-xl font-bold text-black text-xs transition-all"
-                    style={{ 
-                      fontFamily: 'Syne, sans-serif',
-                      background: '#EA803A',
-                      boxShadow: '3px 3px 0 #c4612a'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f0965a'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#EA803A'}
-                  >
-                    Change Avatar
-                  </button>
+                  <p className="text-sm font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Profile avatar</p>
+                  <p className="mt-2 text-xs text-zinc-500">Choose from our curated DiceBear set instead of uploading custom images.</p>
                 </div>
               </div>
+
+              <AvatarPicker
+                value={profileForm.avatarUrl}
+                options={curatedAvatarOptions}
+                onChange={(url) => setProfileForm((current) => ({ ...current, avatarUrl: url }))}
+                title="Pick your avatar"
+                description="Only avatars from our list are available here."
+                triggerLabel="Open picker"
+                helperText="Compact popup with curated choices"
+                shape="rounded-full"
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    Full Name
-                  </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Full name</span>
                   <input
-                    type="text"
-                    defaultValue={user?.name || ''}
-                    className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:border-[#EA803A] focus:outline-none transition-colors"
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm((current) => ({ ...current, name: e.target.value }))}
+                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
                     placeholder="John Doe"
                   />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    Email
-                  </label>
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Email</span>
                   <input
-                    type="email"
-                    defaultValue={user?.email || ''}
-                    className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:border-[#EA803A] focus:outline-none transition-colors"
-                    placeholder="you@example.com"
+                    value={user.email || ''}
                     disabled
+                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-zinc-500"
+                  />
+                </label>
+                <div className="space-y-2">
+                  <RoleField
+                    label="Title"
+                    value={profileForm.title}
+                    onChange={(value) => setProfileForm((current) => ({ ...current, title: value }))}
+                    selectClassName="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                    inputClassName="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    helperText="Choose a common title fast, or use Other for a custom one."
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                  Company (Optional)
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Company</span>
+                  <input
+                    value={profileForm.company}
+                    onChange={(e) => setProfileForm((current) => ({ ...current, company: e.target.value }))}
+                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    placeholder="Your company"
+                  />
                 </label>
-                <input
-                  type="text"
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:border-[#EA803A] focus:outline-none transition-colors"
-                  placeholder="Your company"
-                />
               </div>
 
               <div className="flex justify-end">
-                <button className="px-8 py-3 rounded-xl font-bold text-black text-base transition-all"
-                  style={{ 
-                    fontFamily: 'Syne, sans-serif',
-                    background: '#EA803A',
-                    boxShadow: '4px 4px 0 #c4612a'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f0965a'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#EA803A'}
-                >
-                  Save Changes
-                </button>
+                <SaveButton saving={savingKey === 'profile'}>Save profile</SaveButton>
               </div>
-            </div>
+            </form>
+          )}
+
+          {activeTab === 'workspace' && (
+            <form onSubmit={handleWorkspaceSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Workspace settings</h2>
+                  <p className="text-sm text-zinc-500 mt-1">Manage the shared identity and defaults tied to your workspace.</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">Workspace type</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{workspace?.type || user?.accountType || 'individual'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl border border-[#2a2a2a] bg-[#111]">
+                  {workspaceForm.imageUrl ? (
+                    <img src={workspaceForm.imageUrl} alt="Workspace avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-[#f2b07d]" style={{ fontFamily: 'Syne, sans-serif' }}>{initials}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Workspace avatar</p>
+                  <p className="mt-2 text-xs text-zinc-500">Use one of the curated DiceBear marks shown across onboarding and settings.</p>
+                </div>
+              </div>
+
+              <AvatarPicker
+                value={workspaceForm.imageUrl}
+                options={curatedAvatarOptions}
+                onChange={(url) => setWorkspaceForm((current) => ({ ...current, imageUrl: url }))}
+                title="Pick a workspace avatar"
+                description="Only curated avatars from our list can be used here."
+                triggerLabel="Open picker"
+                helperText="Compact popup with curated choices"
+                shape="rounded-3xl"
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="space-y-2 md:col-span-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Workspace name</span>
+                  <input
+                    value={workspaceForm.name}
+                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, name: e.target.value }))}
+                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    placeholder="Workspace name"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Industry</span>
+                  <input
+                    value={workspaceForm.industry}
+                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, industry: e.target.value }))}
+                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    placeholder="Developer tools, fintech..."
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Company size</span>
+                  <MinimalSelect
+                    value={workspaceForm.companySize}
+                    onChange={(value) => setWorkspaceForm((current) => ({ ...current, companySize: value }))}
+                    placeholder="Select a range"
+                    options={companySizes.map((size) => ({ value: size, label: size }))}
+                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Website</span>
+                  <input
+                    value={workspaceForm.website}
+                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, website: e.target.value }))}
+                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    placeholder="https://your-company.com"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Timezone</span>
+                  <MinimalSelect
+                    value={workspaceForm.timezone}
+                    onChange={(value) => setWorkspaceForm((current) => ({ ...current, timezone: value }))}
+                    options={timezones.map((timezone) => ({ value: timezone, label: timezone }))}
+                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </label>
+                <label className="space-y-2 md:col-span-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Primary use case</span>
+                  <textarea
+                    value={workspaceForm.primaryUseCase}
+                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, primaryUseCase: e.target.value }))}
+                    className="h-24 w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    placeholder="What workflows should the workspace support first?"
+                  />
+                </label>
+                <label className="space-y-2 md:col-span-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Description</span>
+                  <textarea
+                    value={workspaceForm.description}
+                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, description: e.target.value }))}
+                    className="h-28 w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    placeholder="A short summary of the team, products, or operating context."
+                  />
+                </label>
+              </div>
+
+              <div className="flex justify-end">
+                <SaveButton saving={savingKey === 'workspace'}>Save workspace</SaveButton>
+              </div>
+            </form>
           )}
 
           {activeTab === 'notifications' && (
-            <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-4">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Notification Preferences</h2>
+            <form onSubmit={handleNotificationsSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-4">
+              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Notification preferences</h2>
 
               <div className="space-y-3">
                 {[
@@ -151,36 +434,37 @@ const Settings = () => {
                   { key: 'monthlyReports', label: 'Monthly Reports', description: 'Receive monthly usage and analytics reports' },
                   { key: 'productUpdates', label: 'Product Updates', description: 'Get notified about new features and improvements' }
                 ].map((item) => (
-                  <div key={item.key} className="flex items-center justify-between py-3 border-b border-[#202020] last:border-0">
+                  <label key={item.key} className="flex items-center justify-between py-3 border-b border-[#202020] last:border-0">
                     <div>
                       <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{item.label}</p>
                       <p className="text-xs text-zinc-500">{item.description}</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={notifications[item.key]}
-                        onChange={() => handleNotificationChange(item.key)}
-                        className="sr-only"
-                      />
-                      <div className={`w-9 h-5 rounded-full transition-colors ${
-                        notifications[item.key] ? 'bg-[#EA803A]' : 'bg-[#2a2a2a]'
-                      }`}>
-                        <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                          notifications[item.key] ? 'translate-x-4' : 'translate-x-0'
-                        }`}></div>
-                      </div>
-                    </label>
-                  </div>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(settings.notifications[item.key])}
+                      onChange={() => setSettings((current) => ({
+                        ...current,
+                        notifications: {
+                          ...current.notifications,
+                          [item.key]: !current.notifications[item.key]
+                        }
+                      }))}
+                      className="h-4 w-4 accent-[#EA803A]"
+                    />
+                  </label>
                 ))}
               </div>
-            </div>
+
+              <div className="flex justify-end">
+                <SaveButton saving={savingKey === 'notifications'}>Save notifications</SaveButton>
+              </div>
+            </form>
           )}
 
           {activeTab === 'agents' && (
             <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
               <div>
-                <h2 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Agent Integrations</h2>
+                <h2 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Agent integrations</h2>
                 <p className="text-sm text-zinc-500 leading-7">
                   Keep one MCP memory layer behind every supported coding agent.
                 </p>
@@ -201,10 +485,10 @@ const Settings = () => {
                     </div>
                     <p className="text-sm text-zinc-400 leading-6 mb-3">{agent.summary}</p>
                     <div className="rounded-lg border border-[#2a2a2a] bg-[#0c0c0c] px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1">
                         Setup command
                       </p>
-                      <code className="text-xs text-zinc-300 break-all" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                      <code className="text-xs text-zinc-300 break-all">
                         {agent.setup}
                       </code>
                     </div>
@@ -216,121 +500,92 @@ const Settings = () => {
 
           {activeTab === 'security' && (
             <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-4">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Security Settings</h2>
-
+              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Security settings</h2>
               <div className="space-y-3">
-                <div className="flex items-center justify-between py-3 border-b border-[#202020] last:border-0">
-                  <div>
-                    <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Two-Factor Authentication</p>
-                    <p className="text-xs text-zinc-500">Add an extra layer of security to your account</p>
-                  </div>
-                  <button className="px-6 py-2 rounded-xl font-bold text-black text-sm transition-all"
-                    style={{ 
-                      fontFamily: 'Syne, sans-serif',
-                      background: '#EA803A',
-                      boxShadow: '4px 4px 0 #c4612a'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f0965a'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#EA803A'}
-                  >
-                    Enable 2FA
-                  </button>
+                <div className="rounded-xl border border-[#202020] bg-[#111] px-4 py-4">
+                  <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Two-factor authentication</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    The backend 2FA endpoints are available, and this workspace now preserves the account metadata needed to manage them safely.
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between py-3 border-b border-[#202020] last:border-0">
-                  <div>
-                    <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Change Password</p>
-                    <p className="text-xs text-zinc-500">Update your account password</p>
-                  </div>
-                  <button className="px-6 py-2 rounded-xl font-bold text-black text-sm transition-all"
-                    style={{ 
-                      fontFamily: 'Syne, sans-serif',
-                      background: '#EA803A',
-                      boxShadow: '4px 4px 0 #c4612a'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f0965a'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#EA803A'}
-                  >
-                    Change
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between py-3 border-b border-[#202020] last:border-0">
-                  <div>
-                    <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Active Sessions</p>
-                    <p className="text-xs text-zinc-500">Manage your active login sessions</p>
-                  </div>
-                  <button className="px-3 py-1.5 rounded-lg border border-[#2a2a2a] bg-[#111] text-zinc-300 text-xs font-bold hover:text-white transition-colors" style={{ fontFamily: 'Syne, sans-serif' }}>
-                    View Sessions
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="font-bold text-red-400 text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Delete Account</p>
-                    <p className="text-xs text-zinc-500">Permanently delete your account and all data</p>
-                  </div>
-                  <button className="bg-red-900/20 text-red-400 px-3 py-1.5 rounded-lg border border-red-900/50 text-xs font-bold hover:bg-red-900/30 transition-colors" style={{ fontFamily: 'Syne, sans-serif' }}>
-                    Delete
-                  </button>
+                <div className="rounded-xl border border-[#202020] bg-[#111] px-4 py-4">
+                  <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Account identity</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Workspace ownership, onboarding completion, avatar URLs, and profile details are all persisted and available through the authenticated backend.
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'api' && (
-            <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>API Configuration</h2>
-              <p className="text-sm text-zinc-500">API access follows the same limited-time free access model as the rest of the platform. Keys get the standard usage-limited quota automatically.</p>
+            <form onSubmit={handleApiSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
+              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>API configuration</h2>
+              <p className="text-sm text-zinc-500">These preferences are stored in your user settings document and applied as your workspace defaults.</p>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    Default Response Style
-                  </label>
-                  <select className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:border-[#EA803A] focus:outline-none transition-colors">
-                    <option value="normal">Normal</option>
-                    <option value="lite">Lite</option>
-                    <option value="full">Full</option>
-                    <option value="ultra">Ultra</option>
-                  </select>
-                </div>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Default response style</span>
+                  <MinimalSelect
+                    value={settings.api.responseStyle}
+                    onChange={(value) => setSettings((current) => ({
+                      ...current,
+                      api: {
+                        ...current.api,
+                        responseStyle: value
+                      }
+                    }))}
+                    options={[
+                      { value: 'normal', label: 'Normal' },
+                      { value: 'lite', label: 'Lite' },
+                      { value: 'full', label: 'Full' },
+                      { value: 'ultra', label: 'Ultra' }
+                    ]}
+                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </label>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    Webhook URL (Optional)
-                  </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Webhook URL</span>
                   <input
                     type="url"
-                    className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:border-[#EA803A] focus:outline-none transition-colors"
+                    value={settings.api.webhookUrl}
+                    onChange={(e) => setSettings((current) => ({
+                      ...current,
+                      api: {
+                        ...current.api,
+                        webhookUrl: e.target.value
+                      }
+                    }))}
+                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
                     placeholder="https://your-app.com/webhook"
                   />
-                  <p className="text-xs text-zinc-500 mt-1.5">Receive real-time notifications about API events</p>
-                </div>
+                </label>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    Allowed Origins (CORS)
-                  </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Allowed origins (one per line)</span>
                   <textarea
-                    className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:border-[#EA803A] focus:outline-none transition-colors h-20"
-                    placeholder="*&#10;https://your-app.com&#10;"
+                    value={(settings.api.allowedOrigins || []).join('\n')}
+                    onChange={(e) => setSettings((current) => ({
+                      ...current,
+                      api: {
+                        ...current.api,
+                        allowedOrigins: e.target.value.split(/\r?\n/).filter(Boolean)
+                      }
+                    }))}
+                    className="h-24 w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
+                    placeholder="https://your-app.com"
                   />
-                  <p className="text-xs text-zinc-500 mt-1.5">One origin per line. Use * for all origins.</p>
-                </div>
+                </label>
               </div>
 
               <div className="flex justify-end">
-                <button className="px-4 py-2 rounded-lg bg-[#EA803A] text-sm font-bold text-black" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  Save API Settings
-                </button>
+                <SaveButton saving={savingKey === 'api'}>Save API settings</SaveButton>
               </div>
-            </div>
+            </form>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-export default Settings;
+}

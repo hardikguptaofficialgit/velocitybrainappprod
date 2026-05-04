@@ -1,0 +1,350 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "68f8b48d-1a0e-4cc4-a610-5a77e003017d",
+      "workspace_id": "acme",
+      "repo_id": "velocitybrain",
+      "branch": null,
+      "commit": null,
+      "task_type": "repo_analysis",
+      "fingerprint": "b0380bd6aa0150347cec4152683454db73ce5a59303459199bba501f06710017",
+      "artifact_kind": "answer",
+      "text_is_compressed": true,
+      "source_run_id": "run-48d75452-c778-44f9-9303-accdb0f35370",
+      "context_paths": [],
+      "file_hashes": {},
+      "base_confidence": 0.74,
+      "quality_confidence": 0.74,
+      "reuse_successes": 2,
+      "reuse_failures": 0,
+      "token_cost_to_create": 24,
+      "created_at": "2026-05-03T18:34:28.658643+00:00",
+      "last_used_at": "2026-05-03T18:34:28.666949+00:00",
+      "blacklisted_fingerprints": [],
+      "embedding": null,
+      "compressed_text_hex": "1f8b08003495f76902ff2dcd4b0e80200c45d1adbc0db902c2a0601522a1a4143fbb1713c73739d719f5c363a1064b8c24dd78050d4bd88a5c70ca4d3c4e2e12b33d412957b828d5f8360fe5d12914469435d71d7f40a46643a7b4894e38777c0ebed90b9d97de7472000000"
+    },
+    {
+      "artifact_id": "a5f86ee6-6c1f-42d6-b323-882ea1020711",
+      "workspace_id": "acme",
+      "repo_id": "velocitybrain",
+      "branch": null,
+      "commit": null,
+      "task_type": "repo_analysis",
+      "fingerprint": "b0380bd6aa0150347cec4152683454db73ce5a59303459199bba501f06710017",
+      "artifact_kind": "answer",
+      "text_is_compressed": true,
+      "source_run_id": "run-7ba3eeba-c3eb-4a82-b32f-50a8cc5c297b",
+      "context_paths": [],
+      "file_hashes": {},
+      "base_confidence": 0.74,
+      "quality_confidence": 0.74,
+      "reuse_successes": 1,
+      "reuse_failures": 0,
+      "token_cost_to_create": 24,
+      "created_at": "2026-05-03T18:34:28.668585+00:00",
+      "last_used_at": null,
+      "blacklisted_fingerprints": [],
+      "embedding": null,
+      "compressed_text_hex": "1f8b08003495f76902ff2dcd4b0e80200c45d1adbc0db902c2a0601522a1a4143fbb1713c73739d719f5c363a1064b8c24dd78050d4bd88a5c70ca4d3c4e2e12b33d412957b828d5f8360fe5d12914469435d71d7f40a46643a7b4894e38777c0ebed90b9d97de7472000000"
+    }
+  ],
+  "task_runs": [
+    {
+      "run_id": "run-48d75452-c778-44f9-9303-accdb0f35370",
+      "task": "Map the hosted auth flow",
+      "result": "[task]\nMap the hosted auth flow\n\n[repo]\nvelocitybrain\n\n[context]\nreusable coding context captured for this repo task",
+      "reused": false,
+      "reuse_confidence": 0.0,
+      "reuse_hit_type": "none",
+      "artifacts_used": [],
+      "savings": {
+        "avoided_input_tokens": 0,
+        "estimated_cost_without_reuse": 0.000117,
+        "estimated_cost_actual": 0.000117,
+        "estimated_cost_saved": 0.0,
+        "saved_percent": 0.0,
+        "estimated_latency_saved_ms": 0,
+        "input_tokens_actual": 39,
+        "input_tokens_without_reuse": 39
+      },
+      "truth_report": {
+        "reused": false,
+        "tokens_saved": 0,
+        "percent_saved": 0.0,
+        "correct_reuse": true
+      },
+      "failures": [],
+      "created_at": "2026-05-03T18:34:28.657452+00:00"
+    },
+    {
+      "run_id": "run-7ba3eeba-c3eb-4a82-b32f-50a8cc5c297b",
+      "task": "Map the hosted auth flow",
+      "result": "[task] Map the hosted auth flow [repo] velocitybrain [context] reusable coding context captured for this repo task",
+      "reused": true,
+      "reuse_confidence": 1.0,
+      "reuse_hit_type": "exact",
+      "artifacts_used": [
+        "68f8b48d-1a0e-4cc4-a610-5a77e003017d"
+      ],
+      "savings": {
+        "avoided_input_tokens": 25,
+        "estimated_cost_without_reuse": 0.000183,
+        "estimated_cost_actual": 0.000108,
+        "estimated_cost_saved": 7.5e-05,
+        "saved_percent": 41.0,
+        "estimated_latency_saved_ms": 40,
+        "input_tokens_actual": 36,
+        "input_tokens_without_reuse": 61
+      },
+      "truth_report": {
+        "reused": true,
+        "tokens_saved": 25,
+        "percent_saved": 41.0,
+        "correct_reuse": true
+      },
+      "failures": [],
+      "created_at": "2026-05-03T18:34:28.667349+00:00"
+    }
+  ],
+  "run_logs": [
+    {
+      "run_id": "run-48d75452-c778-44f9-9303-accdb0f35370",
+      "user_id": "user-usage",
+      "repo_id": "velocitybrain",
+      "task_hash": "f719da628af52e637dffc5c337ea073de1aea664578e6eaca7ee00697d7d880e",
+      "repeat_key": "c2af9903bc7f8af01ea58e0f3e28a2b91c6969d0d96c73beead56f86c3ac5979",
+      "first_seen_at": "2026-05-03T18:34:28.657452+00:00",
+      "repeat_count": 1,
+      "is_repeat_run": false,
+      "reused": false,
+      "reuse_confidence": 0.0,
+      "tokens_saved": 0,
+      "percent_saved": 0.0,
+      "latency_ms": 0.29,
+      "timestamp": "2026-05-03T18:34:28.657452+00:00"
+    },
+    {
+      "run_id": "run-7ba3eeba-c3eb-4a82-b32f-50a8cc5c297b",
+      "user_id": "user-usage",
+      "repo_id": "velocitybrain",
+      "task_hash": "f719da628af52e637dffc5c337ea073de1aea664578e6eaca7ee00697d7d880e",
+      "repeat_key": "c2af9903bc7f8af01ea58e0f3e28a2b91c6969d0d96c73beead56f86c3ac5979",
+      "first_seen_at": "2026-05-03T18:34:28.657452+00:00",
+      "repeat_count": 2,
+      "is_repeat_run": true,
+      "reused": true,
+      "reuse_confidence": 1.0,
+      "tokens_saved": 25,
+      "percent_saved": 41.0,
+      "latency_ms": 0.116,
+      "timestamp": "2026-05-03T18:34:28.667349+00:00"
+    }
+  ],
+  "user_metrics": {
+    "user-usage": {
+      "user_id": "user-usage",
+      "total_runs": 2,
+      "repeat_runs": 1,
+      "repeat_rate": 0.5,
+      "avg_tokens_saved": 12.5,
+      "reuse_hit_rate": 0.5,
+      "low_value_user": false,
+      "classification": "emerging_user",
+      "aha_count": 0,
+      "best_repo": "velocitybrain",
+      "best_reuse_rate": 50.0,
+      "best_savings": 12.5,
+      "top_repo_per_user": "velocitybrain"
+    }
+  },
+  "repo_metrics": {
+    "user-usage::velocitybrain": {
+      "user_id": "user-usage",
+      "repo_id": "velocitybrain",
+      "total_runs": 2,
+      "repeat_rate": 0.5,
+      "reuse_rate": 0.5,
+      "avg_savings": 12.5,
+      "wedge_score": 12.5
+    }
+  },
+  "repeat_index": {
+    "c2af9903bc7f8af01ea58e0f3e28a2b91c6969d0d96c73beead56f86c3ac5979": {
+      "repo_id": "velocitybrain",
+      "normalized_task": "map the hosted auth flow",
+      "first_seen_at": "2026-05-03T18:34:28.657452+00:00",
+      "repeat_count": 2
+    }
+  },
+  "low_value_users": [],
+  "reuse_decisions": [
+    {
+      "run_id": "run-48d75452-c778-44f9-9303-accdb0f35370",
+      "result": "[task]\nMap the hosted auth flow\n\n[repo]\nvelocitybrain\n\n[context]\nreusable coding context captured for this repo task",
+      "reuse": {
+        "hit_type": "none",
+        "artifacts_used": [],
+        "confidence": 0.0,
+        "reuse_confidence": 0.0,
+        "reused": false
+      },
+      "savings": {
+        "avoided_input_tokens": 0,
+        "estimated_cost_without_reuse": 0.000117,
+        "estimated_cost_actual": 0.000117,
+        "estimated_cost_saved": 0.0,
+        "saved_percent": 0.0,
+        "estimated_latency_saved_ms": 0,
+        "input_tokens_actual": 39,
+        "input_tokens_without_reuse": 39
+      },
+      "truth_report": {
+        "reused": false,
+        "tokens_saved": 0,
+        "percent_saved": 0.0,
+        "correct_reuse": true
+      },
+      "debug": {
+        "why": "no reusable artifact cleared the matching thresholds",
+        "task_type": "repo_analysis",
+        "fingerprint_prefix": "b0380bd6aa01",
+        "requested_context_paths": [],
+        "candidate_counts": {
+          "exact": 0,
+          "repo_context_same_repo": 0,
+          "semantic": 0
+        },
+        "matched_artifact_id": null,
+        "matched_artifact_kind": null,
+        "matched_source_run_id": null,
+        "confidence": 0.0,
+        "path_overlap": 0.0,
+        "skipped": [
+          "exact fingerprint miss",
+          "no same-repo artifact matched overlapping files strongly enough",
+          "semantic confidence below threshold"
+        ],
+        "latency_ms": {
+          "fingerprint": 0.008,
+          "cache_lookup": 0.003,
+          "artifact_scan": 0.259,
+          "ranking": 0.01,
+          "total": 0.29
+        }
+      },
+      "created_at": "2026-05-03T18:34:28.657452+00:00",
+      "failures": []
+    },
+    {
+      "run_id": "run-7ba3eeba-c3eb-4a82-b32f-50a8cc5c297b",
+      "result": "[task] Map the hosted auth flow [repo] velocitybrain [context] reusable coding context captured for this repo task",
+      "reuse": {
+        "hit_type": "exact",
+        "artifacts_used": [
+          "68f8b48d-1a0e-4cc4-a610-5a77e003017d"
+        ],
+        "confidence": 1.0,
+        "reuse_confidence": 1.0,
+        "reused": true
+      },
+      "savings": {
+        "avoided_input_tokens": 25,
+        "estimated_cost_without_reuse": 0.000183,
+        "estimated_cost_actual": 0.000108,
+        "estimated_cost_saved": 7.5e-05,
+        "saved_percent": 41.0,
+        "estimated_latency_saved_ms": 40,
+        "input_tokens_actual": 36,
+        "input_tokens_without_reuse": 61
+      },
+      "truth_report": {
+        "reused": true,
+        "tokens_saved": 25,
+        "percent_saved": 41.0,
+        "correct_reuse": true
+      },
+      "debug": {
+        "why": "exact",
+        "task_type": "repo_analysis",
+        "fingerprint_prefix": "b0380bd6aa01",
+        "requested_context_paths": [],
+        "candidate_counts": {
+          "exact": 1,
+          "repo_context_same_repo": 0,
+          "semantic": 0
+        },
+        "matched_artifact_id": "68f8b48d-1a0e-4cc4-a610-5a77e003017d",
+        "matched_artifact_kind": "answer",
+        "matched_source_run_id": "run-48d75452-c778-44f9-9303-accdb0f35370",
+        "confidence": 0.74,
+        "path_overlap": 0.0,
+        "skipped": [
+          "retrieval pipeline skipped because exact cache hit"
+        ],
+        "latency_ms": {
+          "fingerprint": 0.005,
+          "cache_lookup": 0.009,
+          "artifact_scan": 0.0,
+          "ranking": 0.0,
+          "total": 0.116
+        }
+      },
+      "created_at": "2026-05-03T18:34:28.667349+00:00",
+      "failures": []
+    }
+  ],
+  "savings_events": [
+    {
+      "run_id": "run-48d75452-c778-44f9-9303-accdb0f35370",
+      "avoided_input_tokens": 0,
+      "estimated_cost_without_reuse": 0.000117,
+      "estimated_cost_actual": 0.000117,
+      "estimated_cost_saved": 0.0,
+      "saved_percent": 0.0,
+      "estimated_latency_saved_ms": 0,
+      "input_tokens_actual": 39,
+      "input_tokens_without_reuse": 39,
+      "hit_type": "none",
+      "repo_id": "velocitybrain",
+      "user_id": "user-usage"
+    },
+    {
+      "run_id": "run-7ba3eeba-c3eb-4a82-b32f-50a8cc5c297b",
+      "avoided_input_tokens": 25,
+      "estimated_cost_without_reuse": 0.000183,
+      "estimated_cost_actual": 0.000108,
+      "estimated_cost_saved": 7.5e-05,
+      "saved_percent": 41.0,
+      "estimated_latency_saved_ms": 40,
+      "input_tokens_actual": 36,
+      "input_tokens_without_reuse": 61,
+      "hit_type": "exact",
+      "repo_id": "velocitybrain",
+      "user_id": "user-usage"
+    }
+  ],
+  "failure_events": [],
+  "latency_events": [
+    {
+      "fingerprint_ms": 0.008199989679269493,
+      "cache_lookup_ms": 0.0031999952625483274,
+      "artifact_scan_ms": 0.25880000612232834,
+      "ranking_ms": 0.010100004146806896,
+      "total_ms": 0.2899999963119626
+    },
+    {
+      "fingerprint_ms": 0.0050000089686363935,
+      "cache_lookup_ms": 0.009499999578110874,
+      "artifact_scan_ms": 0.0,
+      "ranking_ms": 0.0,
+      "total_ms": 0.11629999789875001
+    }
+  ],
+  "exact_cache": [
+    [
+      "b0380bd6aa0150347cec4152683454db73ce5a59303459199bba501f06710017",
+      "a5f86ee6-6c1f-42d6-b323-882ea1020711"
+    ]
+  ]
+}

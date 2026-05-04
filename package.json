@@ -1,4 +1,23 @@
 {
+  "name": "velocitybrain-monorepo",
+  "version": "0.10.1",
+  "private": true,
+  "description": "Velocity Brain monorepo for the hosted memory platform, dashboard, backend API, and MCP tooling.",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dashboard:start": "npm --prefix dashboard start",
+    "dashboard:build": "npm --prefix dashboard run build",
+    "dashboard:test": "set CI=true&& npm --prefix dashboard test",
+    "backend:start": "npm --prefix backend start",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:test": "npm --prefix backend test",
+    "mcp:setup:claude": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_mcp_plugin.ps1 -Client claude",
+    "mcp:setup:codex": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_mcp_plugin.ps1 -Client codex",
+    "mcp:setup:openclaw": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_mcp_plugin.ps1 -Client openclaw",
+    "mcp:verify": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify_mcp_integrations.ps1"
+  },
   "dependencies": {
     "@revenuecat/purchases-js": "^1.35.0",
     "svgl": "^0.0.1"

@@ -1,4 +1,4 @@
-const configuredApiUrl = process.env.REACT_APP_API_URL || '';
+import { configuredHostedApiUrl, shouldUseRelativeApi } from './api';
 
 export const isBackendUnavailable = (error) => {
   if (!error) return false;
@@ -20,7 +20,9 @@ export const isBackendUnavailable = (error) => {
 
 export const getErrorMessage = (error, fallbackMessage) => {
   if (isBackendUnavailable(error)) {
-    const apiTarget = configuredApiUrl || 'the dashboard proxy on port 3000';
+    const apiTarget = shouldUseRelativeApi
+      ? 'the local dashboard proxy on port 3000'
+      : configuredHostedApiUrl;
     return `Backend is unavailable right now. Tried ${apiTarget}. Make sure the configured API server is reachable.`;
   }
 

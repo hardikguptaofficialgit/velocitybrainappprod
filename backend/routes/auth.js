@@ -6,9 +6,24 @@ const { generateToken, authenticate } = require('../middleware/auth');
 const { ACCESS_POLICY } = require('../config/access');
 const { authenticator } = require('otpauth');
 const QRCode = require('qrcode');
+const {
+    buildDefaultUserSettings,
+    buildUserDefaults,
+    mergeSettings,
+    sanitizeText,
+    toPublicUser,
+    toPublicWorkspace
+} = require('../utils/account');
 
 const router = express.Router();
 const restrictedAccessMessage = 'Access is limited to approved accounts. Ask an admin to add your email or enable public signup.';
+
+const getWorkspacePayload = async (workspaceId) => {
+    if (!workspaceId) return null;
+    const doc = await db.collection(COLLECTIONS.WORKSPACES).doc(workspaceId).get();
+    if (!doc.exists) return null;
+    return toPublicWorkspace(doc.id, doc.data());
+};
 
 // Register
 router.post('/register', [
@@ -49,15 +64,18 @@ router.post('/register', [
 
         // Create user
         const now = new Date().toISOString();
-        const userRef = await db.collection(COLLECTIONS.USERS).add({
+        const userDefaults = buildUserDefaults({
             email,
             name: name || '',
+            tier: ACCESS_POLICY.defaultUserTier
+        });
+        const userRef = await db.collection(COLLECTIONS.USERS).add({
+            ...userDefaults,
             password_hash: passwordHash,
-            tier: ACCESS_POLICY.defaultUserTier,
-            status: 'active',
             created_at: now,
             updated_at: now
         });
+        await db.collection(COLLECTIONS.USER_SETTINGS).doc(userRef.id).set(buildDefaultUserSettings());
 
         // Generate token
         const token = generateToken(userRef.id);
@@ -69,12 +87,7 @@ router.post('/register', [
                 label: ACCESS_POLICY.limitedAccessLabel,
                 message: ACCESS_POLICY.publicAccessMessage
             },
-            user: {
-                id: userRef.id,
-                email,
-                name: name || '',
-                tier: ACCESS_POLICY.defaultUserTier
-            },
+            user: toPublicUser(userRef.id, userDefaults),
             token
         });
     } catch (error) {
@@ -126,6 +139,8 @@ router.post('/login', [
         // Generate token
         const token = generateToken(userDoc.id);
 
+        const workspace = await getWorkspacePayload(user.workspace_id);
+
         res.json({
             success: true,
             message: 'Login successful',
@@ -133,12 +148,8 @@ router.post('/login', [
                 label: ACCESS_POLICY.limitedAccessLabel,
                 message: ACCESS_POLICY.publicAccessMessage
             },
-            user: {
-                id: userDoc.id,
-                email: user.email,
-                name: user.name,
-                tier: user.tier
-            },
+            user: toPublicUser(userDoc.id, user),
+            workspace,
             token
         });
     } catch (error) {
@@ -149,9 +160,21 @@ router.post('/login', [
 
 // Get current user
 router.get('/me', authenticate, async (req, res) => {
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(req.user.id).get();
+    const userData = userDoc.exists ? userDoc.data() : req.user;
+    const settingsRef = db.collection(COLLECTIONS.USER_SETTINGS).doc(req.user.id);
+    const settingsDoc = await settingsRef.get();
+    if (!settingsDoc.exists) {
+        await settingsRef.set(buildDefaultUserSettings());
+    } else {
+        await settingsRef.set(mergeSettings(settingsDoc.data()));
+    }
+    const workspace = await getWorkspacePayload(userData.workspace_id);
+
     res.json({
         success: true,
-        user: req.user,
+        user: toPublicUser(req.user.id, userData),
+        workspace,
         access: {
             label: ACCESS_POLICY.limitedAccessLabel,
             message: ACCESS_POLICY.publicAccessMessage
@@ -173,7 +196,7 @@ router.patch('/profile', authenticate, [
         }
 
         const updates = {};
-        if (req.body.name) updates.name = req.body.name;
+        if (req.body.name) updates.name = sanitizeText(req.body.name, 120);
         if (req.body.email) updates.email = req.body.email;
         updates.updated_at = new Date().toISOString();
 
@@ -183,12 +206,7 @@ router.patch('/profile', authenticate, [
 
         res.json({
             success: true,
-            user: {
-                id: userDoc.id,
-                email: userData.email,
-                name: userData.name,
-                tier: userData.tier
-            },
+            user: toPublicUser(userDoc.id, userData),
             access: {
                 label: ACCESS_POLICY.limitedAccessLabel,
                 message: ACCESS_POLICY.publicAccessMessage
@@ -396,11 +414,11 @@ router.post('/firebase-session', [
             // Update existing user
             const existingDoc = existingUsers.docs[0];
             await existingDoc.ref.update({
-                name: name || existingDoc.data().name,
+                name: sanitizeText(name, 120) || existingDoc.data().name,
                 password_hash: existingDoc.data().password_hash || OAUTH_PASSWORD_PLACEHOLDER,
                 updated_at: now
             });
-            userDoc = existingDoc;
+            userDoc = await db.collection(COLLECTIONS.USERS).doc(existingDoc.id).get();
             userData = userDoc.data();
             console.info('[AuthRoute] Updated existing Firebase session user', {
                 userId: userDoc.id,
@@ -415,15 +433,18 @@ router.post('/firebase-session', [
             }
 
             // Create new user from Firebase OAuth
-            const userRef = await db.collection(COLLECTIONS.USERS).doc(userId).set({
-                email,
-                name: name || '',
+            const userPayload = {
+                ...buildUserDefaults({
+                    email,
+                    name,
+                    tier: ACCESS_POLICY.defaultUserTier
+                }),
                 password_hash: OAUTH_PASSWORD_PLACEHOLDER,
-                tier: ACCESS_POLICY.defaultUserTier,
-                status: 'active',
                 created_at: now,
                 updated_at: now
-            });
+            };
+            await db.collection(COLLECTIONS.USERS).doc(userId).set(userPayload);
+            await db.collection(COLLECTIONS.USER_SETTINGS).doc(userId).set(buildDefaultUserSettings());
             userDoc = await db.collection(COLLECTIONS.USERS).doc(userId).get();
             userData = userDoc.data();
             console.info('[AuthRoute] Created new Firebase session user', {
@@ -431,6 +452,14 @@ router.post('/firebase-session', [
                 email: userData.email
             });
 
+        }
+
+        const settingsRef = db.collection(COLLECTIONS.USER_SETTINGS).doc(userDoc.id);
+        const settingsDoc = await settingsRef.get();
+        if (!settingsDoc.exists) {
+            await settingsRef.set(buildDefaultUserSettings());
+        } else {
+            await settingsRef.set(mergeSettings(settingsDoc.data()));
         }
 
         // Generate JWT token
@@ -441,18 +470,16 @@ router.post('/firebase-session', [
             hasToken: Boolean(token)
         });
 
+        const workspace = await getWorkspacePayload(userData.workspace_id);
+
         res.json({
             success: true,
             access: {
                 label: ACCESS_POLICY.limitedAccessLabel,
                 message: ACCESS_POLICY.publicAccessMessage
             },
-            user: {
-                id: userDoc.id,
-                email: userData.email,
-                name: userData.name,
-                tier: userData.tier
-            },
+            user: toPublicUser(userDoc.id, userData),
+            workspace,
             token
         });
     } catch (error) {

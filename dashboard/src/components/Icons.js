@@ -50,17 +50,19 @@ export const Activity = doodleIcon(Health.HeartBeat, 24);
 export const Cpu = doodleIcon(Misc.Chip, 24);
 export const Database = doodleIcon(Interfaces.Server, 24);
 
-export const Github = (props) => (
-  <img
-    src="https://svgl.app/library/github_light.svg"
-    alt="GitHub"
+export const Github = ({ size = 20, width, height, color, className, style, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={width || size}
+    height={height || size}
+    fill={color || 'currentColor'}
+    className={className}
+    style={style}
+    aria-hidden="true"
     {...props}
-    style={{
-      width: props.width || 20,
-      height: props.height || 20,
-      ...props.style,
-    }}
-  />
+  >
+    <path d="M12 2C6.48 2 2 6.58 2 12.22c0 4.5 2.87 8.32 6.84 9.67.5.1.66-.22.66-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.05 1.53 1.05.9 1.57 2.35 1.12 2.92.85.09-.67.35-1.12.64-1.37-2.22-.26-4.55-1.14-4.55-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.83c.85 0 1.71.12 2.51.36 1.91-1.33 2.75-1.05 2.75-1.05.55 1.42.2 2.47.1 2.73.64.72 1.03 1.63 1.03 2.75 0 3.93-2.33 4.79-4.56 5.05.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.8 0 .27.17.59.67.49A10.23 10.23 0 0 0 22 12.22C22 6.58 17.52 2 12 2Z" />
+  </svg>
 );
 
 export const Google = (props) => (

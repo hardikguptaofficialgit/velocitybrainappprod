@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
-const GLSLHills = ({ width = '100vw', height = '100vh', cameraZ = 125, planeSize = 256, speed = 0.5 }) => {
+const GLSLHills = ({
+  width = '100vw',
+  height = '100vh',
+  cameraZ = 125,
+  planeSize = 256,
+  speed = 0.5,
+}) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -202,7 +208,7 @@ const GLSLHills = ({ width = '100vw', height = '100vh', cameraZ = 125, planeSize
   }, [cameraZ, planeSize, speed]);
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width, height }}> 
+    <div ref={containerRef} style={{ position: 'relative', width, height }}>
       <canvas
         ref={canvasRef}
         style={{

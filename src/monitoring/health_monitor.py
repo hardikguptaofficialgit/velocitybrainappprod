@@ -2,6 +2,8 @@
 Comprehensive health monitoring and metrics collection for Velocity Brain.
 """
 
+import os
+import socket
 import time
 import psutil
 import asyncio
@@ -9,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, asdict
 from pathlib import Path
+from urllib.parse import urlparse
 
 from src.core.db import get_conn
 from src.core.logging_config import get_logger
@@ -209,8 +212,11 @@ class HealthMonitor:
                 elif not os.access(path, os.R_OK | os.W_OK):
                     issues.append(f"Permission denied: {path}")
             
-            # Check disk space
-            disk_usage = psutil.disk_usage('/')
+            # Check disk space on the workspace volume, which is more accurate on Windows.
+            disk_target = Path(settings.workspace_root)
+            if not disk_target.exists():
+                disk_target = Path.cwd()
+            disk_usage = psutil.disk_usage(str(disk_target))
             disk_usage_percent = (disk_usage.used / disk_usage.total) * 100
             
             response_time = (time.time() - start_time) * 1000
@@ -346,7 +352,7 @@ class HealthMonitor:
             if not settings.database_url:
                 issues.append("DATABASE_URL not configured")
             
-            if settings.env == 'production':
+            if settings.env in {'prod', 'production'}:
                 if not settings.secret_key:
                     issues.append("SECRET_KEY not configured for production")
                 if settings.allow_unsafe_file_reads:
@@ -395,21 +401,43 @@ class HealthMonitor:
         start_time = time.time()
         
         try:
-            # Check embedding service if configured
-            if settings.embedding_provider == 'openai-compatible':
-                # This would check OpenAI API connectivity
-                # For now, we'll simulate the check
-                pass
-            
+            dependency_results: Dict[str, Any] = {
+                'provider': settings.embedding_provider,
+                'backend_api_url': settings.backend_api_url,
+            }
+            issues: List[str] = []
+
+            backend_ok = await asyncio.to_thread(self._check_tcp_url, settings.backend_api_url)
+            dependency_results['backend_api_reachable'] = backend_ok
+            if not backend_ok:
+                issues.append(f"Backend API unreachable: {settings.backend_api_url}")
+
+            redis_url = os.getenv('REDIS_URL')
+            if redis_url:
+                redis_ok = await asyncio.to_thread(self._check_tcp_url, redis_url)
+                dependency_results['redis_url'] = redis_url
+                dependency_results['redis_reachable'] = redis_ok
+                if not redis_ok:
+                    issues.append("Redis unreachable")
+            else:
+                dependency_results['redis_configured'] = False
+
             response_time = (time.time() - start_time) * 1000
+
+            if issues:
+                status = 'degraded'
+                message = '; '.join(issues)
+            else:
+                status = 'healthy'
+                message = "External dependencies OK"
             
             return HealthCheck(
                 name='external_dependencies',
-                status='healthy',
-                message="External dependencies OK",
+                status=status,
+                message=message,
                 timestamp=datetime.now(timezone.utc),
                 response_time_ms=response_time,
-                details={'provider': settings.embedding_provider}
+                details=dependency_results
             )
             
         except Exception as exc:
@@ -458,25 +486,28 @@ class HealthMonitor:
                     conn_stats = cur.fetchone()
                     
                     # Get database size
-                    cur.execute("""
-                        SELECT pg_size_pretty(pg_database_size(current_database())) as size
-                    """)
+                    cur.execute("SELECT pg_database_size(current_database()) as size_bytes")
                     size_result = cur.fetchone()
                     
-                    # Get slow queries (simplified)
-                    cur.execute("""
-                        SELECT count(*) as slow_queries
-                        FROM pg_stat_statements
-                        WHERE mean_exec_time > 1000
-                    """)
-                    slow_queries = cur.fetchone()
+                    slow_query_count = 0
+                    try:
+                        cur.execute("""
+                            SELECT count(*) as slow_queries
+                            FROM pg_stat_statements
+                            WHERE mean_exec_time > 1000
+                        """)
+                        slow_queries = cur.fetchone()
+                        slow_query_count = slow_queries['slow_queries'] if slow_queries else 0
+                    except Exception:
+                        # pg_stat_statements is optional in many deployments.
+                        slow_query_count = 0
                     
                     return DatabaseMetrics(
                         connection_count=conn_stats['total_connections'],
                         active_connections=conn_stats['active_connections'],
-                        database_size_mb=float(size_result['size'].replace('MB', '').replace('GB', '')) if size_result['size'] else 0,
+                        database_size_mb=round((size_result['size_bytes'] or 0) / (1024 * 1024), 2),
                         index_usage_percent=0.0,  # Would need more complex query
-                        slow_query_count=slow_queries['slow_queries'] if slow_queries else 0,
+                        slow_query_count=slow_query_count,
                         timestamp=datetime.now(timezone.utc)
                     )
         except Exception as exc:
@@ -525,6 +556,30 @@ class HealthMonitor:
         # Keep only last 1000 response times
         if len(self.response_times) > 1000:
             self.response_times = self.response_times[-1000:]
+
+    @staticmethod
+    def _check_tcp_url(raw_url: str) -> bool:
+        """Return True when a TCP endpoint derived from a URL is reachable."""
+        try:
+            parsed = urlparse(raw_url)
+            host = parsed.hostname
+            if not host:
+                return False
+
+            if parsed.scheme in {'postgres', 'postgresql'}:
+                default_port = 5432
+            elif parsed.scheme in {'redis', 'rediss'}:
+                default_port = 6379
+            elif parsed.scheme == 'https':
+                default_port = 443
+            else:
+                default_port = 80
+
+            port = parsed.port or default_port
+            with socket.create_connection((host, port), timeout=2):
+                return True
+        except OSError:
+            return False
 
 
 # Global health monitor instance

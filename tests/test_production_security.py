@@ -3,8 +3,6 @@ Production security tests for Velocity Brain.
 """
 
 import pytest
-import json
-import tempfile
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from src.core.security import validator, token_manager, rate_limiter
@@ -312,16 +310,18 @@ class TestErrorHandling:
     
     def test_file_read_error_handling(self):
         """Test file read error handling."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            skill_file = f"{temp_dir}/test-skill.json"
-            with open(skill_file, "w", encoding="utf-8") as handle:
-                json.dump({"skill_key": "test", "name": "Test", "category": "ingestion", "version": "1.0.0"}, handle)
+        fake_skill_file = MagicMock()
+        fake_skill_file.stat.return_value.st_size = 128
+        fake_skill_file.relative_to.return_value = "test-skill.json"
 
-            with patch('pathlib.Path.read_text', side_effect=IOError("Permission denied")):
-                from src.services.skill_registry import SkillRegistry
+        with patch('pathlib.Path.exists', return_value=True), \
+             patch('pathlib.Path.is_dir', return_value=True), \
+             patch('pathlib.Path.rglob', return_value=[fake_skill_file]), \
+             patch.object(fake_skill_file, 'read_text', side_effect=IOError("Permission denied")):
+            from src.services.skill_registry import SkillRegistry
 
-                registry = SkillRegistry(temp_dir)
-                assert registry.list_skills() == []
+            registry = SkillRegistry("skills")
+            assert registry.list_skills() == []
 
 
 if __name__ == "__main__":

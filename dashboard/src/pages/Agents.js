@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useQuery } from 'react-query';
 import { CheckCircle, Cpu, Database, Shield, Terminal } from '../components/Icons';
 import BlobLoader from '../components/BlobLoader';
+import { resolveApiUrl } from '../lib/api';
 import { isBackendUnavailable } from '../lib/network';
 import { bundledAgentRuntimeStatus } from '../lib/agentRuntime';
 
@@ -15,6 +16,7 @@ const statusTone = {
 const agentIcon = {
   'claude-code': Terminal,
   codex: Cpu,
+  hermes: Terminal,
   'gemini-cli': Database,
   openclaw: Shield,
   cline: Terminal
@@ -63,7 +65,7 @@ const Agents = () => {
   const { data, isLoading, error } = useQuery(
     'dashboard-agents',
     async () => {
-      const response = await axios.get('/api/dashboard/agents');
+      const response = await axios.get(resolveApiUrl('/api/dashboard/agents'));
       return response.data || bundledAgentRuntimeStatus;
     },
     {

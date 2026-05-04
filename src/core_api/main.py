@@ -43,7 +43,7 @@ app.add_middleware(
 if settings.env in {"prod", "production"}:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["api.velocitybrain.ai", "*.velocitybrain.ai"]
+        allowed_hosts=["velocity.linkitapp.in", "*.linkitapp.in", "api.velocitybrain.ai", "*.velocitybrain.ai"]
     )
 
 # Rate limiting middleware

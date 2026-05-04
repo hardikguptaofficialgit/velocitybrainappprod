@@ -8,6 +8,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
+from src.core.paths import get_velocitybrain_home
 from src.services.reuse_service import ReuseService
 
 
@@ -27,7 +28,7 @@ STOPWORDS = {
 class AdoptionService:
     def __init__(self, state_dir: Path | None = None, repo_root: Path | None = None) -> None:
         configured_home = os.getenv('VELOCITYBRAIN_HOME')
-        default_state_dir = Path(configured_home) if configured_home else (Path.home() / '.velocitybrain')
+        default_state_dir = Path(configured_home) if configured_home else get_velocitybrain_home()
         self.state_dir = state_dir or default_state_dir
         self.repo_root = repo_root or Path.cwd()
         self.state_dir.mkdir(parents=True, exist_ok=True)

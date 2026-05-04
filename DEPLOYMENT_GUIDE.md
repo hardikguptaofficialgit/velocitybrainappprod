@@ -141,7 +141,7 @@ ENVIRONMENT=production
 **Client SDK:**
 ```bash
 VELOCITYBRAIN_API_KEY=user-api-key
-VELOCITYBRAIN_BASE_URL=https://api.velocitybrain.ai
+VELOCITYBRAIN_BASE_URL=https://velocity.linkitapp.in
 ```
 
 ### Database Schema Setup

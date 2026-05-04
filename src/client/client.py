@@ -50,7 +50,7 @@ class VelocityBrainClient:
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.velocitybrain.ai",
+        base_url: str = "https://velocity.linkitapp.in",
         timeout: int = 30,
         max_retries: int = 3
     ):

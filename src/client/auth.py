@@ -12,7 +12,7 @@ from .exceptions import AuthenticationError, APIError, NetworkError
 class AuthManager:
     """Manages authentication with VelocityBrain API."""
     
-    def __init__(self, api_key: str, base_url: str = "https://api.velocitybrain.ai", timeout: int = 30):
+    def __init__(self, api_key: str, base_url: str = "https://velocity.linkitapp.in", timeout: int = 30):
         self.api_key = api_key
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout

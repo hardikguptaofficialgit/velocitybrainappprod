@@ -16,6 +16,7 @@ from typing import Any
 
 import tiktoken
 
+from src.core.paths import get_velocitybrain_home
 from src.services.embedding_service import EmbeddingService
 
 
@@ -82,7 +83,7 @@ class ReuseService:
     def __init__(self) -> None:
         self.embedding = EmbeddingService()
         self.encoding = tiktoken.get_encoding('cl100k_base')
-        self.state_path = Path(os.getenv('VELOCITYBRAIN_STATE_PATH') or (Path.home() / '.velocitybrain' / 'core_state.json'))
+        self.state_path = Path(os.getenv('VELOCITYBRAIN_STATE_PATH') or (get_velocitybrain_home() / 'core_state.json'))
         self.persistence_required = os.getenv('VELOCITYBRAIN_REQUIRE_PERSISTENCE', '1') != '0'
         self._ensure_state_loaded()
 

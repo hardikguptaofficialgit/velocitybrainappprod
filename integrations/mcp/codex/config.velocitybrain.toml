@@ -1,0 +1,3 @@
+[mcp_servers.velocitybrain]
+command = "velocitybrain"
+args = ["serve", "mcp"]

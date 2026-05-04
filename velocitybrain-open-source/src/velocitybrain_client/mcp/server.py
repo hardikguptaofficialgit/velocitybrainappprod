@@ -29,7 +29,7 @@ def get_client() -> VelocityBrainClient:
         api_key = os.getenv("VELOCITYBRAIN_API_KEY")
         if not api_key:
             raise ValueError("VELOCITYBRAIN_API_KEY is required for the public MCP bridge.")
-        client = VelocityBrainClient(api_key, os.getenv("VELOCITYBRAIN_BASE_URL", "https://api.velocitybrain.ai"))
+        client = VelocityBrainClient(api_key, os.getenv("VELOCITYBRAIN_BASE_URL", "https://velocity.linkitapp.in"))
     return client
 
 

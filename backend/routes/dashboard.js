@@ -80,6 +80,10 @@ const buildAgentRuntimeStatus = () => {
             ['velocitybrain-open-source', 'integrations', 'openclaw', 'mcpServers.json']
         ]),
         detectFirstExisting([
+            ['velocitybrain-open-source', 'integrations', 'hermes', 'config.velocitybrain.yaml'],
+            ['docs', 'CLIENT_INTEGRATIONS.md']
+        ]),
+        detectFirstExisting([
             ['integrations', 'mcp', 'README.md'],
             ['docs', 'CLIENT_INTEGRATIONS.md']
         ])
@@ -149,6 +153,25 @@ const buildAgentRuntimeStatus = () => {
             ],
             extraCandidates: [
                 ['docs', 'CLIENT_INTEGRATIONS.md']
+            ]
+        },
+        {
+            id: 'hermes',
+            name: 'Hermes Agent',
+            surface: 'MCP',
+            setup: 'velocitybrain connect hermes --apply',
+            summary: 'Native Hermes MCP wiring with a narrow Velocity Brain tool surface.',
+            strengths: ['Native MCP support', 'Tool allowlisting', 'Good fit for chat and long-running agents'],
+            templateCandidates: [
+                ['velocitybrain-open-source', 'integrations', 'hermes', 'config.velocitybrain.yaml'],
+                ['docs', 'CLIENT_INTEGRATIONS.md']
+            ],
+            workspaceCandidates: [
+                ['.hermes', 'config.yaml']
+            ],
+            extraCandidates: [
+                ['docs', 'CLIENT_INTEGRATIONS.md'],
+                ['scripts', 'setup_mcp_plugin.ps1']
             ]
         },
         {
@@ -227,6 +250,7 @@ const buildAgentRuntimeStatus = () => {
         ...(agentsMd.exists ? [{ label: 'AGENTS.md', path: agentsMd.path, type: 'instruction' }] : []),
         ...(claudeHooks.exists ? listFiles(...claudeHooks.path.split('/')).map((item) => ({ label: item.name, path: item.path, type: 'hook' })) : []),
         ...(mcpRoot.exists ? listFiles(...mcpRoot.path.split('/')).map((item) => ({ label: item.name, path: item.path, type: item.type })) : []),
+        ...(detectFile('velocitybrain-open-source', 'integrations', 'hermes').exists ? listFiles('velocitybrain-open-source', 'integrations', 'hermes').map((item) => ({ label: item.name, path: item.path, type: item.type })) : []),
         ...(setupScript.exists ? [{ label: 'setup_mcp_plugin.ps1', path: setupScript.path, type: 'script' }] : []),
         ...(verifyScript.exists ? [{ label: 'verify_mcp_integrations.ps1', path: verifyScript.path, type: 'script' }] : []),
         ...(installClaudeHooksScript.exists ? [{ label: 'install_claude_caveman_hooks.ps1', path: installClaudeHooksScript.path, type: 'script' }] : []),

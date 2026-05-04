@@ -8,6 +8,7 @@ from itertools import cycle, islice
 from pathlib import Path
 from typing import Any
 
+from src.core.paths import get_velocitybrain_home
 from src.services.reuse_service import ReuseService
 
 
@@ -34,7 +35,7 @@ class ReuseValidationService:
     def __init__(self, reuse_service: ReuseService | None = None, repo_root: Path | None = None) -> None:
         self.reuse_service = reuse_service or ReuseService()
         self.repo_root = repo_root or Path(__file__).resolve().parents[2]
-        self.failure_log_path = Path.home() / '.velocitybrain' / 'reuse_failures.jsonl'
+        self.failure_log_path = get_velocitybrain_home() / 'reuse_failures.jsonl'
 
     def scenario_catalog(self) -> list[ValidationScenario]:
         auth_context = [

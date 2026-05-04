@@ -13,10 +13,12 @@ const authRoutes = require('./routes/auth');
 const apiKeyRoutes = require('./routes/apiKeys');
 const usageRoutes = require('./routes/usage');
 const dashboardRoutes = require('./routes/dashboard');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 const dashboardBuildPath = path.resolve(__dirname, '../dashboard/build');
+const docsRoot = path.resolve(__dirname, '../docs');
 const hasDashboardBuild = fs.existsSync(path.join(dashboardBuildPath, 'index.html'));
 const shouldServeDashboard =
     process.env.SERVE_DASHBOARD === 'true' ||
@@ -101,8 +103,33 @@ app.get('/', (req, res) => {
     });
 });
 
+app.get('/api/docs/:docName', (req, res) => {
+    const { docName } = req.params;
+
+    if (!/^[A-Z0-9_]+\.(md|csv)$/i.test(docName)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid documentation path'
+        });
+    }
+
+    const target = path.join(docsRoot, docName);
+    const relative = path.relative(docsRoot, target);
+
+    if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.existsSync(target)) {
+        return res.status(404).json({
+            success: false,
+            message: 'Documentation file not found'
+        });
+    }
+
+    res.type(path.extname(target).toLowerCase() === '.csv' ? 'text/csv' : 'text/markdown');
+    res.send(fs.readFileSync(target, 'utf8'));
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/dashboard', dashboardRoutes);

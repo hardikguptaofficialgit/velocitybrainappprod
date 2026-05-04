@@ -37,3 +37,24 @@ def test_auth_authorize_route_rejects_invalid_key(monkeypatch):
 
     assert response.status_code == 401
     assert response.json()['detail'] == 'Invalid API key'
+
+
+def test_api_proxy_forwards_dashboard_backend_routes(monkeypatch):
+    client = TestClient(app)
+
+    async def _fake_proxy(path, request):
+        from fastapi.responses import JSONResponse
+
+        assert path == 'settings/onboarding'
+        assert request.method == 'POST'
+        payload = await request.json()
+        assert payload['workspaceName'] == 'VelocityBrain'
+        return JSONResponse({'success': True, 'user': {'id': 'user-1'}}, status_code=200)
+
+    monkeypatch.setattr('src.main._proxy_backend_request', _fake_proxy)
+
+    response = client.post('/api/settings/onboarding', json={'workspaceName': 'VelocityBrain'})
+
+    assert response.status_code == 200
+    assert response.json()['success'] is True
+    assert response.json()['user']['id'] == 'user-1'

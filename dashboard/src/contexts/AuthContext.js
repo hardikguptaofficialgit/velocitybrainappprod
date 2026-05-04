@@ -3,19 +3,10 @@ import axios from 'axios';
 import { signOut, onAuthStateChanged, signInWithRedirect, signInWithPopup, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, authPersistenceReady } from '../lib/firebase';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
-
-const configuredApiUrl = process.env.REACT_APP_API_URL || '';
-const isLocalApiUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredApiUrl);
-const isLocalFrontend =
-  typeof window !== 'undefined' &&
-  /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
-const API_URL =
-  process.env.NODE_ENV === 'development' && isLocalFrontend && isLocalApiUrl
-    ? ''
-    : configuredApiUrl;
+import { apiBaseUrl, resolveApiUrl } from '../lib/api';
 
 // Configure axios defaults
-axios.defaults.baseURL = API_URL;
+axios.defaults.baseURL = apiBaseUrl || '';
 
 const AuthContext = createContext();
 
@@ -95,14 +86,14 @@ export const AuthProvider = ({ children }) => {
 
     console.info('[Auth] Syncing Firebase user with backend', {
       uid: firebaseUser?.uid,
-      email: firebaseUser?.email,
-      apiBaseUrl: axios.defaults.baseURL || '(relative /api)'
-    });
+          email: firebaseUser?.email,
+          apiBaseUrl: axios.defaults.baseURL || '(relative /api)'
+        });
 
     const syncPromise = (async () => {
       try {
         const idToken = await firebaseUser.getIdToken();
-        const response = await axios.post('/api/auth/firebase-session', {
+        const response = await axios.post(resolveApiUrl('/api/auth/firebase-session'), {
           idToken
         });
 
@@ -144,9 +135,9 @@ export const AuthProvider = ({ children }) => {
   // Configure axios defaults on mount
   useEffect(() => {
     const token = localStorage.getItem('velocitybrain_token');
-    console.info('[Auth] Bootstrapping axios auth header', {
-      apiBaseUrl: axios.defaults.baseURL || '(relative /api)',
-      hasStoredToken: Boolean(token)
+      console.info('[Auth] Bootstrapping axios auth header', {
+        apiBaseUrl: axios.defaults.baseURL || '(relative /api)',
+        hasStoredToken: Boolean(token)
     });
     if (token) {
       axios.defaults.headers.common.Authorization = `Bearer ${token}`;

@@ -13,7 +13,7 @@ from .exceptions import APIError, AuthenticationError
 class AuthManager:
     """Manages hosted API authentication tokens for the public client."""
 
-    def __init__(self, api_key: str, base_url: str = "https://api.velocitybrain.ai"):
+    def __init__(self, api_key: str, base_url: str = "https://velocity.linkitapp.in"):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self._access_token: str | None = None
@@ -74,4 +74,3 @@ class AuthManager:
             "Authorization": f"Bearer {self.get_access_token()}",
             "Content-Type": "application/json",
         }
-

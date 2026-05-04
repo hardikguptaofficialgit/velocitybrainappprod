@@ -1,12 +1,14 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("claude", "codex", "openclaw")]
+    [ValidateSet("claude", "codex", "hermes", "openclaw")]
     [string]$Client,
 
     [string]$CommandPath = "velocitybrain",
 
     [switch]$UseAbsoluteCommandPath,
+
+    [string]$HermesConfigPath = "$HOME/.hermes/config.yaml",
 
     [string]$OpenClawConfigPath = "$HOME/.openclaw/mcp.json"
 )
@@ -55,6 +57,51 @@ function Write-McpJson {
     Set-Content -Path $Path -Value $json -Encoding UTF8
 }
 
+function Write-HermesConfig {
+    param(
+        [string]$Path,
+        [string]$CommandValue
+    )
+
+    $dir = Split-Path $Path -Parent
+    if ($dir -and -not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+
+    $safeCommand = $CommandValue -replace "'", "''"
+    $serverBlock = @"
+  velocitybrain:
+    command: '$safeCommand'
+    args: ['serve', 'mcp']
+    tools:
+      include: ['healthz', 'retrieve_reuse_context', 'query', 'run_agent']
+      prompts: false
+      resources: false
+"@
+
+    if (-not (Test-Path $Path)) {
+        $content = "mcp_servers:`n$serverBlock"
+        Set-Content -Path $Path -Value $content -Encoding UTF8
+        return
+    }
+
+    $existing = Get-Content -Path $Path -Raw
+
+    if ($existing -match "(?m)^\s{2}velocitybrain:\s*$") {
+        return
+    }
+
+    if ($existing -match "(?m)^mcp_servers:\s*$") {
+        $updated = [regex]::Replace($existing, "(?m)^mcp_servers:\s*$", "mcp_servers:`n$serverBlock", 1)
+        Set-Content -Path $Path -Value $updated -Encoding UTF8
+        return
+    }
+
+    $trimmed = $existing.TrimEnd()
+    $updated = "$trimmed`n`nmcp_servers:`n$serverBlock"
+    Set-Content -Path $Path -Value $updated -Encoding UTF8
+}
+
 $commandValue = Resolve-CommandValue -DefaultCommand $CommandPath -UseAbsolute:$UseAbsoluteCommandPath
 
 if ($Client -eq "claude") {
@@ -96,5 +143,14 @@ if ($Client -eq "openclaw") {
     Write-Host "OpenClaw config written:" -ForegroundColor Green
     Write-Host "  $OpenClawConfigPath"
     Write-Host "Restart OpenClaw and verify the velocitybrain server is listed."
+    exit 0
+}
+
+if ($Client -eq "hermes") {
+    Write-HermesConfig -Path $HermesConfigPath -CommandValue $commandValue
+    Write-Host "Hermes config updated:" -ForegroundColor Green
+    Write-Host "  $HermesConfigPath"
+    Write-Host "Start Hermes with: hermes chat"
+    Write-Host "If Hermes is already running, use: /reload-mcp"
     exit 0
 }

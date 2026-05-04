@@ -13,7 +13,7 @@ from velocitybrain_client.client import VelocityBrainClient
 from velocitybrain_client.client.exceptions import VelocityBrainError
 
 
-DEFAULT_BASE_URL = "https://api.velocitybrain.ai"
+DEFAULT_BASE_URL = "https://velocity.linkitapp.in"
 
 
 def _config_path() -> Path:

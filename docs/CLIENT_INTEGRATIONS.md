@@ -10,7 +10,7 @@ For Codex specifically, there are two parts:
 ## Integration Model
 
 - Velocity Brain runs as an MCP server process.
-- Your client runtime (Claude Code, Codex CLI, Gemini CLI, Cline, OpenClaw) is the MCP client.
+- Your client runtime (Claude Code, Codex CLI, Hermes Agent, Gemini CLI, Cline, OpenClaw) is the MCP client.
 - The client launches `velocitybrain serve mcp` and calls hosted tools like `retrieve_reuse_context`, `query`, and `run_agent`.
 
 ## Prerequisites
@@ -28,7 +28,7 @@ Preferred command:
 velocitybrain serve mcp
 ```
 
-Hosted mode is the primary product path. It is selected automatically when an API key is configured through `velocitybrain login` or `VELOCITYBRAIN_API_KEY`. Self-hosted mode remains a deprecated compatibility path.
+Hosted mode is the primary product path. It is selected automatically when an API key is configured through `velocitybrain login` or `VELOCITYBRAIN_API_KEY`. The current hosted default base URL is `https://velocity.linkitapp.in`. Self-hosted mode remains a deprecated compatibility path.
 
 If `velocitybrain` is not on PATH, use the full executable path:
 
@@ -136,6 +136,7 @@ Helpful validation commands:
 - `velocitybrain doctor --verbose`
 - `velocitybrain smoke`
 - `velocitybrain connect claude`
+- `velocitybrain connect hermes`
 - `velocitybrain connect openclaw`
 
 ### Recommended smoke prompts
@@ -158,6 +159,84 @@ Use Gemini CLI MCP config and register the same server command:
   }
 }
 ```
+
+## Hermes Agent
+
+Hermes Agent has native MCP support and reads MCP server config from:
+
+```text
+~/.hermes/config.yaml
+```
+
+Hermes' official MCP docs recommend starting with a small allowlist, especially for sensitive systems. Velocity Brain fits that pattern well because the first useful hosted surface is already narrow.
+
+### One-command setup
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_mcp_plugin.ps1 -Client hermes
+```
+
+Or use the Velocity Brain CLI:
+
+```powershell
+velocitybrain connect hermes --apply
+```
+
+### Config snippet
+
+A ready-made template is included at:
+
+- `velocitybrain-open-source/integrations/hermes/config.velocitybrain.yaml`
+
+Equivalent snippet:
+
+```yaml
+mcp_servers:
+  velocitybrain:
+    command: "velocitybrain"
+    args: ["serve", "mcp"]
+    tools:
+      include: ["healthz", "retrieve_reuse_context", "query", "run_agent"]
+      prompts: false
+      resources: false
+```
+
+That config follows Hermes' official MCP model:
+
+- stdio MCP server using `command` plus `args`
+- tool allowlisting via `tools.include`
+- utility wrappers disabled with `prompts: false` and `resources: false`
+
+### Start and reload
+
+After updating `~/.hermes/config.yaml`:
+
+```powershell
+hermes chat
+```
+
+If Hermes is already running, reload MCP in-session:
+
+```text
+/reload-mcp
+```
+
+### Verify
+
+Ask Hermes:
+
+- `Tell me which MCP-backed tools are available right now.`
+- `Use the velocitybrain healthz tool and show me the result.`
+- `Retrieve reuse context for the auth and API key flow in this repo.`
+
+### Why this setup is recommended
+
+Hermes' official docs recommend connecting the smallest useful MCP surface first. For Velocity Brain, the safest starter set is:
+
+- `healthz`
+- `retrieve_reuse_context`
+- `query`
+- `run_agent`
 
 ## Cline
 

@@ -4,10 +4,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timezone
+import httpx
 
 from src.api.routes import router
 from src.background.scheduler import start_scheduler
@@ -164,6 +165,46 @@ DOC_PAGE_MAP: dict[str, tuple[str, str, Path]] = {
 }
 
 
+async def _proxy_backend_request(path: str, request: Request) -> Response:
+    backend_url = settings.backend_api_url.rstrip('/')
+    target_url = f'{backend_url}/api/{path.lstrip("/")}'
+    request_body = await request.body()
+    upstream_headers = {
+        key: value
+        for key, value in request.headers.items()
+        if key.lower() not in {'host', 'content-length'}
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            upstream_response = await client.request(
+                request.method,
+                target_url,
+                content=request_body,
+                headers=upstream_headers,
+                params=request.query_params,
+            )
+    except httpx.TimeoutException as exc:
+        logger.error('Backend proxy timed out for %s: %s', request.url.path, exc)
+        raise HTTPException(status_code=504, detail='Backend request timed out') from exc
+    except httpx.HTTPError as exc:
+        logger.error('Backend proxy failed for %s: %s', request.url.path, exc)
+        raise HTTPException(status_code=502, detail='Backend request failed') from exc
+
+    response_headers = {
+        key: value
+        for key, value in upstream_response.headers.items()
+        if key.lower() not in {'content-length', 'transfer-encoding', 'connection', 'content-encoding'}
+    }
+
+    return Response(
+        content=upstream_response.content,
+        status_code=upstream_response.status_code,
+        headers=response_headers,
+        media_type=upstream_response.headers.get('content-type'),
+    )
+
+
 if WEB_ROOT.exists():
     app.mount('/guide/static', StaticFiles(directory=str(WEB_ROOT)), name='guide-static')
 
@@ -208,6 +249,11 @@ async def detailed_health():
             status_code=503,
             detail="Health check service unavailable"
         )
+
+
+@app.api_route('/api/{path:path}', methods=['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
+async def backend_api_proxy(path: str, request: Request):
+    return await _proxy_backend_request(path, request)
 
 
 @app.get('/v1/docs/pages')

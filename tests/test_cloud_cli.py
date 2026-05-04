@@ -87,6 +87,10 @@ def test_connect_codex_command_available():
     assert cli._connect_command_for_client('codex') == 'codex mcp add velocitybrain -- velocitybrain serve mcp'
 
 
+def test_default_cloud_base_url_matches_current_hosted_backend():
+    assert cli.DEFAULT_CLOUD_BASE_URL == 'https://velocity.linkitapp.in'
+
+
 def test_doctor_details_masks_api_key(monkeypatch, tmp_path):
     config_dir = tmp_path / '.velocitybrain'
     config_path = config_dir / 'config.json'

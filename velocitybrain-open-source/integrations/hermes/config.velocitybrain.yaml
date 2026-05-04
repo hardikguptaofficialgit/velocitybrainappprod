@@ -1,0 +1,8 @@
+mcp_servers:
+  velocitybrain:
+    command: "velocitybrain"
+    args: ["serve", "mcp"]
+    tools:
+      include: ["healthz", "retrieve_reuse_context", "query", "run_agent"]
+      prompts: false
+      resources: false

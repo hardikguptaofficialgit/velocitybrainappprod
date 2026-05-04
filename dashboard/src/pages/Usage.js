@@ -4,6 +4,7 @@ import { useQuery } from 'react-query';
 import { Activity, TrendingUp, AlertTriangle, CheckCircle } from '../components/Icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { estimateTokenSavings } from '../lib/agentRuntime';
+import { resolveApiUrl } from '../lib/api';
 import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
 
@@ -11,7 +12,7 @@ const Usage = () => {
   const { data: usageData, isLoading } = useQuery(
     'usage-data',
     async () => {
-      const response = await axios.get('/api/usage');
+      const response = await axios.get(resolveApiUrl('/api/usage'));
       return response.data;
     },
     {

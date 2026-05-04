@@ -72,6 +72,11 @@ REDIS_PASSWORD=your_redis_password_here
 ENV=production
 PORT=8080
 LOG_LEVEL=INFO
+
+# Cloudinary image storage
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 ```
 
 ### 3. Generate Secure Secrets
@@ -85,7 +90,26 @@ openssl rand -base64 32
 
 # Generate Redis password
 openssl rand -base64 32
+
+# Generate Cloudinary values from your Cloudinary dashboard
+# CLOUDINARY_CLOUD_NAME
+# CLOUDINARY_API_KEY
+# CLOUDINARY_API_SECRET
 ```
+
+### 4. Media Storage
+
+Workspace images and profile avatars are stored in Cloudinary by the Node backend.
+
+Required backend variables:
+
+```bash
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+```
+
+If these values are missing, image upload endpoints will reject uploads instead of silently storing files on local disk.
 
 ## Database Setup
 
@@ -147,6 +171,39 @@ docker-compose -f docker-compose.prod.yml up -d
 
 # Check deployment status
 docker-compose -f docker-compose.prod.yml ps
+```
+
+### 1b. Update an Existing Droplet from GitHub
+
+If the repo is already cloned on your Droplet and you are deploying with Docker Compose:
+
+```bash
+cd /opt/velocitybrain   # or wherever this repo lives on the server
+git fetch origin
+git checkout main
+git pull origin main
+
+# Review/refresh production secrets before recreating containers
+nano .env.prod
+
+# Rebuild the services that changed
+docker compose -f docker-compose.prod.yml build backend dashboard api
+
+# Recreate containers with the new images and env
+docker compose -f docker-compose.prod.yml up -d
+
+# Check status and logs
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f backend
+```
+
+If you want the safest update flow before recreating containers:
+
+```bash
+docker compose -f docker-compose.prod.yml config > /tmp/velocitybrain-compose-check.txt
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml build backend dashboard api
+docker compose -f docker-compose.prod.yml up -d --remove-orphans
 ```
 
 ### 2. Configure Nginx Reverse Proxy

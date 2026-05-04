@@ -51,7 +51,14 @@ const authenticate = async (req, res, next) => {
             id: userDoc.id,
             email: user.email,
             name: user.name,
-            tier: user.tier
+            tier: user.tier,
+            title: user.title || '',
+            company: user.company || '',
+            accountType: user.account_type || '',
+            avatarUrl: user.avatar_url || '',
+            workspaceId: user.workspace_id || '',
+            workspaceIds: Array.isArray(user.workspace_ids) ? user.workspace_ids : [],
+            onboardingCompleted: Boolean(user.onboarding_completed)
         };
 
         console.info(`[AuthMiddleware] Authenticated ${requestPath}`, {
@@ -94,7 +101,14 @@ const optionalAuth = async (req, res, next) => {
                         id: userDoc.id,
                         email: user.email,
                         name: user.name,
-                        tier: user.tier
+                        tier: user.tier,
+                        title: user.title || '',
+                        company: user.company || '',
+                        accountType: user.account_type || '',
+                        avatarUrl: user.avatar_url || '',
+                        workspaceId: user.workspace_id || '',
+                        workspaceIds: Array.isArray(user.workspace_ids) ? user.workspace_ids : [],
+                        onboardingCompleted: Boolean(user.onboarding_completed)
                     };
                 }
             }

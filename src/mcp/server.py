@@ -29,7 +29,7 @@ def get_client() -> VelocityBrainClient:
         api_key = os.getenv("VELOCITYBRAIN_API_KEY")
         if not api_key:
             raise ValueError("VELOCITYBRAIN_API_KEY environment variable is required")
-        base_url = os.getenv("VELOCITYBRAIN_BASE_URL", "https://api.velocitybrain.ai")
+        base_url = os.getenv("VELOCITYBRAIN_BASE_URL", "https://velocity.linkitapp.in")
         client = VelocityBrainClient(api_key, base_url)
         logger.info("VelocityBrain client initialized")
     return client

@@ -275,6 +275,14 @@ docker-compose -f docker-compose.prod.yml up -d
 docker-compose -f docker-compose.prod.yml ps
 ```
 
+Set Cloudinary credentials in `.env.prod` before deploying if you want profile and workspace image uploads to work:
+
+```bash
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+```
+
 ### 📊 **Access Production Services**
 
 - **API**: `https://your-domain.com`
@@ -396,6 +404,7 @@ Use the same `mcpServers` JSON config in that client's MCP settings.
 Turnkey setup assets are available in:
 
 - `integrations/mcp/claude-code/mcpServers.velocitybrain.json`
+- `integrations/mcp/codex/mcpServers.velocitybrain.json`
 - `integrations/mcp/openclaw/mcpServers.velocitybrain.json`
 - `scripts/setup_mcp_plugin.ps1`
 

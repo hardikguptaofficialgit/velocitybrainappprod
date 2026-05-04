@@ -54,10 +54,12 @@ const Layout = () => {
             </Link>
             <button
               type="button"
-              className="lg:hidden w-8 h-8 rounded-lg bg-[#111] flex items-center justify-center text-zinc-400 hover:text-white"
+              className="group lg:hidden w-8 h-8 rounded-lg bg-[#111] flex items-center justify-center text-zinc-400 transition-all duration-200 hover:text-white"
               onClick={() => setSidebarOpen(false)}
             >
-              <X className="w-4 h-4" />
+              <span className="transition-transform duration-300 ease-out group-hover:rotate-180">
+                <X className="w-4 h-4" />
+              </span>
             </button>
           </div>
 

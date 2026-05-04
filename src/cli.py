@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import subprocess
 import sys
 import webbrowser
@@ -12,6 +13,7 @@ from src.client import VelocityBrainClient
 from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError
 from src.core.config import settings
 from src.core.db import bootstrap_schema
+from src.core.paths import get_velocitybrain_home
 from src.services.caveman_compress import caveman_compress_file
 from src.services.caveman_ops import caveman_commit, caveman_review
 from src.services.adoption_service import AdoptionService
@@ -30,9 +32,9 @@ from src.services.sync_service import SyncService
 
 BRAND = 'Velocity Brain'
 MAX_INGEST_FILE_BYTES = 2 * 1024 * 1024
-DEFAULT_CLOUD_BASE_URL = 'https://api.velocitybrain.ai'
-DEFAULT_DASHBOARD_URL = 'https://velocitybrain.ai/dashboard/api-keys'
-CONFIG_DIR = Path.home() / '.velocitybrain'
+DEFAULT_CLOUD_BASE_URL = 'https://velocity.linkitapp.in'
+DEFAULT_DASHBOARD_URL = 'https://velocitybrain.vercel.app/login'
+CONFIG_DIR = get_velocitybrain_home()
 CONFIG_PATH = CONFIG_DIR / 'config.json'
 RUNTIME_MODE_AUTO = 'auto'
 RUNTIME_MODE_CLOUD = 'cloud'
@@ -887,6 +889,8 @@ def _render_connect(payload: dict[str, Any]) -> None:
     if payload.get('config'):
         print(_style('  config:', SLATE, color=use_color))
         print(payload['config'])
+    if payload.get('config_path'):
+        print(_style(f"  config_path: {payload['config_path']}", SLATE, color=use_color))
     if payload.get('hint'):
         print(_style(f"  hint: {payload['hint']}", SLATE, color=use_color))
 
@@ -1573,6 +1577,46 @@ def _connect_command_for_client(client: str) -> str:
     return ''
 
 
+def _hermes_server_block(command_value: str = 'velocitybrain') -> str:
+    safe_command = command_value.replace("'", "''")
+    return (
+        "  velocitybrain:\n"
+        f"    command: '{safe_command}'\n"
+        "    args: ['serve', 'mcp']\n"
+        "    tools:\n"
+        "      include: ['healthz', 'retrieve_reuse_context', 'query', 'run_agent']\n"
+        "      prompts: false\n"
+        "      resources: false\n"
+    )
+
+
+def _hermes_config_snippet(command_value: str = 'velocitybrain') -> str:
+    return f"mcp_servers:\n{_hermes_server_block(command_value)}"
+
+
+def _write_hermes_config(config_path: Path, command_value: str = 'velocitybrain') -> tuple[bool, str]:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    server_block = _hermes_server_block(command_value)
+
+    if not config_path.exists():
+        config_path.write_text(_hermes_config_snippet(command_value), encoding='utf-8')
+        return True, 'Created Hermes config with Velocity Brain MCP entry.'
+
+    existing = config_path.read_text(encoding='utf-8')
+    if re.search(r'(?m)^\s{2}velocitybrain:\s*$', existing):
+        return False, 'Velocity Brain MCP entry already exists in the Hermes config.'
+
+    if re.search(r'(?m)^mcp_servers:\s*$', existing):
+        updated = re.sub(r'(?m)^mcp_servers:\s*$', f'mcp_servers:\n{server_block}', existing, count=1)
+    else:
+        trimmed = existing.rstrip()
+        prefix = f'{trimmed}\n\n' if trimmed else ''
+        updated = f'{prefix}mcp_servers:\n{server_block}'
+
+    config_path.write_text(updated, encoding='utf-8')
+    return True, 'Updated Hermes config with Velocity Brain MCP entry.'
+
+
 def cmd_connect(args: argparse.Namespace) -> int:
     runtime_mode = _resolve_runtime_mode(args)
     payload: dict[str, Any] = {
@@ -1594,6 +1638,17 @@ def cmd_connect(args: argparse.Namespace) -> int:
         else:
             payload['hint'] = f'Run this command to connect {args.client} to Velocity Brain.'
             exit_code = 0
+    elif args.client == 'hermes':
+        config_path = Path.home() / '.hermes' / 'config.yaml'
+        payload['config'] = _hermes_config_snippet()
+        payload['config_path'] = str(config_path)
+        if args.apply:
+            applied, note = _write_hermes_config(config_path)
+            payload['applied'] = applied
+            payload['hint'] = f"{note} Start Hermes with `hermes chat` or run `/reload-mcp` in an active Hermes session."
+        else:
+            payload['hint'] = 'Add this block under `mcp_servers` in ~/.hermes/config.yaml, then start `hermes chat` or run `/reload-mcp`.'
+        exit_code = 0
     elif args.client == 'openclaw':
         payload['config'] = json.dumps({
             'mcpServers': {
@@ -1719,8 +1774,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_config.add_argument('--set-mode', choices=RUNTIME_MODE_CHOICES, help='Persist runtime mode preference.')
     p_config.set_defaults(func=cmd_config)
 
-    p_connect = sub.add_parser('connect', help='Show or apply MCP client setup for Codex, Claude, OpenClaw, or a generic client.')
-    p_connect.add_argument('client', choices=['codex', 'claude', 'openclaw', 'generic'])
+    p_connect = sub.add_parser('connect', help='Show or apply MCP client setup for Codex, Claude, Hermes, OpenClaw, or a generic client.')
+    p_connect.add_argument('client', choices=['codex', 'claude', 'hermes', 'openclaw', 'generic'])
     p_connect.add_argument('--apply', action='store_true', help='Run the client registration command when supported.')
     p_connect.set_defaults(func=cmd_connect)
 

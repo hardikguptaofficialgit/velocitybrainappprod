@@ -4,6 +4,7 @@ import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Activity, ArrowRight, Cpu, Database, Shield, TrendingUp, User as Users } from '../components/Icons';
+import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
 import { promptLifecycle, supportedAgents } from '../lib/agentRuntime';
 import BlobLoader from '../components/BlobLoader';
@@ -40,7 +41,7 @@ const Dashboard = () => {
         hasAuthHeader: Boolean(axios.defaults.headers.common.Authorization)
       });
 
-      const response = await axios.get('/api/dashboard/stats');
+      const response = await axios.get(resolveApiUrl('/api/dashboard/stats'));
       const payload = response.data || {};
       console.info('[Dashboard] Dashboard stats fetch succeeded', {
         totalApiCalls: payload.stats?.totalApiCalls ?? 0,

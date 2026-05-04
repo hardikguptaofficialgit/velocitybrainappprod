@@ -56,6 +56,8 @@ try {
 
 const COLLECTIONS = {
   USERS: 'users',
+  WORKSPACES: 'workspaces',
+  USER_SETTINGS: 'user_settings',
   API_KEYS: 'api_keys',
   USAGE_LOGS: 'usage_logs',
   BILLING: 'billing',

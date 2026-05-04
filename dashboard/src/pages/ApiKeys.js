@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { ArrowRight as Key, Plus, Eye, Trash2, Copy, X } from '../components/Icons';
+import { resolveApiUrl } from '../lib/api';
 import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
 
@@ -15,7 +16,7 @@ const ApiKeys = () => {
   const { data: apiKeys, isLoading } = useQuery(
     'api-keys',
     async () => {
-      const response = await axios.get('/api/api-keys');
+      const response = await axios.get(resolveApiUrl('/api/api-keys'));
       return response.data;
     },
     {
@@ -25,7 +26,7 @@ const ApiKeys = () => {
 
   const createKeyMutation = useMutation(
     async (keyData) => {
-      const response = await axios.post('/api/api-keys', keyData);
+      const response = await axios.post(resolveApiUrl('/api/api-keys'), keyData);
       return response.data;
     },
     {
@@ -43,7 +44,7 @@ const ApiKeys = () => {
 
   const deleteKeyMutation = useMutation(
     async (keyId) => {
-      const response = await axios.delete(`/api/api-keys/${keyId}`);
+      const response = await axios.delete(resolveApiUrl(`/api/api-keys/${keyId}`));
       return response.data;
     },
     {
@@ -216,8 +217,10 @@ const ApiKeys = () => {
           <div className="w-full max-w-md rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Create API Key</h2>
-              <button onClick={() => setShowCreateModal(false)} className="p-2 rounded-lg border border-[#2a2a2a] bg-[#111] hover:bg-[#1a1a1a] text-zinc-400 hover:text-white transition-colors">
-                <X className="h-4 w-4" />
+              <button onClick={() => setShowCreateModal(false)} className="group p-2 rounded-lg border border-[#2a2a2a] bg-[#111] hover:bg-[#1a1a1a] text-zinc-400 hover:text-white transition-all duration-200">
+                <span className="block transition-transform duration-300 ease-out group-hover:rotate-180">
+                  <X className="h-4 w-4" />
+                </span>
               </button>
             </div>
 

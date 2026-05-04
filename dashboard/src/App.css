@@ -2,6 +2,8 @@
 
 :root {
   /* Light Mode - Pastel Colors */
+  --app-font-size: 16px;
+  --app-max-width: 1280px;
   --clay-bg: #fef7f0;
   --clay-surface: #ffffff;
   --clay-surface-raised: #ffffff;
@@ -46,11 +48,32 @@ html, body, #root {
 }
 
 html {
+  font-size: var(--app-font-size);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@keyframes onboardingFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes onboardingGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(234, 128, 58, 0);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(234, 128, 58, 0.12);
+  }
 }
 
 .syne {
@@ -64,6 +87,38 @@ body {
 body {
   background-color: var(--clay-bg);
   color: var(--clay-text);
+}
+
+.onboarding-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.onboarding-preview::before {
+  content: '';
+  position: absolute;
+  inset: -20% auto auto -10%;
+  width: 240px;
+  height: 240px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(234, 128, 58, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.onboarding-preview::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  bottom: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(127, 227, 200, 0.14), transparent 72%);
+  pointer-events: none;
+}
+
+.onboarding-orb {
+  animation: onboardingFloat 7s ease-in-out infinite, onboardingGlow 7s ease-in-out infinite;
 }
 
 /* Claymorphism Cards */
