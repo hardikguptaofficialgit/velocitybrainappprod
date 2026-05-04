@@ -124,6 +124,29 @@ router.get('/', authenticate, async (req, res) => {
             percentage: totalMonthly > 0 ? Math.round((calls / totalMonthly) * 100) : 0
         }));
 
+        const repoStats = {};
+        monthlyUsage.forEach(log => {
+            const repoId = log.repo_id || 'default-workspace';
+            if (!repoStats[repoId]) {
+                repoStats[repoId] = {
+                    repoId,
+                    calls: 0,
+                    savedTokens: 0,
+                    savedCost: 0
+                };
+            }
+            repoStats[repoId].calls += 1;
+            repoStats[repoId].savedTokens += log.avoided_input_tokens || 0;
+            repoStats[repoId].savedCost += log.estimated_cost_saved || 0;
+        });
+        const repoBreakdown = Object.values(repoStats)
+            .sort((a, b) => b.calls - a.calls)
+            .slice(0, 10)
+            .map((entry) => ({
+                ...entry,
+                savedCost: Number(entry.savedCost.toFixed(6))
+            }));
+
         // Real hourly distribution for the last 24 hours
         const hourlyBuckets = {};
         dailyUsage.forEach(log => {
@@ -170,6 +193,19 @@ router.get('/', authenticate, async (req, res) => {
             });
         }
 
+        const recentActivity = allUsageData
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 12)
+            .map(log => ({
+                description: `${log.method} ${log.endpoint}`,
+                status: log.status_code >= 400 ? 'failed' : 'completed',
+                timestamp: log.created_at,
+                reuseHitType: log.reuse_hit_type || 'none',
+                avoidedInputTokens: log.avoided_input_tokens || 0,
+                estimatedCostSaved: log.estimated_cost_saved || 0,
+                repoId: log.repo_id || 'default-workspace'
+            }));
+
         res.json({
             success: true,
             stats: {
@@ -190,15 +226,9 @@ router.get('/', authenticate, async (req, res) => {
             },
             dailyUsage: dailyTrend,
             endpointBreakdown,
+            repoBreakdown,
             hourlyDistribution,
-            recentActivity: dailyUsage.slice(-5).map(log => ({
-                description: `${log.method} ${log.endpoint}`,
-                status: log.status_code >= 400 ? 'failed' : 'completed',
-                timestamp: log.created_at,
-                reuseHitType: log.reuse_hit_type || 'none',
-                avoidedInputTokens: log.avoided_input_tokens || 0,
-                estimatedCostSaved: log.estimated_cost_saved || 0
-            }))
+            recentActivity
         });
     } catch (error) {
         console.error('Get usage stats error:', error);

@@ -13,10 +13,12 @@ const chartColors = ['#EA803A', '#f4b183', '#5fd1b3', '#7c9cf5'];
 
 const fallbackStats = {
   totalApiCalls: 0,
+  totalSavedTokens: 0,
   apiCallsChange: 0,
   activeApiKeys: 0,
   apiKeysChange: 0,
   documentsProcessed: 0,
+  totalSavedUsd: 0,
   documentsChange: 0,
   successRate: 0,
   successRateChange: 0,
@@ -120,9 +122,9 @@ const Dashboard = () => {
       )}
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Saved Tokens" value={stats.totalApiCalls || 0} change={stats.apiCallsChange || 0} icon={Activity} tint="#EA803A" />
+        <StatCard title="Saved Tokens" value={stats.totalSavedTokens || 0} change={stats.apiCallsChange || 0} icon={Activity} tint="#EA803A" />
         <StatCard title="Active API Keys" value={stats.activeApiKeys || 0} change={stats.apiKeysChange || 0} icon={ArrowRight} tint="#f4b183" />
-        <StatCard title="Saved USD" value={`$${stats.documentsProcessed || 0}`} change={stats.documentsChange || 0} icon={Users} tint="#5fd1b3" />
+        <StatCard title="Saved USD" value={`$${stats.totalSavedUsd || 0}`} change={stats.documentsChange || 0} icon={Users} tint="#5fd1b3" />
         <StatCard title="Reuse Hit Rate" value={`${stats.successRate || 0}%`} change={stats.successRateChange || 0} icon={TrendingUp} tint="#7c9cf5" />
       </section>
 

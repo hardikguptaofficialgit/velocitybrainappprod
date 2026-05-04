@@ -1220,6 +1220,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             payload = _normalize_cloud_health(result, trace_id='doctor-cloud')
             payload['checks'].setdefault('api_key', bool(cloud_cfg.get('api_key')))
             payload['checks'].setdefault('base_url', bool(cloud_cfg.get('base_url')))
+            _, sync_note = _flush_pending_integrations()
+            payload['integration_sync'] = sync_note
             exit_code = 0 if payload['ok'] else 1
         except Exception as exc:
             details = _cloud_error_details(exc)
@@ -1377,6 +1379,231 @@ def _maybe_save_api_key(api_key: str | None) -> None:
     _save_cli_config(config)
 
 
+def _pending_integrations(config: dict[str, Any]) -> list[dict[str, Any]]:
+    pending = config.get('pending_integrations') or []
+    return pending if isinstance(pending, list) else []
+
+
+def _remember_registered_agent(agent_id: str) -> None:
+    config = _load_cli_config()
+    registered = config.get('registered_agents') or []
+    if not isinstance(registered, list):
+        registered = []
+    if agent_id not in registered:
+        registered.append(agent_id)
+    config['registered_agents'] = registered
+    config['preferred_agent'] = agent_id
+    _save_cli_config(config)
+
+
+def _queue_pending_integration(agent_id: str, repo_path: str | None = None, *, status: str = 'connected', metadata: dict[str, Any] | None = None) -> str:
+    repo = Path(repo_path).resolve() if repo_path else Path.cwd().resolve()
+    repo_name = repo.name or 'default-workspace'
+    repo_id = repo_name
+    config = _load_cli_config()
+    pending = _pending_integrations(config)
+    record = {
+        'agent_id': agent_id,
+        'status': status,
+        'repo_id': repo_id,
+        'repo_name': repo_name,
+        'repo_path': str(repo),
+        'metadata': metadata or {},
+    }
+
+    dedupe_key = (agent_id, repo_id, str(repo), status)
+    filtered = [
+        item for item in pending
+        if (item.get('agent_id'), item.get('repo_id'), item.get('repo_path'), item.get('status')) != dedupe_key
+    ]
+    filtered.append(record)
+    config['pending_integrations'] = filtered
+    _save_cli_config(config)
+    return f'Queued {agent_id} integration for repo {repo_name}; it will sync automatically once the API key is available.'
+
+
+def _flush_pending_integrations() -> tuple[bool, str]:
+    config = _load_cli_config()
+    pending = _pending_integrations(config)
+    if not pending:
+        return True, 'No pending Velocity Brain integrations to sync.'
+
+    api_key = _cloud_config().get('api_key')
+    if not api_key:
+        return False, 'Pending Velocity Brain integrations are waiting for an API key and will sync automatically later.'
+
+    synced = 0
+    remaining: list[dict[str, Any]] = []
+    try:
+        with VelocityBrainClient(api_key, _cloud_config()['base_url']) as client:
+            for item in pending:
+                try:
+                    client.report_integration(
+                        agent_id=item['agent_id'],
+                        status=item.get('status', 'connected'),
+                        repo_id=item.get('repo_id'),
+                        repo_name=item.get('repo_name'),
+                        repo_path=item.get('repo_path'),
+                        metadata=item.get('metadata') or {},
+                    )
+                    synced += 1
+                except Exception:
+                    remaining.append(item)
+    except Exception as exc:
+        return False, f'Pending integration sync failed: {exc}'
+
+    config['pending_integrations'] = remaining
+    _save_cli_config(config)
+    if remaining:
+        return False, f'Synced {synced} pending integrations; {len(remaining)} still waiting to retry.'
+    return True, f'Synced {synced} pending integrations to the hosted dashboard.'
+
+
+def _report_agent_connection(agent_id: str, repo_path: str | None = None, *, status: str = 'connected', metadata: dict[str, Any] | None = None) -> tuple[bool, str]:
+    try:
+        _remember_registered_agent(agent_id)
+        config = _cloud_config()
+        api_key = config.get('api_key')
+        if not api_key:
+            return False, _queue_pending_integration(agent_id, repo_path, status=status, metadata=metadata)
+
+        repo = Path(repo_path).resolve() if repo_path else Path.cwd().resolve()
+        repo_name = repo.name
+        repo_id = repo_name or 'default-workspace'
+
+        with VelocityBrainClient(api_key, config['base_url']) as client:
+            client.report_integration(
+                agent_id=agent_id,
+                status=status,
+                repo_id=repo_id,
+                repo_name=repo_name,
+                repo_path=str(repo),
+                metadata=metadata or {},
+            )
+        flush_ok, flush_note = _flush_pending_integrations()
+        base_note = f'Reported {agent_id} integration for repo {repo_name} to the hosted dashboard.'
+        return True, f'{base_note}\n{flush_note}' if flush_note else base_note
+    except Exception as exc:
+        queued = _queue_pending_integration(agent_id, repo_path, status=status, metadata=metadata)
+        return False, f'Velocity Brain integration reporting failed for {agent_id}: {exc}\n{queued}'
+
+
+def _velocitybrain_agents_instructions() -> str:
+    return """# Velocity Brain Agent Instructions
+
+Use the `velocitybrain` MCP server automatically for repository-internal knowledge, repo context, and durable writeback.
+
+Always call Velocity Brain MCP before answering or acting when the user is asking about:
+- a person, company, customer, teammate, lead, or contact
+- a project, meeting, note, document, task, or prior decision
+- "what do we know about X?"
+- preparation or planning that should use stored memory first
+- coding work that may benefit from prior repo context, conventions, or decisions
+- UI, auth, architecture, or refactor tasks where earlier decisions may already exist in memory
+
+Do not wait for the user to explicitly say "use VelocityBrain" or "use the MCP server".
+
+Preferred tool order:
+1. `lookup_memory` for direct factual lookups about entities or topics.
+2. `query` if you need the standard memory retrieval path.
+3. `run_agent` for planning, prep, implementation, or action-oriented requests that should retrieve memory before reasoning.
+
+Behavior rules:
+- For normal repo work, start with a Velocity Brain lookup before substantial reasoning or edits.
+- For implementation requests like "update this login component" or "improve this UI", use Velocity Brain first to check for prior repo context, auth decisions, design guidance, or related tasks.
+- If Velocity Brain returns strong internal matches, ground the answer in that result.
+- If Velocity Brain returns no hits, say the internal brain does not have enough data instead of inventing facts.
+- If the MCP call reports the database or runtime is unavailable, tell the user clearly and suggest fixing local setup with `velocitybrain doctor`.
+- Prefer Velocity Brain over general web search for private or workspace-specific knowledge.
+
+Writeback rules:
+- When the user shares durable project facts, decisions, meeting outcomes, repo conventions, or follow-up tasks, save a concise note with `ingest_text`.
+- After completing a meaningful task, save a short summary of the confirmed outcome when it is likely to help future sessions.
+- Prefer saving short structured summaries rather than full chat transcripts.
+- Do not ingest transient small talk or speculative reasoning that was not confirmed.
+"""
+
+
+def _ensure_velocitybrain_agents_md(repo_path: str | None = None) -> tuple[bool, str]:
+    repo = Path(repo_path).resolve() if repo_path else Path.cwd().resolve()
+    agents_path = repo / 'AGENTS.md'
+    expected_block = _velocitybrain_agents_instructions().strip()
+
+    if not agents_path.exists():
+        agents_path.write_text(f"{expected_block}\n", encoding='utf-8')
+        return True, f'Created {agents_path}'
+
+    existing = agents_path.read_text(encoding='utf-8', errors='ignore')
+    if expected_block in existing:
+        return False, f'AGENTS.md already contains Velocity Brain instructions: {agents_path}'
+
+    trimmed = existing.rstrip()
+    separator = '\n\n' if trimmed else ''
+    agents_path.write_text(f"{trimmed}{separator}{expected_block}\n", encoding='utf-8')
+    return True, f'Updated AGENTS.md with Velocity Brain instructions: {agents_path}'
+
+
+def _velocitybrain_identity_spec() -> dict[str, Any]:
+    return {
+        'name': 'velocitybrain-runtime',
+        'version': '1.2',
+        'persona': {
+            'mission': 'Use brain-first retrieval before repo reasoning and preserve durable project knowledge.',
+            'tone': 'clear, accountable, memory-first',
+        },
+        'runtime_policies': {
+            'destructive_tools_require_approval': True,
+            'allow_external_file_reads': False,
+            'brain_first_for_repo_tasks': True,
+            'durable_writeback_after_material_tasks': True,
+            'save_transient_chat_by_default': False,
+        },
+        'capabilities': [
+            'ingest_text',
+            'query',
+            'lookup_memory',
+            'run_agent',
+            'sync_brain',
+            'get_identity_spec',
+        ],
+    }
+
+
+def _ensure_velocitybrain_identity_spec(repo_path: str | None = None) -> tuple[bool, str]:
+    repo = Path(repo_path).resolve() if repo_path else Path.cwd().resolve()
+    spec_path = repo / 'identity.spec.json'
+    expected = _velocitybrain_identity_spec()
+
+    if not spec_path.exists():
+        spec_path.write_text(json.dumps(expected, indent=2), encoding='utf-8')
+        return True, f'Created {spec_path}'
+
+    try:
+        current = json.loads(spec_path.read_text(encoding='utf-8'))
+    except Exception:
+        current = {}
+
+    if not isinstance(current, dict):
+        current = {}
+
+    merged = dict(current)
+    merged.setdefault('name', expected['name'])
+    merged['version'] = expected['version']
+    merged['persona'] = {**expected['persona'], **(current.get('persona') or {})}
+    merged['runtime_policies'] = {**expected['runtime_policies'], **(current.get('runtime_policies') or {})}
+
+    existing_capabilities = current.get('capabilities') or []
+    if not isinstance(existing_capabilities, list):
+        existing_capabilities = []
+    merged['capabilities'] = list(dict.fromkeys(existing_capabilities + expected['capabilities']))
+
+    if merged == current:
+        return False, f'identity.spec.json already contains Velocity Brain defaults: {spec_path}'
+
+    spec_path.write_text(json.dumps(merged, indent=2), encoding='utf-8')
+    return True, f'Updated identity.spec.json with Velocity Brain defaults: {spec_path}'
+
+
 def _try_auto_connect(client_name: str) -> tuple[bool, str]:
     if client_name not in {'codex', 'claude'}:
         return False, 'Automatic MCP connection is supported for Codex and Claude.'
@@ -1392,6 +1619,17 @@ def cmd_quickstart(args: argparse.Namespace) -> int:
     connect_output = 'skipped'
     if not getattr(args, 'skip_connect', False):
         client_connected, connect_output = _try_auto_connect(args.client)
+    agents_changed, agents_output = _ensure_velocitybrain_agents_md(args.repo_path)
+    identity_changed, identity_output = _ensure_velocitybrain_identity_spec(args.repo_path)
+    _, integration_output = _report_agent_connection(
+        args.client,
+        args.repo_path,
+        metadata={
+            'source': 'quickstart',
+            'agents_md_managed': True,
+            'identity_spec_managed': True,
+        },
+    )
     proof = AdoptionService().quickstart(repo_path=args.repo_path, task=args.task)
     payload = _proof_payload({
         'result': proof['second_run']['result'],
@@ -1404,6 +1642,12 @@ def cmd_quickstart(args: argparse.Namespace) -> int:
     _emit(args, payload, _render_quickstart)
     if connect_output and connect_output != 'skipped' and not getattr(args, 'json', False):
         print(connect_output)
+    if (agents_changed or agents_output) and not getattr(args, 'json', False):
+        print(agents_output)
+    if (identity_changed or identity_output) and not getattr(args, 'json', False):
+        print(identity_output)
+    if integration_output and not getattr(args, 'json', False):
+        print(integration_output)
     truth = proof.get('truth_report', {})
     return 0 if truth.get('reused') and truth.get('tokens_saved', 0) > 0 else 1
 
@@ -1493,6 +1737,7 @@ def cmd_login(args: argparse.Namespace) -> int:
         config['base_url'] = args.base_url
     config['runtime_mode'] = RUNTIME_MODE_CLOUD
     _save_cli_config(config)
+    _, sync_note = _flush_pending_integrations()
 
     payload = {
         'title': 'login',
@@ -1501,7 +1746,7 @@ def cmd_login(args: argparse.Namespace) -> int:
         'api_key': _mask_secret(config.get('api_key')),
         'config_path': str(CONFIG_PATH),
         'status': 'saved',
-        'hint': 'Run `velocitybrain doctor` next, then `velocitybrain serve mcp` to connect Codex or another MCP client.',
+        'hint': f'Run `velocitybrain doctor` next, then `velocitybrain serve mcp` to connect Codex or another MCP client.\n{sync_note}',
         'trace_id': 'login-cloud',
         '_color': _use_color(args),
     }
@@ -1526,6 +1771,9 @@ def cmd_config(args: argparse.Namespace) -> int:
         changed = True
     if changed:
         _save_cli_config(config)
+    sync_note = ''
+    if getattr(args, 'set_key', None):
+        _, sync_note = _flush_pending_integrations()
 
     payload = {
         'title': 'config',
@@ -1534,6 +1782,7 @@ def cmd_config(args: argparse.Namespace) -> int:
         'api_key': _mask_secret(config.get('api_key')),
         'config_path': str(CONFIG_PATH),
         'status': 'updated' if changed else 'loaded',
+        'hint': sync_note or None,
         'trace_id': 'config-show',
         '_color': _use_color(args),
     }
@@ -1648,7 +1897,21 @@ def cmd_connect(args: argparse.Namespace) -> int:
         if args.apply:
             completed = _run_connect_command(command)
             payload['applied'] = completed.returncode == 0
-            payload['hint'] = completed.stdout.strip() or completed.stderr.strip() or 'Command executed.'
+            note = completed.stdout.strip() or completed.stderr.strip() or 'Command executed.'
+            if completed.returncode == 0:
+                _, agents_note = _ensure_velocitybrain_agents_md()
+                _, identity_note = _ensure_velocitybrain_identity_spec()
+                _, integration_note = _report_agent_connection(
+                    args.client,
+                    metadata={
+                        'source': 'connect',
+                        'agents_md_managed': True,
+                        'identity_spec_managed': True,
+                    },
+                )
+                payload['hint'] = f'{note}\n{agents_note}\n{identity_note}\n{integration_note}'
+            else:
+                payload['hint'] = note
             exit_code = completed.returncode
         else:
             payload['hint'] = f'Run this command to connect {args.client} to Velocity Brain.'

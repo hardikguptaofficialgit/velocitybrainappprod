@@ -38,6 +38,8 @@ const Usage = () => {
       { endpoint: 'run', calls: 780, percentage: 15 },
       { endpoint: 'skills', calls: 520, percentage: 10 }
     ],
+    repoBreakdown: [],
+    recentActivity: [],
     hourlyDistribution: [
       { hour: '00:00', calls: 12 },
       { hour: '04:00', calls: 8 },
@@ -55,7 +57,10 @@ const Usage = () => {
       quotaLimit: 100,
       peakHour: 'N/A',
       avgPerMin: 'N/A',
-      resetIn: 'N/A'
+      resetIn: 'N/A',
+      savedTokensToday: 0,
+      savedCostToday: 0,
+      reuseHitRate: 0
     }
   };
 
@@ -72,7 +77,10 @@ const Usage = () => {
       quotaLimit: rawData.stats?.quotaLimit ?? 100,
       peakHour: rawData.stats?.peakHour ?? 'N/A',
       avgPerMin: rawData.stats?.avgPerMin ?? 'N/A',
-      resetIn: rawData.stats?.resetIn ?? 'N/A'
+      resetIn: rawData.stats?.resetIn ?? 'N/A',
+      savedTokensToday: rawData.stats?.savedTokensToday ?? 0,
+      savedCostToday: rawData.stats?.savedCostToday ?? 0,
+      reuseHitRate: rawData.stats?.reuseHitRate ?? 0
     },
     dailyUsage: rawData.dailyUsage || mockData.dailyUsage,
     usageOverTime: rawData.dailyUsage || rawData.apiCallsOverTime || mockData.dailyUsage,
@@ -81,6 +89,8 @@ const Usage = () => {
       count: item.count ?? item.calls ?? 0
     })),
     endpointBreakdown: rawData.endpointBreakdown || mockData.endpointBreakdown,
+    repoBreakdown: rawData.repoBreakdown || mockData.repoBreakdown,
+    recentActivity: rawData.recentActivity || mockData.recentActivity,
     hourlyDistribution: rawData.hourlyDistribution || mockData.hourlyDistribution
   };
   const COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6'];
@@ -164,6 +174,18 @@ const Usage = () => {
             </div>
           </div>
         </div>
+
+        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Saved Tokens Today</p>
+              <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.savedTokensToday.toLocaleString()}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-black flex-shrink-0" style={{ background: '#f4b183' }}>
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quota Usage */}
@@ -192,6 +214,16 @@ const Usage = () => {
           <div>
             <p className="text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reset In</p>
             <p className="font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.resetIn}</p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Saved Cost Today</p>
+            <p className="text-xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>${Number(data.stats.savedCostToday || 0).toFixed(6)}</p>
+          </div>
+          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reuse Hit Rate</p>
+            <p className="text-xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.reuseHitRate}%</p>
           </div>
         </div>
       </div>
@@ -272,6 +304,54 @@ const Usage = () => {
                 <span className="text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{item.percentage}%</span>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Repo Usage</p>
+          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Top connected repos</h3>
+          <div className="space-y-3">
+            {data.repoBreakdown.length ? data.repoBreakdown.map((repo) => (
+              <div key={repo.repoId} className="rounded-xl border border-[#202020] bg-[#111] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{repo.repoId}</p>
+                  <span className="text-xs text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{repo.calls} calls</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs text-zinc-400">
+                  <span>Saved tokens: {repo.savedTokens.toLocaleString()}</span>
+                  <span>Saved cost: ${Number(repo.savedCost || 0).toFixed(6)}</span>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-zinc-500">No repo-linked usage has been reported yet.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Recent Activity</p>
+          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Latest query, run, and writeback events</h3>
+          <div className="space-y-3">
+            {data.recentActivity.length ? data.recentActivity.map((item, index) => (
+              <div key={`${item.timestamp}-${index}`} className="rounded-xl border border-[#202020] bg-[#111] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{item.description}</p>
+                  <span className={`rounded-full border px-2 py-1 text-[10px] ${item.status === 'failed' ? 'border-[#5a1f1f] bg-[#2a1111] text-[#ff9b9b]' : 'border-[#17301f] bg-[#13261d] text-[#7fe3c8]'}`}>
+                    {item.status}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-zinc-400 sm:grid-cols-2">
+                  <span>Repo: {item.repoId || 'default-workspace'}</span>
+                  <span>Reuse: {item.reuseHitType || 'none'}</span>
+                  <span>Saved tokens: {(item.avoidedInputTokens || 0).toLocaleString()}</span>
+                  <span>{item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown time'}</span>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-zinc-500">No recent usage activity has been reported yet.</p>
+            )}
           </div>
         </div>
       </div>

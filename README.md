@@ -392,10 +392,16 @@ Basic Codex flow:
 1. For hosted mode, run `velocitybrain login --api-key vb_live_xxx`
 2. Start the MCP bridge with `velocitybrain serve mcp`
 3. Register the MCP server in Codex with `velocitybrain connect codex --apply`
-4. Keep the repository `AGENTS.md` file so Codex knows to consult Velocity Brain automatically for internal knowledge lookups
+4. `connect codex --apply` now creates or updates the current repo `AGENTS.md` and `identity.spec.json` so Codex consults Velocity Brain automatically for repo tasks and durable memory writeback
 5. Restart Codex if needed so it picks up the new MCP server
 6. Ask normal questions like `What do we know about auth and API key flows in this repo?` or `Prepare me to review this large codebase before changing auth`
 7. Use `velocitybrain smoke` when you want a quick end-to-end hosted verification
+
+Writeback behavior:
+- Connecting Velocity Brain to Codex does not mean every Codex chat turn is blindly saved.
+- In a connected repo, Codex should treat Velocity Brain as brain-first context for normal implementation tasks too, not only explicit memory questions.
+- Codex should call `ingest_text` for durable facts such as confirmed decisions, meeting outcomes, repo conventions, and follow-up tasks.
+- Transient chatter and unconfirmed speculation should not be ingested.
 8. Use `response_style` when you want shorter or denser outputs
 
 - OpenClaw / Gemini CLI / Cline / Antigravity / any MCP-capable client:

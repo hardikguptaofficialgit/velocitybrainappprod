@@ -7,6 +7,7 @@ import json
 import logging
 import os
 from typing import Any
+from pathlib import Path
 
 from mcp.server import Server
 from mcp.server.models import InitializationOptions
@@ -21,15 +22,101 @@ logger = logging.getLogger("velocitybrain.mcp")
 
 server = Server("velocitybrain")
 client: VelocityBrainClient | None = None
+session_registered = False
+
+
+def _load_saved_cloud_config() -> dict[str, Any]:
+    config_path = Path.home() / ".velocitybrain" / "config.json"
+    if not config_path.exists():
+        return {}
+    try:
+        return json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception:
+        logger.warning("Failed to read Velocity Brain config from %s", config_path)
+        return {}
+
+
+def _infer_agent_id(config: dict[str, Any] | None = None) -> str:
+    config = config or _load_saved_cloud_config()
+    return (
+        os.getenv("VELOCITYBRAIN_AGENT_ID")
+        or config.get("preferred_agent")
+        or ((config.get("registered_agents") or [None])[0])
+        or "mcp-client"
+    )
+
+
+def _detect_repo_context() -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
+    current = cwd
+    while True:
+        if (current / ".git").exists() or (current / "AGENTS.md").exists() or (current / "identity.spec.json").exists():
+            return {
+                "repo_id": current.name or "default-workspace",
+                "repo_name": current.name or "default-workspace",
+                "repo_path": str(current),
+                "cwd": str(cwd),
+            }
+        if current.parent == current:
+            break
+        current = current.parent
+    return {
+        "repo_id": cwd.name or "default-workspace",
+        "repo_name": cwd.name or "default-workspace",
+        "repo_path": str(cwd),
+        "cwd": str(cwd),
+    }
+
+
+def _with_repo_metadata(metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    merged = dict(metadata or {})
+    for key, value in _detect_repo_context().items():
+        merged.setdefault(key, value)
+    return merged
+
+
+def _with_repo_filters(filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    merged = dict(filters or {})
+    repo = _detect_repo_context()
+    merged.setdefault("repo_id", repo["repo_id"])
+    return merged
+
+
+def _ensure_session_registration(vb: VelocityBrainClient) -> None:
+    global session_registered
+    if session_registered:
+        return
+    config = _load_saved_cloud_config()
+    repo = _detect_repo_context()
+    try:
+        vb.report_integration(
+            agent_id=_infer_agent_id(config),
+            status="connected",
+            repo_id=repo["repo_id"],
+            repo_name=repo["repo_name"],
+            repo_path=repo["repo_path"],
+            metadata={
+                "source": "mcp_session",
+                "cwd": repo["cwd"],
+                "auto_reported": True,
+            },
+        )
+        session_registered = True
+    except Exception as exc:
+        logger.warning("VelocityBrain MCP session registration failed: %s", exc)
 
 
 def get_client() -> VelocityBrainClient:
     global client
     if client is None:
-        api_key = os.getenv("VELOCITYBRAIN_API_KEY")
+        config = _load_saved_cloud_config()
+        api_key = os.getenv("VELOCITYBRAIN_API_KEY") or config.get("api_key")
         if not api_key:
-            raise ValueError("VELOCITYBRAIN_API_KEY environment variable is required")
-        base_url = os.getenv("VELOCITYBRAIN_BASE_URL", "https://velocity.linkitapp.in")
+            raise ValueError(
+                "VELOCITYBRAIN_API_KEY environment variable is required, or save a key with "
+                "`velocitybrain login --api-key <key>`."
+            )
+        base_url = os.getenv("VELOCITYBRAIN_BASE_URL") or config.get("base_url") or "https://velocity.linkitapp.in"
         client = VelocityBrainClient(api_key, base_url)
         logger.info("VelocityBrain client initialized")
     return client
@@ -42,6 +129,58 @@ def _tool_output(payload: dict[str, Any]) -> list[TextContent]:
 @server.list_tools()
 async def handle_list_tools() -> list[Tool]:
     return [
+        Tool(
+            name="healthz",
+            description="Check whether the hosted Velocity Brain bridge is configured and reachable.",
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        Tool(
+            name="query",
+            description="Query Velocity Brain memory for people, projects, decisions, notes, or repo knowledge.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string"},
+                    "response_style": {
+                        "type": "string",
+                        "enum": ["normal", "lite", "full", "ultra"],
+                        "default": "normal",
+                    },
+                    "limit": {"type": "integer", "default": 10},
+                },
+                "required": ["question"],
+            },
+        ),
+        Tool(
+            name="lookup_memory",
+            description="Look up what Velocity Brain knows about a person, company, project, meeting, or topic.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string"},
+                    "response_style": {
+                        "type": "string",
+                        "enum": ["normal", "lite", "full", "ultra"],
+                        "default": "normal",
+                    },
+                    "limit": {"type": "integer", "default": 10},
+                },
+                "required": ["question"],
+            },
+        ),
+        Tool(
+            name="ingest_text",
+            description="Save durable project facts, decisions, notes, or meeting outcomes into Velocity Brain memory.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string", "default": "codex"},
+                    "content": {"type": "string"},
+                    "metadata": {"type": "object"},
+                },
+                "required": ["content"],
+            },
+        ),
         Tool(
             name="run_agent",
             description="Run a coding-agent task with hosted memory reuse and savings reporting.",
@@ -71,12 +210,33 @@ async def handle_list_tools() -> list[Tool]:
 async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     try:
         vb = get_client()
+        if name != "usage":
+            _ensure_session_registration(vb)
+        if name == "healthz":
+            return _tool_output(vb.get_health())
+        if name in {"query", "lookup_memory"}:
+            return _tool_output(
+                vb.query(
+                    question=arguments["question"],
+                    response_style=arguments.get("response_style", "normal"),
+                    max_results=int(arguments.get("limit", 10)),
+                    filters=_with_repo_filters(arguments.get("filters")),
+                )
+            )
+        if name == "ingest_text":
+            return _tool_output(
+                vb.ingest(
+                    content=arguments["content"],
+                    source=arguments.get("source", _infer_agent_id(_load_saved_cloud_config())),
+                    metadata=_with_repo_metadata(arguments.get("metadata")),
+                )
+            )
         if name == "run_agent":
             return _tool_output(
                 vb.run(
                     task=arguments["task"],
                     response_style=arguments.get("response_style", "normal"),
-                    metadata=arguments.get("metadata"),
+                    metadata=_with_repo_metadata(arguments.get("metadata")),
                 )
             )
         if name == "usage":

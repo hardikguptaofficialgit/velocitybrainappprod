@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap');
+
 /* VelocityBrain Dashboard - Pastel Design System with Dark Mode */
 
 :root {
@@ -15,9 +17,21 @@
   --clay-warning: #fcd34d;
   --clay-success: #86efac;
   --clay-info: #93c5fd;
+  
+  /* Shadows */
   --clay-shadow: 8px 8px 16px #e5e5e5, -8px -8px 16px #ffffff;
   --clay-shadow-sm: 4px 4px 8px #e5e5e5, -4px -4px 8px #ffffff;
   --clay-shadow-inset: inset 4px 4px 8px #e5e5e5, inset -4px -4px 8px #ffffff;
+
+  /* Component Specific Dynamic Shadows & Colors */
+  --clay-primary-shadow: 4px 4px 8px rgba(249, 115, 22, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.8);
+  --clay-danger-shadow: 4px 4px 8px rgba(239, 68, 68, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.8);
+  --clay-input-focus: inset 6px 6px 12px #c8c8cb, inset -6px -6px 12px #ffffff;
+  --clay-btn-hover: #e8e8eb;
+  --clay-modal-overlay: rgba(240, 240, 243, 0.8);
+  --clay-toggle-dot-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1), -2px -2px 4px rgba(255, 255, 255, 0.9);
+  
+  /* Radius */
   --clay-radius: 20px;
   --clay-radius-lg: 28px;
   --clay-radius-xl: 36px;
@@ -36,9 +50,19 @@
   --clay-warning: #fcd34d;
   --clay-success: #86efac;
   --clay-info: #93c5fd;
+  
+  /* Shadows */
   --clay-shadow: 8px 8px 16px #0f0f1a, -8px -8px 16px #242442;
   --clay-shadow-sm: 4px 4px 8px #0f0f1a, -4px -4px 8px #242442;
   --clay-shadow-inset: inset 4px 4px 8px #0f0f1a, inset -4px -4px 8px #242442;
+
+  /* Component Specific Dynamic Shadows & Colors */
+  --clay-primary-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5), -4px -4px 8px rgba(255, 255, 255, 0.05);
+  --clay-danger-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5), -4px -4px 8px rgba(255, 255, 255, 0.05);
+  --clay-input-focus: inset 6px 6px 12px #0f0f1a, inset -6px -6px 12px #242442;
+  --clay-btn-hover: #1e2a4a;
+  --clay-modal-overlay: rgba(15, 15, 26, 0.8);
+  --clay-toggle-dot-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), -2px -2px 4px rgba(255, 255, 255, 0.1);
 }
 
 /* Force background color */
@@ -50,10 +74,14 @@ html, body, #root {
 html {
   font-size: var(--app-font-size);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--clay-bg);
+  color: var(--clay-text);
+  margin: 0;
 }
 
 @keyframes onboardingFloat {
@@ -76,6 +104,7 @@ body {
   }
 }
 
+/* Font Utility Classes */
 .syne {
   font-family: 'Syne', sans-serif;
 }
@@ -84,11 +113,7 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
-body {
-  background-color: var(--clay-bg);
-  color: var(--clay-text);
-}
-
+/* Onboarding Elements */
 .onboarding-preview {
   position: relative;
   overflow: hidden;
@@ -153,7 +178,7 @@ body {
   cursor: pointer;
   font-weight: 500;
   padding: 0.75rem 1.5rem;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
   position: relative;
 }
 
@@ -164,7 +189,7 @@ body {
 .clay-btn-primary {
   background: var(--clay-primary);
   color: white;
-  box-shadow: 4px 4px 8px rgba(249, 115, 22, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.8);
+  box-shadow: var(--clay-primary-shadow);
 }
 
 .clay-btn-primary:hover {
@@ -178,13 +203,13 @@ body {
 }
 
 .clay-btn-secondary:hover {
-  background: #e8e8eb;
+  background: var(--clay-btn-hover);
 }
 
 .clay-btn-danger {
   background: var(--clay-danger);
   color: white;
-  box-shadow: 4px 4px 8px rgba(239, 68, 68, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.8);
+  box-shadow: var(--clay-danger-shadow);
 }
 
 /* Inputs - Claymorphism */
@@ -198,10 +223,11 @@ body {
   padding: 0.75rem 1rem;
   transition: box-shadow 0.2s ease;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .clay-input:focus {
-  box-shadow: inset 6px 6px 12px #c8c8cb, inset -6px -6px 12px #ffffff;
+  box-shadow: var(--clay-input-focus);
 }
 
 .clay-input::placeholder {
@@ -250,7 +276,7 @@ body {
 }
 
 .clay-modal-overlay {
-  background: rgba(240, 240, 243, 0.8);
+  background: var(--clay-modal-overlay);
   backdrop-filter: blur(8px);
 }
 
@@ -265,7 +291,7 @@ body {
   position: relative;
   cursor: pointer;
   outline: none;
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .clay-toggle::after {
@@ -277,7 +303,7 @@ body {
   border-radius: 50%;
   top: 3px;
   left: 3px;
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1), -2px -2px 4px rgba(255, 255, 255, 0.9);
+  box-shadow: var(--clay-toggle-dot-shadow);
   transition: transform 0.3s ease;
 }
 
@@ -406,7 +432,7 @@ body {
   position: relative;
   background: var(--clay-primary);
   color: white;
-  box-shadow: 4px 4px 8px rgba(249, 115, 22, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.8);
+  box-shadow: var(--clay-primary-shadow);
 }
 
 .btn-primary:hover {
@@ -427,7 +453,7 @@ body {
 }
 
 .btn-secondary:hover {
-  background: #e8e8eb;
+  background: var(--clay-btn-hover);
 }
 
 .card {
@@ -448,19 +474,15 @@ body {
   padding: 0.75rem 1rem;
   transition: box-shadow 0.2s ease;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .input-field:focus {
-  box-shadow: inset 6px 6px 12px #c8c8cb, inset -6px -6px 12px #ffffff;
+  box-shadow: var(--clay-input-focus);
 }
 
 .input-field::placeholder {
   color: var(--clay-text-muted);
-}
-
-/* Smooth scroll */
-html {
-  scroll-behavior: smooth;
 }
 
 /* Focus states */

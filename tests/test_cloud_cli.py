@@ -35,6 +35,66 @@ def test_login_persists_cloud_config(monkeypatch, tmp_path):
     assert saved['runtime_mode'] == cli.RUNTIME_MODE_CLOUD
 
 
+def test_report_agent_connection_queues_when_api_key_missing(monkeypatch, tmp_path):
+    config_dir = tmp_path / '.velocitybrain'
+    config_path = config_dir / 'config.json'
+    monkeypatch.setattr(cli, 'CONFIG_DIR', config_dir)
+    monkeypatch.setattr(cli, 'CONFIG_PATH', config_path)
+
+    ok, note = cli._report_agent_connection('codex', str(tmp_path))
+    saved = cli._load_cli_config()
+
+    assert ok is False
+    assert 'Queued codex integration' in note
+    assert len(saved['pending_integrations']) == 1
+    assert saved['pending_integrations'][0]['agent_id'] == 'codex'
+
+
+def test_flush_pending_integrations_runs_after_key_is_saved(monkeypatch, tmp_path):
+    config_dir = tmp_path / '.velocitybrain'
+    config_path = config_dir / 'config.json'
+    monkeypatch.setattr(cli, 'CONFIG_DIR', config_dir)
+    monkeypatch.setattr(cli, 'CONFIG_PATH', config_path)
+    cli._save_cli_config({
+        'api_key': 'vb_live_queued',
+        'base_url': 'https://api.example.com',
+        'pending_integrations': [{
+            'agent_id': 'codex',
+            'status': 'connected',
+            'repo_id': 'repo-x',
+            'repo_name': 'repo-x',
+            'repo_path': 'C:/repo-x',
+            'metadata': {'source': 'connect'}
+        }]
+    })
+
+    captured = []
+
+    class DummyClient:
+        def __init__(self, api_key, base_url):
+            self.api_key = api_key
+            self.base_url = base_url
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return False
+
+        def report_integration(self, **kwargs):
+            captured.append(kwargs)
+
+    monkeypatch.setattr(cli, 'VelocityBrainClient', DummyClient)
+
+    ok, note = cli._flush_pending_integrations()
+    saved = cli._load_cli_config()
+
+    assert ok is True
+    assert 'Synced 1 pending integrations' in note
+    assert captured[0]['agent_id'] == 'codex'
+    assert saved['pending_integrations'] == []
+
+
 def test_handle_no_command_runs_cloud_onboarding(monkeypatch, tmp_path):
     config_dir = tmp_path / '.velocitybrain'
     config_path = config_dir / 'config.json'
@@ -141,6 +201,58 @@ def test_quickstart_command_returns_immediate_savings(monkeypatch, capsys, tmp_p
     assert output['reused'] is True
     assert output['tokens_saved'] > 0
     assert output['reuse_confidence'] >= 0.0
+
+
+def test_ensure_velocitybrain_agents_md_creates_file(tmp_path):
+    changed, message = cli._ensure_velocitybrain_agents_md(str(tmp_path))
+
+    agents_path = tmp_path / 'AGENTS.md'
+    assert changed is True
+    assert agents_path.exists()
+    assert 'Use the `velocitybrain` MCP server automatically' in agents_path.read_text(encoding='utf-8')
+    assert 'Created' in message
+
+
+def test_ensure_velocitybrain_agents_md_is_idempotent(tmp_path):
+    cli._ensure_velocitybrain_agents_md(str(tmp_path))
+    changed, message = cli._ensure_velocitybrain_agents_md(str(tmp_path))
+
+    assert changed is False
+    assert 'already contains Velocity Brain instructions' in message
+
+
+def test_ensure_velocitybrain_identity_spec_creates_file(tmp_path):
+    changed, message = cli._ensure_velocitybrain_identity_spec(str(tmp_path))
+
+    spec_path = tmp_path / 'identity.spec.json'
+    assert changed is True
+    assert spec_path.exists()
+    payload = json.loads(spec_path.read_text(encoding='utf-8'))
+    assert payload['runtime_policies']['brain_first_for_repo_tasks'] is True
+    assert 'lookup_memory' in payload['capabilities']
+    assert 'Created' in message
+
+
+def test_ensure_velocitybrain_identity_spec_merges_existing_file(tmp_path):
+    spec_path = tmp_path / 'identity.spec.json'
+    spec_path.write_text(json.dumps({
+        'name': 'custom-runtime',
+        'persona': {'tone': 'custom-tone'},
+        'runtime_policies': {'destructive_tools_require_approval': False},
+        'capabilities': ['custom_capability']
+    }), encoding='utf-8')
+
+    changed, message = cli._ensure_velocitybrain_identity_spec(str(tmp_path))
+    payload = json.loads(spec_path.read_text(encoding='utf-8'))
+
+    assert changed is True
+    assert payload['name'] == 'custom-runtime'
+    assert payload['persona']['tone'] == 'custom-tone'
+    assert payload['runtime_policies']['destructive_tools_require_approval'] is False
+    assert payload['runtime_policies']['brain_first_for_repo_tasks'] is True
+    assert 'custom_capability' in payload['capabilities']
+    assert 'lookup_memory' in payload['capabilities']
+    assert 'Updated identity.spec.json' in message
 
 
 def test_share_run_outputs_last_saved_proof(monkeypatch, capsys, tmp_path):

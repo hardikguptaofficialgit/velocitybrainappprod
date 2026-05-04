@@ -60,6 +60,8 @@ const COLLECTIONS = {
   USER_SETTINGS: 'user_settings',
   API_KEYS: 'api_keys',
   USAGE_LOGS: 'usage_logs',
+  HOSTED_INGESTS: 'hosted_ingests',
+  AGENT_CONNECTIONS: 'agent_connections',
   BILLING: 'billing',
   SKILLS: 'skills'
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { db, COLLECTIONS } = require('../config/firebase');
+const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -402,11 +402,13 @@ router.get('/stats', authenticate, async (req, res) => {
         res.json({
             success: true,
             stats: {
-                totalApiCalls: savedTokens,
+                totalApiCalls,
+                totalSavedTokens: savedTokens,
                 apiCallsChange: 18.4,
                 activeApiKeys,
                 apiKeysChange: 0,
                 documentsProcessed: Number(savedCost.toFixed(6)),
+                totalSavedUsd: Number(savedCost.toFixed(6)),
                 documentsChange: 11.2,
                 successRate: reuseHitRate,
                 successRateChange: 6.8,
@@ -431,10 +433,75 @@ router.get('/stats', authenticate, async (req, res) => {
 router.get('/agents', authenticate, async (req, res) => {
     try {
         const payload = buildAgentRuntimeStatus();
+        const userId = req.user.id;
+
+        let connectionDocs = [];
+        if (firebaseInitialized) {
+            const snapshot = await db.collection(COLLECTIONS.AGENT_CONNECTIONS)
+                .where('user_id', '==', userId)
+                .limit(500)
+                .get();
+            connectionDocs = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+        }
+
+        const connectionsByAgent = new Map();
+        connectionDocs.forEach((record) => {
+            const list = connectionsByAgent.get(record.agent_id) || [];
+            list.push(record);
+            connectionsByAgent.set(record.agent_id, list);
+        });
+
+        const enrichedAgents = payload.agents.map((agent) => {
+            const connections = (connectionsByAgent.get(agent.id) || [])
+                .sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+            const latestConnection = connections[0] || null;
+            const connectedRepos = connections.map((connection) => ({
+                id: connection.id,
+                repoId: connection.repo_id || 'default-workspace',
+                repoName: connection.repo_name || connection.repo_id || 'default-workspace',
+                repoPath: connection.repo_path || '',
+                status: connection.status || 'connected',
+                updatedAt: connection.updated_at || connection.created_at || null,
+                metadata: connection.metadata || {}
+            }));
+
+            return {
+                ...agent,
+                accountConnected: connections.length > 0,
+                connectionCount: connections.length,
+                latestConnectionAt: latestConnection?.updated_at || latestConnection?.created_at || null,
+                connectedRepos
+            };
+        });
+
+        const allRepos = Object.values(enrichedAgents.reduce((acc, agent) => {
+            (agent.connectedRepos || []).forEach((repo) => {
+                const key = `${repo.repoId}:${repo.repoPath}`;
+                if (!acc[key] || new Date(repo.updatedAt || 0) > new Date(acc[key].updatedAt || 0)) {
+                    acc[key] = repo;
+                }
+            });
+            return acc;
+        }, {}));
 
         res.json({
             success: true,
-            ...payload
+            workspace: {
+                ...payload.workspace,
+                connectedAgentCount: enrichedAgents.filter((agent) => agent.accountConnected).length,
+                connectedRepoCount: allRepos.length
+            },
+            agents: enrichedAgents,
+            workspaceFiles: payload.workspaceFiles,
+            connections: {
+                repos: allRepos.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)),
+                recent: connectionDocs
+                    .sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
+                    .slice(0, 20)
+            }
         });
     } catch (error) {
         console.error('[DashboardRoute] Agent runtime status error', {

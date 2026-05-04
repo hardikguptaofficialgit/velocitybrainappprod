@@ -330,6 +330,29 @@ class VelocityBrainClient:
     def get_usage_stats(self) -> Dict[str, Any]:
         payload = self._make_request("GET", "/v1/usage")
         return self._coerce_response(payload, lambda result: result)
+
+    def report_integration(
+        self,
+        agent_id: str,
+        status: str = "connected",
+        repo_id: Optional[str] = None,
+        repo_path: Optional[str] = None,
+        repo_name: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        payload = self._make_request(
+            "POST",
+            "/v1/integrations/report",
+            data={
+                "agent_id": agent_id,
+                "status": status,
+                "repo_id": repo_id,
+                "repo_path": repo_path,
+                "repo_name": repo_name,
+                "metadata": metadata or {},
+            },
+        )
+        return self._coerce_response(payload, lambda result: result)
     
     def close(self):
         """Close the client session."""

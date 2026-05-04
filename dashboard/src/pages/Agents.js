@@ -24,8 +24,8 @@ const agentIcon = {
 
 const workspaceMetrics = (workspace, agents) => [
   { label: 'Supported Agents', value: agents.length, detail: 'Tracked integration targets', icon: Cpu },
-  { label: 'Ready Templates', value: workspace.readyAgentCount || 0, detail: 'Agents with repo setup assets', icon: Database },
-  { label: 'Workspace Configs', value: workspace.workspaceConfigCount || 0, detail: 'Local config paths detected', icon: Shield },
+  { label: 'Connected Agents', value: workspace.connectedAgentCount || 0, detail: 'Agents reported by user installs', icon: Database },
+  { label: 'Connected Repos', value: workspace.connectedRepoCount || 0, detail: 'Repos linked to those agent installs', icon: Shield },
   { label: 'Scripts + Docs', value: (workspace.setupScriptsPresent || 0) + (workspace.integrationDocsPresent || 0), detail: 'Setup and validation assets', icon: Terminal }
 ];
 
@@ -79,6 +79,8 @@ const Agents = () => {
   const workspace = sourceData.workspace || bundledAgentRuntimeStatus.workspace;
   const agents = sourceData.agents || bundledAgentRuntimeStatus.agents;
   const workspaceFiles = sourceData.workspaceFiles || bundledAgentRuntimeStatus.workspaceFiles;
+  const connectedRepos = sourceData.connections?.repos || [];
+  const recentConnections = sourceData.connections?.recent || [];
   const metrics = workspaceMetrics(workspace, agents);
 
   if (isLoading) {
@@ -102,8 +104,8 @@ const Agents = () => {
             <h1 className="mb-3 text-3xl font-bold text-white md:text-4xl" style={{ fontFamily: 'Syne, sans-serif' }}>
               Workspace agent status
             </h1>
-            <p className="max-w-2xl text-sm leading-7 text-zinc-300">
-              Real repo-backed agent detection: templates, runtime files, setup scripts, docs, and local config paths that are actually present.
+              <p className="max-w-2xl text-sm leading-7 text-zinc-300">
+              Combined account and repo view: connected agents and repos reported by user installs, plus repo-side templates, runtime files, setup scripts, docs, and local config paths.
             </p>
           </div>
 
@@ -187,6 +189,11 @@ const Agents = () => {
                             {strength}
                           </span>
                         ))}
+                        {agent.accountConnected && (
+                          <span className="rounded-full border border-[#17301f] bg-[#13261d] px-2.5 py-1 text-[11px] text-[#7fe3c8]">
+                            Account connected
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -217,6 +224,32 @@ const Agents = () => {
                     <p className={`break-all text-xs ${agent.workspaceConfigured ? 'text-[#7fe3c8]' : 'text-zinc-500'}`} style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                       {agent.workspaceConfigured ? agent.workspaceConfig?.path : 'not detected'}
                     </p>
+                  </div>
+                  <div className="rounded-xl border border-[#2a2a2a] bg-[#0c0c0c] p-3 lg:col-span-2">
+                    <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                      Connected repos
+                    </p>
+                    {agent.connectedRepos?.length ? (
+                      <div className="space-y-2">
+                        {agent.connectedRepos.slice(0, 4).map((repo) => (
+                          <div key={`${agent.id}-${repo.repoId}-${repo.repoPath}`} className="flex items-start justify-between gap-3 rounded-lg border border-[#202020] bg-[#111] px-3 py-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>
+                                {repo.repoName}
+                              </p>
+                              <p className="mt-1 break-all text-[11px] text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                                {repo.repoPath || repo.repoId}
+                              </p>
+                            </div>
+                            <span className="rounded-full border border-[#17301f] bg-[#13261d] px-2 py-1 text-[10px] text-[#7fe3c8]">
+                              {repo.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-500">No account-level repo connections reported yet.</p>
+                    )}
                   </div>
                   <div className="rounded-xl border border-[#2a2a2a] bg-[#0c0c0c] p-3 lg:col-span-2">
                     <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
@@ -314,11 +347,63 @@ const Agents = () => {
                     Status rules
                   </p>
                   <p className="mt-1 text-sm leading-6 text-zinc-400">
-                    `Workspace config found` means a local client path was detected. `Template ready` means this repo ships setup files plus supporting assets. Live connection state still needs explicit runtime heartbeat reporting from the client.
+                  `Workspace config found` means a local client path was detected. `Template ready` means this repo ships setup files plus supporting assets. Live connection state still needs explicit runtime heartbeat reporting from the client.
                   </p>
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#7c9cf5] text-black">
+                <Cpu className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Account Connections
+                </p>
+                <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>
+                  Connected repos and recent reports
+                </h2>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {connectedRepos.length ? connectedRepos.slice(0, 8).map((repo) => (
+                <div key={`${repo.repoId}-${repo.repoPath}`} className="rounded-xl border border-[#202020] bg-[#111] p-3">
+                  <p className="text-sm font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>
+                    {repo.repoName}
+                  </p>
+                  <p className="mt-1 break-all text-[11px] text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                    {repo.repoPath || repo.repoId}
+                  </p>
+                  <p className="mt-2 text-xs text-zinc-400">
+                    Last report: {repo.updatedAt ? new Date(repo.updatedAt).toLocaleString() : 'Unknown'}
+                  </p>
+                </div>
+              )) : (
+                <div className="rounded-xl border border-dashed border-[#2a2a2a] px-4 py-5 text-sm text-zinc-500">
+                  No connected repos reported yet. Run `velocitybrain connect codex --apply` or `velocitybrain quickstart` from a repo with your API key configured.
+                </div>
+              )}
+            </div>
+
+            {recentConnections.length > 0 && (
+              <div className="mt-4 rounded-xl border border-[#202020] bg-[#111] p-4">
+                <p className="mb-3 text-[10px] uppercase tracking-[0.24em] text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Recent connection reports
+                </p>
+                <div className="space-y-2">
+                  {recentConnections.slice(0, 6).map((record) => (
+                    <div key={record.id} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="text-zinc-300">{record.agent_id}</span>
+                      <span className="text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{record.repo_name || record.repo_id}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>

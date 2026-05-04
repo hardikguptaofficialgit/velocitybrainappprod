@@ -5,7 +5,7 @@ This guide shows how to connect Velocity Brain to MCP-capable clients in the hos
 For Codex specifically, there are two parts:
 
 1. Register the Velocity Brain MCP server.
-2. Keep the repo-level `AGENTS.md` instructions so Codex knows when to call Velocity Brain automatically.
+2. `velocitybrain connect codex --apply` creates or updates the repo-level `AGENTS.md` and `identity.spec.json` instructions so Codex knows when to call Velocity Brain automatically.
 
 ## Integration Model
 
@@ -104,7 +104,7 @@ args = ["serve", "mcp"]
 
 ### Make Codex use Velocity Brain automatically
 
-Keep the repository `AGENTS.md` file in place. It tells Codex to call Velocity Brain automatically for:
+Keep the repository `AGENTS.md` file in place. `velocitybrain connect codex --apply` writes or refreshes it for the current repo, and also updates `identity.spec.json` with brain-first defaults. It tells Codex to call Velocity Brain automatically for:
 
 - people or company lookups
 - project or meeting memory
@@ -118,6 +118,14 @@ That means a user can ask:
 - `Prepare me to review this large codebase`
 
 and Codex should prefer the Velocity Brain MCP tools without needing the user to mention `velocitybrain` in the prompt.
+
+That applies to ordinary coding requests too, such as UI improvements, auth edits, refactors, or architecture work inside the connected repo. Codex should consult Velocity Brain before substantial reasoning or edits so prior repo decisions can influence the work.
+
+Codex writeback behavior should be selective:
+
+- read from Velocity Brain automatically for repo and memory questions
+- write back with `ingest_text` when the user shares durable facts, decisions, meeting notes, or follow-up tasks
+- avoid ingesting transient chatter or unconfirmed reasoning
 
 ### Hosted onboarding flow
 
