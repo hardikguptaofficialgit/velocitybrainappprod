@@ -3,10 +3,12 @@ services:
   db:
     image: pgvector/pgvector:pg16
     container_name: velocitybrain-db
+    env_file:
+      - .env.prod
     environment:
-      POSTGRES_USER: ${DB_USER:-velocity}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-velocitybrain}
+      POSTGRES_USER: ${POSTGRES_USER:-velocity}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-velocitybrain}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -16,7 +18,7 @@ services:
       - "${DB_PORT:-5432}:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-velocity} -d ${DB_NAME:-velocitybrain}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-velocity} -d $${POSTGRES_DB:-velocitybrain}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -36,14 +38,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: velocitybrain-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    env_file:
+      - .env.prod
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$REDIS_PASSWORD\""]
     volumes:
       - redis_data:/data
     ports:
       - "${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -67,9 +71,6 @@ services:
     env_file: .env.prod
     environment:
       BACKEND_API_URL: http://backend:5001
-      INTERNAL_USAGE_SECRET: ${INTERNAL_USAGE_SECRET}
-      DATABASE_URL: postgresql://${DB_USER:-velocity}:${DB_PASSWORD}@db:5432/${DB_NAME:-velocitybrain}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       ENV: production
       PORT: 8080
     depends_on:
@@ -111,10 +112,8 @@ services:
     environment:
       PORT: 5001
       NODE_ENV: production
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       CORE_API_URL: http://api:8080
       BACKEND_API_URL: http://backend:5001
-      INTERNAL_USAGE_SECRET: ${INTERNAL_USAGE_SECRET}
     depends_on:
       api:
         condition: service_healthy
@@ -138,15 +137,15 @@ services:
       context: ./dashboard
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_URL: ""
-        REACT_APP_FIREBASE_API_KEY: ${REACT_APP_FIREBASE_API_KEY:-}
-        REACT_APP_FIREBASE_AUTH_DOMAIN: ${REACT_APP_FIREBASE_AUTH_DOMAIN:-}
-        REACT_APP_FIREBASE_PROJECT_ID: ${REACT_APP_FIREBASE_PROJECT_ID:-}
-        REACT_APP_FIREBASE_STORAGE_BUCKET: ${REACT_APP_FIREBASE_STORAGE_BUCKET:-}
-        REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${REACT_APP_FIREBASE_MESSAGING_SENDER_ID:-}
-        REACT_APP_FIREBASE_APP_ID: ${REACT_APP_FIREBASE_APP_ID:-}
-        REACT_APP_FIREBASE_MEASUREMENT_ID: ${REACT_APP_FIREBASE_MEASUREMENT_ID:-}
-        REACT_APP_REVENUECAT_API_KEY: ${REACT_APP_REVENUECAT_API_KEY:-}
+        REACT_APP_API_URL: ${REACT_APP_API_URL}
+        REACT_APP_FIREBASE_API_KEY: ${REACT_APP_FIREBASE_API_KEY}
+        REACT_APP_FIREBASE_AUTH_DOMAIN: ${REACT_APP_FIREBASE_AUTH_DOMAIN}
+        REACT_APP_FIREBASE_PROJECT_ID: ${REACT_APP_FIREBASE_PROJECT_ID}
+        REACT_APP_FIREBASE_STORAGE_BUCKET: ${REACT_APP_FIREBASE_STORAGE_BUCKET}
+        REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${REACT_APP_FIREBASE_MESSAGING_SENDER_ID}
+        REACT_APP_FIREBASE_APP_ID: ${REACT_APP_FIREBASE_APP_ID}
+        REACT_APP_FIREBASE_MEASUREMENT_ID: ${REACT_APP_FIREBASE_MEASUREMENT_ID}
+        REACT_APP_REVENUECAT_API_KEY: ${REACT_APP_REVENUECAT_API_KEY}
     container_name: velocitybrain-dashboard
     depends_on:
       - backend

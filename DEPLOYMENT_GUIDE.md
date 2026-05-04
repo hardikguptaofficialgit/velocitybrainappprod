@@ -1,5 +1,26 @@
 # VelocityBrain Open-Source Deployment Guide
 
+## Production Compose Command
+
+For the Docker production stack, always use:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
+
+Do not rely on `docker compose -f docker-compose.prod.yml up -d --build` by itself. Docker Compose only auto-loads `.env`, not `.env.prod`, for variable interpolation. Without `--env-file .env.prod`, secrets and build args can resolve to blank values and break:
+
+- Postgres password wiring
+- Redis password wiring
+- internal usage secret wiring
+- frontend build-time Firebase and API variables
+
+If you prefer a single command, use:
+
+```bash
+./scripts/deploy_prod.sh
+```
+
 ## 🎉 Implementation Complete!
 
 Your VelocityBrain open-source strategy has been successfully implemented. Here's what has been created and what you need to do next.
