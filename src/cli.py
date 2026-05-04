@@ -3,6 +3,8 @@ import asyncio
 import json
 import os
 import re
+import shlex
+import shutil
 import subprocess
 import sys
 import webbrowser
@@ -1617,6 +1619,20 @@ def _write_hermes_config(config_path: Path, command_value: str = 'velocitybrain'
     return True, 'Updated Hermes config with Velocity Brain MCP entry.'
 
 
+def _run_connect_command(command: str) -> subprocess.CompletedProcess[str]:
+    executable = shlex.split(command, posix=False)[0]
+    resolved = shutil.which(executable)
+
+    if os.name == 'nt' and resolved and resolved.lower().endswith('.ps1'):
+        return subprocess.run(
+            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command],
+            capture_output=True,
+            text=True,
+        )
+
+    return subprocess.run(shlex.split(command, posix=False), capture_output=True, text=True)
+
+
 def cmd_connect(args: argparse.Namespace) -> int:
     runtime_mode = _resolve_runtime_mode(args)
     payload: dict[str, Any] = {
@@ -1630,8 +1646,7 @@ def cmd_connect(args: argparse.Namespace) -> int:
         command = _connect_command_for_client(args.client)
         payload['command'] = command
         if args.apply:
-            parts = command.split()
-            completed = subprocess.run(parts, capture_output=True, text=True)
+            completed = _run_connect_command(command)
             payload['applied'] = completed.returncode == 0
             payload['hint'] = completed.stdout.strip() or completed.stderr.strip() or 'Command executed.'
             exit_code = completed.returncode

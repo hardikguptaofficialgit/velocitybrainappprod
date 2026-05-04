@@ -18,3 +18,7 @@ excalidraw.log
 .env
 .env.local
 .env.prod
+.velocitybrain
+data
+data/pytest-tmp
+*.log

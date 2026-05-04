@@ -184,10 +184,13 @@ class Settings(BaseModel):
                 except Exception as exc:
                     logger.error(f'Failed to create directory {path}: {exc}')
         
-        # Validate identity spec exists
+        # Missing repo-local identity specs are common in consumer repos, so keep this low-noise
         identity_path = Path(self.identity_spec_path)
         if not identity_path.exists():
-            logger.warning(f'Identity spec file not found: {identity_path}')
+            if os.getenv('IDENTITY_SPEC_PATH'):
+                logger.warning(f'Identity spec file not found: {identity_path}')
+            else:
+                logger.info(f'No repo-local identity spec found at {identity_path}; using default hosted identity behavior')
         
         logger.info(f'Configuration validated for environment: {self.env}')
 

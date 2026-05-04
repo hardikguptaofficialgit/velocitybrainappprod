@@ -1,6 +1,6 @@
 {
   "name": "velocitybrain-monorepo",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "private": true,
   "description": "Velocity Brain monorepo for the hosted memory platform, dashboard, backend API, and MCP tooling.",
   "engines": {

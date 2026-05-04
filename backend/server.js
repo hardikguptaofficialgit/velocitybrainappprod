@@ -12,6 +12,7 @@ const { initializeDatabase } = require('./config/firebase');
 const authRoutes = require('./routes/auth');
 const apiKeyRoutes = require('./routes/apiKeys');
 const usageRoutes = require('./routes/usage');
+const hostedRoutes = require('./routes/hosted');
 const dashboardRoutes = require('./routes/dashboard');
 const settingsRoutes = require('./routes/settings');
 
@@ -128,6 +129,7 @@ app.get('/api/docs/:docName', (req, res) => {
 });
 
 // API Routes
+app.use('/v1', hostedRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/api-keys', apiKeyRoutes);
