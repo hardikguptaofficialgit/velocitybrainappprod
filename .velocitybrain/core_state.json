@@ -1,7 +1,7 @@
 {
   "artifacts": [
     {
-      "artifact_id": "e0c514b9-afb4-4cfc-b5d7-179e2fd95e2a",
+      "artifact_id": "b3ea1b1e-a503-4ea0-82f8-cf95c2b42c7b",
       "workspace_id": "velocitybrain-validation",
       "repo_id": "velocitybrain",
       "branch": null,
@@ -10,7 +10,7 @@
       "fingerprint": "bf30579429152e5bfc25ce0b2812248ba9e2b7254af8dde25870866aa8e9c07e",
       "artifact_kind": "repo_map",
       "text_is_compressed": true,
-      "source_run_id": "auth-repeat-1-5fc3e137",
+      "source_run_id": "auth-repeat-1-b71c0136",
       "context_paths": [
         "backend/server.js",
         "readme.md",
@@ -18,8 +18,8 @@
         "src/core_api/auth.py"
       ],
       "file_hashes": {
-        "readme.md": "b4bd9a0ff4efcc1018eeaa8615ed896d0026669414f6f30d2f3d5564365ef5ca",
-        "src/cli.py": "470db17db3f154bd9c917ec396f567cc39a2a82a34bf95d4a1e20c6cdebb3f91",
+        "readme.md": "ea9fc3beb082ae6d8c488d2c61d2d5aa24194000637c229cca785de4c9bc42ad",
+        "src/cli.py": "6227528695c99215027cd6f1a28fd53aeff2a8a08f3b3a9ea31bd8685c86bfa6",
         "src/core_api/auth.py": "458ed453929eeeff444b95fea9b6e5b927d2631f59c859dc91222e1191384fa9",
         "backend/server.js": "4a59acd311578cea8b7e67852986c1bc0e7bbf3359c3c8b6b7f9d9ae76e627e4"
       },
@@ -28,14 +28,14 @@
       "reuse_successes": 2,
       "reuse_failures": 0,
       "token_cost_to_create": 619,
-      "created_at": "2026-05-04T22:51:02.564938+00:00",
-      "last_used_at": "2026-05-04T22:51:02.570509+00:00",
+      "created_at": "2026-05-05T00:19:36.431336+00:00",
+      "last_used_at": "2026-05-05T00:19:36.439404+00:00",
       "blacklisted_fingerprints": [],
       "embedding": null,
-      "compressed_text_hex": "1f8b0800d622f96902ff8555db6edc3610fd958103742fd5caf52676da2d52c0d9b8885b3b706da32d6018022dcd6a1953a24a72ed28413fa12f45dffb8bfd849ea124df5ab42fbb2239c399393c67e6e2f460ffcdf1415a1597b4f362413fb2b1b90e2dbd764ad7a43d299a4ed7d6072ea8e2caba96545d90e38d676a8c0a2bebaae994f047b92d745d922ab90e3ea5c3403e58c73e5aab2bc36437a1d9044fb6ce39c176709a6f58d6a6a5b0665c5107fe10f0ad02552a04763ee92336d6c1d5ab1ba412ec35d738e95639f24b1ee4b5d63054b9b3ded3f2e830a1fd93c3eefc7879421a21dc4ae58c1ce7a879860a0f64af711ace679c6f1c20984e1774f6c311ccdf731eb4ada97136749f09fd7c76863592afbbb5da207d7ce7aa5b3b15988cae741048e6bb5d98a5ade00443af6f988e6dad01100c24d65b5626ac295f737e8dca2a0127f7a8cd98216883bc01b7027a149ccaafe5ee5d94f0ecd933faebcf3f7e4788217dfa8cf61fe58447dadd7d5aedac74aae027d9c3f2562395ef7e3aef818ed8f9dc363cbb521e888b0332ff18ed6977afbbf7b0c6ebd28d32bae80ea29b4295bd256e1e4043e68fd1155b41158f8eca3ced7dd5d5859274592b436fb8471fa59dafeda65c075aaa266c1ce3de975f2c681f8863f796e537be731dc8a8961d39502f32f1970d7bb00387163f2516115a6cbb361146d735b613e20f00b23b03b52b156f8bc8af8cbd0575ce41d7487532d6365297672764161e039b524bd23ee69e50de25ea496a0f9a7b56dfe2a9b079858a09cc5d6dcca0b2f802d329d76b095a103b873cb0284c14199c8d2dcb489e945eceef48f01bbca27a67df6ae7031d597bbd69e804e4b52013a0baf02edfce8d4e9bb653fdcad98ab09962530ad29568edae19c4db96ddd1ceee3fcc53fe90732350f9c1137a3b907c93271cec37df71b8b5eeba5f9d422a47a294b8a69dbd8711d03ff053af7439dced39087b3c3d97d40b5e51961bbb29b28850567050daf831925ad0c190d98466df50a1f370e1836455b7970b5c8062f40a5d4ed73e08cce2f5af394fc41a89a1656d5c4d9fb07ab9a011bcc2c68ff0f55841d90a3970314a60f7254e2bf61e5c1143a14ddf4f81125d339e5a093145075ca4f0d9dbdb59804f60dc38f3a1353c1e4187d678b8d3e7048b51fadeea7a0c52a92b6d229fd292c37814cd6070713999247476b47f7e90480bb1ee15e895c5afc90411e6ff88e02b483d1372f76104b23e50a35a6355d1c5709cdbaae2bae022bb77faffa03b73d1688fe08e2c516616b3c80c972a6fb35be5447d12a3b15e9a634bbeadf36e10150c91016040e7d9ac663d8c4225c9201dc518f3459c159e5e9172a54f65211296971f9fa8b01e0f0c4ac5d337980499b3364c60eaadb9e1f16472d98b04f4cb54a3b7e5793bb92c686b6b8be68bc7eaa0252ce383ce9ed08740d2b7a25ac87c78f0c764895a8e7d166da6064d2a119a0cd46e22e262ae21744e097c3d441f2a65baf8ae45bcb305a7efbb168237897e439cfb4e9cdeeb7ca5c0da463f90eaa9f446a8e2edf9f9c99d6212f4db0617ca908d2cbf977e7f43ea8751d35f25feaf59b9e1aefd874362e9b8909a95f1f7126fda42090ec30daf315c8e5190898359fa1b5af72b02edb26e31de1a9e241510b72634973141d1092d0104cb8dc2d897d8a75db31fdfdd1a55bc207867806781c2408b1eb8edd8bd1da0c423c3084d07cdf313668496a4f5477ea38292e947bf22251924da4137e976d79eb65758caf168f23568385c20599e76b3e79153378f22afa2c3f33b87467fcfed7fb94403df79cda59a2685ccc6a3ed9b1d88b01345e71f4d9e3f3419b83c4a1e6416cd5e3c351b5402d3e17330ff1b4e30edc0360a0000"
+      "compressed_text_hex": "1f8b08009837f96902ff8555db4ee44610fd95122b652e3126332cb0996823b1b34490c08a004a22216435768da797b6dbe9ee819d5de513f212e53dbf984fc8a9b6cd6da3e465c6dd5df73aa7eaf2ec60ffedc9415a1557347939a39fd8d85c8735bd714ad7a43d291a8f97d6072ea8e2caba35a9ba20c72bcfd4181516d655e331e18f725be8ba2455721d7c4a47817cb08e7d9456d786c9ae42b30a9e6c9d7382ebe034dfb29ccd9ac29261a20efc21e05b05aa5408ec7cd2796cac83aa57b70825d81baef1d29e72c4973c8a6ba921a87267bda7f9f15142fba747edfbc9fc94345cb885ca19314e91f326323c90bbc669289f73be7228c1783ca3f31f8f21fe9ef3a06d4d8db3a1fd4ce897f3739c117cdd9ed50ae1e33b57edd9a9c06474a5839464bad3ba99db0a4a10f4fa96e9c4d61a058280f83a6465c292f225e737c8ac92e2e41eb919d33b6d1037caad503d0a4ee537627b0729bc78f182fefeebcf3fe0a20f9fbea0fd2731a1493b3bcfb3dd2c9d2af859f490bcd308e5fb9f2fba42c7daf9dc36bc79ad3c2a2e0a88fc6394a79dddd6ee518deed2ad32ba681fa29a42969d242cf74543e44fab2bb25255341d9979dafdbacd0b29e9b25686de72577da476b1b4ab721968ae9ab0720cbb7b5fcd681f15c7ed1dcb6fec731dc8a8353b72805e44e2af2bf640071e2d7e4a1c626971edd68920baae719d107f4021db3740bb52d15aacfcc2d83b40e702708d5027636d237979760266c1316a536a09dac7d813cadb403d49ee417387ea3bb40a97d7c89880dcc5caf42c8b1d188fb95e8ad382d839c481436122c9a06c6c5946f0a4b437bd07c1efd08aecddfc4e3b1fe8d8da9b5543a700af059850aa4beff2addce8b45983f5c0c4c2d98a7099e25212d29570ed7e18446bf3f669b2fb9978ca1f726ea454bed704df0e24dee41906bbcb771ceeacbbe94e67a0cab130259e69b2f7d803e6077eea852e7bdb9e83a0c7d3f6deab1915bca02c37765564b14259c14169e387086a46077d6423dafc960a9d874b1f24aa7a7d358301404c2f30e574ed839459b4fe35e611a45f016118592b57d3279c26331a402bacfc005f4f19942d100317830472e8cca062ef81151114d874f31455a21b46ab95005378c0450a9d3d1917a0671d86990f6bc3c30178688d873a7d499018a4efadae870095bad626e2292d390c07510c029757a35142e7c7fb1707898c10eb5e035e59fc1a8de061f7330fbe02d5330177e7464ad6396ad4da5855b43e1ce7b6aab82eb8c81e94fedfe9647b7bf7be821339a2d3598c22335caa7c9ddd2927ec131f8df5321cd7e4d775de2ea28241321418a5f36c169b5d19054a12413a883e5ecde2aef0f49a942b7d2a07a1b0747e78aac272d82328154ddf601364ceda3082a8b7e69687a3d1554712c02f538dde92f6b67499d1c6c6064d674fd9417348c6866e3e830f613c1f0a6b41f3bee14fc112b91ce72cc64c0d9854423459a8ed468461ae41744e09b838c21c2a65bbf87644bcb305a7efdb11829e44bddecfc3244ee3768fb45a28a0b6d18fa87a26b311ac38bcb838bd674c8279dbc0a02cd988f28749d159487dbf6a3a53a2ff8695eb6ded3f5e1273c785e4ac8c7f1822cdba505287dec21b2c97132464e26296f986d1fd9a00bbac3d0c37fa96a452c48d114d654d5054c248004573a3b0f6c5f7593bec87f75685c56820b433946786c4008bae705b717a3b94124d8610860e86e727ec082d41eb8ffc560525db8f7e4348b248b4036fd2ad763c6d2d7094e7c1e81b9a4c7b0312e559bb7b9e28b5fb28e22a2a6cdf2b34fa075eff974a14f0add654b26952d06c38d8ba9d80842d295afd28b2fd58a4c7f220791459147bf95cac670944fbcf5efc1fd2c931ef360a0000"
     },
     {
-      "artifact_id": "e47e7266-5c87-4ce9-be99-0926dc4b349d",
+      "artifact_id": "ebd65372-fb96-4a9c-af81-ae857cbb5216",
       "workspace_id": "velocitybrain-validation",
       "repo_id": "velocitybrain",
       "branch": null,
@@ -44,7 +44,7 @@
       "fingerprint": "bf30579429152e5bfc25ce0b2812248ba9e2b7254af8dde25870866aa8e9c07e",
       "artifact_kind": "repo_map",
       "text_is_compressed": true,
-      "source_run_id": "auth-repeat-2-18173d82",
+      "source_run_id": "auth-repeat-2-5e2d15ba",
       "context_paths": [
         "backend/server.js",
         "readme.md",
@@ -52,8 +52,8 @@
         "src/core_api/auth.py"
       ],
       "file_hashes": {
-        "readme.md": "b4bd9a0ff4efcc1018eeaa8615ed896d0026669414f6f30d2f3d5564365ef5ca",
-        "src/cli.py": "470db17db3f154bd9c917ec396f567cc39a2a82a34bf95d4a1e20c6cdebb3f91",
+        "readme.md": "ea9fc3beb082ae6d8c488d2c61d2d5aa24194000637c229cca785de4c9bc42ad",
+        "src/cli.py": "6227528695c99215027cd6f1a28fd53aeff2a8a08f3b3a9ea31bd8685c86bfa6",
         "src/core_api/auth.py": "458ed453929eeeff444b95fea9b6e5b927d2631f59c859dc91222e1191384fa9",
         "backend/server.js": "4a59acd311578cea8b7e67852986c1bc0e7bbf3359c3c8b6b7f9d9ae76e627e4"
       },
@@ -62,31 +62,31 @@
       "reuse_successes": 1,
       "reuse_failures": 0,
       "token_cost_to_create": 619,
-      "created_at": "2026-05-04T22:51:02.587262+00:00",
+      "created_at": "2026-05-05T00:19:36.461573+00:00",
       "last_used_at": null,
       "blacklisted_fingerprints": [],
       "embedding": null,
-      "compressed_text_hex": "1f8b0800d622f96902ff8555db6edc3610fd958103742fd5caf52676da2d52c0d9b8885b3b706da32d6018022dcd6a1953a24a72ed28413fa12f45dffb8bfd849ea124df5ab42fbb2239c399393c67e6e2f460ffcdf1415a1597b4f362413fb2b1b90e2dbd764ad7a43d299a4ed7d6072ea8e2caba96545d90e38d676a8c0a2bebaae994f047b92d745d922ab90e3ea5c3403e58c73e5aab2bc36437a1d9044fb6ce39c176709a6f58d6a6a5b0665c5107fe10f0ad02552a04763ee92336d6c1d5ab1ba412ec35d738e95639f24b1ee4b5d63054b9b3ded3f2e830a1fd93c3eefc7879421a21dc4ae58c1ce7a879860a0f64af711ace679c6f1c20984e1774f6c311ccdf731eb4ada97136749f09fd7c76863592afbbb5da207d7ce7aa5b3b15988cae741048e6bb5d98a5ade00443af6f988e6dad01100c24d65b5626ac295f737e8dca2a0127f7a8cd98216883bc01b7027a149ccaafe5ee5d94f0ecd933faebcf3f7e4788217dfa8cf61fe58447dadd7d5aedac74aae027d9c3f2562395ef7e3aef818ed8f9dc363cbb521e888b0332ff18ed6977afbbf7b0c6ebd28d32bae80ea29b4295bd256e1e4043e68fd1155b41158f8eca3ced7dd5d5859274592b436fb8471fa59dafeda65c075aaa266c1ce3de975f2c681f8863f796e537be731dc8a8961d39502f32f1970d7bb00387163f2516115a6cbb361146d735b613e20f00b23b03b52b156f8bc8af8cbd0575ce41d7487532d6365297672764161e039b524bd23ee69e50de25ea496a0f9a7b56dfe2a9b079858a09cc5d6dcca0b2f802d329d76b095a103b873cb0284c14199c8d2dcb489e945eceef48f01bbca27a67df6ae7031d597bbd69e804e4b52013a0baf02edfce8d4e9bb653fdcad98ab09962530ad29568edae19c4db96ddd1ceee3fcc53fe90732350f9c1137a3b907c93271cec37df71b8b5eeba5f9d422a47a294b8a69dbd8711d03ff053af7439dced39087b3c3d97d40b5e51961bbb29b28850567050daf831925ad0c190d98466df50a1f370e1836455b7970b5c8062f40a5d4ed73e08cce2f5af394fc41a89a1656d5c4d9fb07ab9a011bcc2c68ff0f55841d90a3970314a60f7254e2bf61e5c1143a14ddf4f81125d339e5a093145075ca4f0d9dbdb59804f60dc38f3a1353c1e4187d678b8d3e7048b51fadeea7a0c52a92b6d229fd292c37814cd6070713999247476b47f7e90480bb1ee15e895c5afc90411e6ff88e02b483d1372f76104b23e50a35a6355d1c5709cdbaae2bae022bb77faffa03b73d1688fe08e2c516616b3c80c972a6fb35be5447d12a3b15e9a634bbeadf36e10150c91016040e7d9ac663d8c4225c9201dc518f3459c159e5e9172a54f65211296971f9fa8b01e0f0c4ac5d337980499b3364c60eaadb9e1f16472d98b04f4cb54a3b7e5793bb92c686b6b8be68bc7eaa0252ce383ce9ed08740d2b7a25ac87c78f0c764895a8e7d166da6064d2a119a0cd46e22e262ae21744e097c3d441f2a65baf8ae45bcb305a7efbb168237897e439cfb4e9cdeeb7ca5c0da463f90eaa9f446a8e2edf9f9c99d6212f4db0617ca908d2cbf977e7f43ea8751d35f25feaf59b9e1aefd874362e9b8909a95f1f7126fda42090ec30daf315c8e5190898359fa1b5af72b02edb26e31de1a9e241510b72634973141d1092d0104cb8dc2d897d8a75db31fdfdd1a55bc207867806781c2408b1eb8edd8bd1da0c423c3084d07cdf313668496a4f5477ea38292e947bf22251924da4137e976d79eb65758caf168f23568385c20599e76b3e79153378f22afa2c3f33b87467fcfed7fb94403df79cda59a2685ccc6a3ed9b1d88b01345e71f4d9e3f3419b83c4a1e6416cd5e3c351b5402d3e17330ff1b4e30edc0360a0000"
+      "compressed_text_hex": "1f8b08009837f96902ff8555db4ee44610fd95122b652e3126332cb0996823b1b34490c08a004a22216435768da797b6dbe9ee819d5de513f212e53dbf984fc8a9b6cd6da3e465c6dd5df73aa7eaf2ec60ffedc9415a1557347939a39fd8d85c8735bd714ad7a43d291a8f97d6072ea8e2caba35a9ba20c72bcfd4181516d655e331e18f725be8ba2455721d7c4a47817cb08e7d9456d786c9ae42b30a9e6c9d7382ebe034dfb29ccd9ac29261a20efc21e05b05aa5408ec7cd2796cac83aa57b70825d81baef1d29e72c4973c8a6ba921a87267bda7f9f15142fba747edfbc9fc94345cb885ca19314e91f326323c90bbc669289f73be7228c1783ca3f31f8f21fe9ef3a06d4d8db3a1fd4ce897f3739c117cdd9ed50ae1e33b57edd9a9c06474a5839464bad3ba99db0a4a10f4fa96e9c4d61a058280f83a6465c292f225e737c8ac92e2e41eb919d33b6d1037caad503d0a4ee537627b0729bc78f182fefeebcf3fe0a20f9fbea0fd2731a1493b3bcfb3dd2c9d2af859f490bcd308e5fb9f2fba42c7daf9dc36bc79ad3c2a2e0a88fc6394a79dddd6ee518deed2ad32ba681fa29a42969d242cf74543e44fab2bb25255341d9979dafdbacd0b29e9b25686de72577da476b1b4ab721968ae9ab0720cbb7b5fcd681f15c7ed1dcb6fec731dc8a8353b72805e44e2af2bf640071e2d7e4a1c626971edd68920baae719d107f4021db3740bb52d15aacfcc2d83b40e702708d5027636d237979760266c1316a536a09dac7d813cadb403d49ee417387ea3bb40a97d7c89880dcc5caf42c8b1d188fb95e8ad382d839c481436122c9a06c6c5946f0a4b437bd07c1efd08aecddfc4e3b1fe8d8da9b5543a700af059850aa4beff2addce8b45983f5c0c4c2d98a7099e25212d29570ed7e18446bf3f669b2fb9978ca1f726ea454bed704df0e24dee41906bbcb771ceeacbbe94e67a0cab130259e69b2f7d803e6077eea852e7bdb9e83a0c7d3f6deab1915bca02c37765564b14259c14169e387086a46077d6423dafc960a9d874b1f24aa7a7d358301404c2f30e574ed839459b4fe35e611a45f016118592b57d3279c26331a402bacfc005f4f19942d100317830472e8cca062ef81151114d874f31455a21b46ab95005378c0450a9d3d1917a0671d86990f6bc3c30178688d873a7d499018a4efadae870095bad626e2292d390c07510c029757a35142e7c7fb1707898c10eb5e035e59fc1a8de061f7330fbe02d5330177e7464ad6396ad4da5855b43e1ce7b6aab82eb8c81e94fedfe9647b7bf7be821339a2d3598c22335caa7c9ddd2927ec131f8df5321cd7e4d775de2ea28241321418a5f36c169b5d19054a12413a883e5ecde2aef0f49a942b7d2a07a1b0747e78aac272d82328154ddf601364ceda3082a8b7e69687a3d1554712c02f538dde92f6b67499d1c6c6064d674fd9417348c6866e3e830f613c1f0a6b41f3bee14fc112b91ce72cc64c0d9854423459a8ed468461ae41744e09b838c21c2a65bbf87644bcb305a7efdb11829e44bddecfc3244ee3768fb45a28a0b6d18fa87a26b311ac38bcb838bd674c8279dbc0a02cd988f28749d159487dbf6a3a53a2ff8695eb6ded3f5e1273c785e4ac8c7f1822cdba505287dec21b2c97132464e26296f986d1fd9a00bbac3d0c37fa96a452c48d114d654d5054c248004573a3b0f6c5f7593bec87f75685c56820b433946786c4008bae705b717a3b94124d8610860e86e727ec082d41eb8ffc560525db8f7e4348b248b4036fd2ad763c6d2d7094e7c1e81b9a4c7b0312e559bb7b9e28b5fb28e22a2a6cdf2b34fa075eff974a14f0add654b26952d06c38d8ba9d80842d295afd28b2fd58a4c7f220791459147bf95cac670944fbcf5efc1fd2c931ef360a0000"
     }
   ],
   "task_runs": [
     {
-      "run_id": "auth-repeat-1-5fc3e137",
+      "run_id": "auth-repeat-1-b71c0136",
       "task": "Map the hosted auth and API key flow across this repo.",
-      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n14: from src.client import VelocityBrainClient\n15: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n16: from src.core.config import settings\n314: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n315: if isinstance(exc, AuthenticationError):\n316: return {\n317: 'status': 'authentication_failed',\n318: 'message': 'The hosted API key was rejected.',\n661: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n662: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1270: return 1\n1271: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1272: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
+      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n15: from src.client import VelocityBrainClient\n16: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n17: from src.core.config import settings\n378: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n379: if isinstance(exc, AuthenticationError):\n380: return {\n381: 'status': 'authentication_failed',\n382: 'message': 'The hosted API key was rejected.',\n725: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n726: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1336: return 1\n1337: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1338: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
       "reused": false,
       "reuse_confidence": 0.0,
       "reuse_hit_type": "none",
       "artifacts_used": [],
       "savings": {
         "avoided_input_tokens": 0,
-        "estimated_cost_without_reuse": 0.087096,
-        "estimated_cost_actual": 0.087096,
+        "estimated_cost_without_reuse": 0.096264,
+        "estimated_cost_actual": 0.096264,
         "estimated_cost_saved": 0.0,
         "saved_percent": 0.0,
         "estimated_latency_saved_ms": 0,
-        "input_tokens_actual": 29032,
-        "input_tokens_without_reuse": 29032
+        "input_tokens_actual": 32088,
+        "input_tokens_without_reuse": 32088
       },
       "truth_report": {
         "reused": false,
@@ -95,70 +95,70 @@
         "correct_reuse": true
       },
       "failures": [],
-      "created_at": "2026-05-04T22:51:02.562996+00:00"
+      "created_at": "2026-05-05T00:19:36.429209+00:00"
     },
     {
-      "run_id": "auth-repeat-2-18173d82",
+      "run_id": "auth-repeat-2-5e2d15ba",
       "task": "Map the hosted auth and API key flow across this repo.",
-      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n14: from src.client import VelocityBrainClient\n15: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n16: from src.core.config import settings\n314: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n315: if isinstance(exc, AuthenticationError):\n316: return {\n317: 'status': 'authentication_failed',\n318: 'message': 'The hosted API key was rejected.',\n661: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n662: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1270: return 1\n1271: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1272: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
+      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n15: from src.client import VelocityBrainClient\n16: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n17: from src.core.config import settings\n378: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n379: if isinstance(exc, AuthenticationError):\n380: return {\n381: 'status': 'authentication_failed',\n382: 'message': 'The hosted API key was rejected.',\n725: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n726: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1336: return 1\n1337: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1338: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
       "reused": true,
       "reuse_confidence": 1.0,
       "reuse_hit_type": "exact",
       "artifacts_used": [
-        "e0c514b9-afb4-4cfc-b5d7-179e2fd95e2a"
+        "b3ea1b1e-a503-4ea0-82f8-cf95c2b42c7b"
       ],
       "savings": {
-        "avoided_input_tokens": 28395,
-        "estimated_cost_without_reuse": 0.087096,
+        "avoided_input_tokens": 31451,
+        "estimated_cost_without_reuse": 0.096264,
         "estimated_cost_actual": 0.001911,
-        "estimated_cost_saved": 0.085185,
-        "saved_percent": 97.8,
-        "estimated_latency_saved_ms": 34084,
+        "estimated_cost_saved": 0.094353,
+        "saved_percent": 98.0,
+        "estimated_latency_saved_ms": 37751,
         "input_tokens_actual": 637,
-        "input_tokens_without_reuse": 29032
+        "input_tokens_without_reuse": 32088
       },
       "truth_report": {
         "reused": true,
-        "tokens_saved": 28395,
-        "percent_saved": 97.8,
+        "tokens_saved": 31451,
+        "percent_saved": 98.0,
         "correct_reuse": true
       },
       "failures": [],
-      "created_at": "2026-05-04T22:51:02.584308+00:00"
+      "created_at": "2026-05-05T00:19:36.459871+00:00"
     }
   ],
   "run_logs": [
     {
-      "run_id": "auth-repeat-1-5fc3e137",
+      "run_id": "auth-repeat-1-b71c0136",
       "user_id": "velocitybrain-validation",
       "repo_id": "velocitybrain",
       "task_hash": "a44361d21b7dba2b1501d2538b1a720ad5154e91e9d46518b2529cb1f4d68473",
       "repeat_key": "0f8178a31f8534b15ecb9ec61fe503ca9872473b4ef81d4065d66840ad4a877d",
-      "first_seen_at": "2026-05-04T22:51:02.562996+00:00",
+      "first_seen_at": "2026-05-05T00:19:36.429209+00:00",
       "repeat_count": 1,
       "is_repeat_run": false,
       "reused": false,
       "reuse_confidence": 0.0,
       "tokens_saved": 0,
       "percent_saved": 0.0,
-      "latency_ms": 0.236,
-      "timestamp": "2026-05-04T22:51:02.562996+00:00"
+      "latency_ms": 0.42,
+      "timestamp": "2026-05-05T00:19:36.429209+00:00"
     },
     {
-      "run_id": "auth-repeat-2-18173d82",
+      "run_id": "auth-repeat-2-5e2d15ba",
       "user_id": "velocitybrain-validation",
       "repo_id": "velocitybrain",
       "task_hash": "a44361d21b7dba2b1501d2538b1a720ad5154e91e9d46518b2529cb1f4d68473",
       "repeat_key": "0f8178a31f8534b15ecb9ec61fe503ca9872473b4ef81d4065d66840ad4a877d",
-      "first_seen_at": "2026-05-04T22:51:02.562996+00:00",
+      "first_seen_at": "2026-05-05T00:19:36.429209+00:00",
       "repeat_count": 2,
       "is_repeat_run": true,
       "reused": true,
       "reuse_confidence": 1.0,
-      "tokens_saved": 28395,
-      "percent_saved": 97.8,
-      "latency_ms": 0.18,
-      "timestamp": "2026-05-04T22:51:02.584308+00:00"
+      "tokens_saved": 31451,
+      "percent_saved": 98.0,
+      "latency_ms": 0.221,
+      "timestamp": "2026-05-05T00:19:36.459871+00:00"
     }
   ],
   "user_metrics": {
@@ -167,14 +167,14 @@
       "total_runs": 2,
       "repeat_runs": 1,
       "repeat_rate": 0.5,
-      "avg_tokens_saved": 14197.5,
+      "avg_tokens_saved": 15725.5,
       "reuse_hit_rate": 0.5,
       "low_value_user": false,
       "classification": "emerging_user",
       "aha_count": 1,
       "best_repo": "velocitybrain",
       "best_reuse_rate": 50.0,
-      "best_savings": 14197.5,
+      "best_savings": 15725.5,
       "top_repo_per_user": "velocitybrain"
     }
   },
@@ -185,23 +185,23 @@
       "total_runs": 2,
       "repeat_rate": 0.5,
       "reuse_rate": 0.5,
-      "avg_savings": 14197.5,
-      "wedge_score": 14197.5
+      "avg_savings": 15725.5,
+      "wedge_score": 15725.5
     }
   },
   "repeat_index": {
     "0f8178a31f8534b15ecb9ec61fe503ca9872473b4ef81d4065d66840ad4a877d": {
       "repo_id": "velocitybrain",
       "normalized_task": "map the hosted auth and api key flow across this repo.",
-      "first_seen_at": "2026-05-04T22:51:02.562996+00:00",
+      "first_seen_at": "2026-05-05T00:19:36.429209+00:00",
       "repeat_count": 2
     }
   },
   "low_value_users": [],
   "reuse_decisions": [
     {
-      "run_id": "auth-repeat-1-5fc3e137",
-      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n14: from src.client import VelocityBrainClient\n15: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n16: from src.core.config import settings\n314: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n315: if isinstance(exc, AuthenticationError):\n316: return {\n317: 'status': 'authentication_failed',\n318: 'message': 'The hosted API key was rejected.',\n661: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n662: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1270: return 1\n1271: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1272: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
+      "run_id": "auth-repeat-1-b71c0136",
+      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n15: from src.client import VelocityBrainClient\n16: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n17: from src.core.config import settings\n378: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n379: if isinstance(exc, AuthenticationError):\n380: return {\n381: 'status': 'authentication_failed',\n382: 'message': 'The hosted API key was rejected.',\n725: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n726: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1336: return 1\n1337: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1338: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
       "reuse": {
         "hit_type": "none",
         "artifacts_used": [],
@@ -211,13 +211,13 @@
       },
       "savings": {
         "avoided_input_tokens": 0,
-        "estimated_cost_without_reuse": 0.087096,
-        "estimated_cost_actual": 0.087096,
+        "estimated_cost_without_reuse": 0.096264,
+        "estimated_cost_actual": 0.096264,
         "estimated_cost_saved": 0.0,
         "saved_percent": 0.0,
         "estimated_latency_saved_ms": 0,
-        "input_tokens_actual": 29032,
-        "input_tokens_without_reuse": 29032
+        "input_tokens_actual": 32088,
+        "input_tokens_without_reuse": 32088
       },
       "truth_report": {
         "reused": false,
@@ -251,42 +251,42 @@
           "semantic confidence below threshold"
         ],
         "latency_ms": {
-          "fingerprint": 0.017,
-          "cache_lookup": 0.004,
-          "artifact_scan": 0.153,
-          "ranking": 0.009,
-          "total": 0.236
+          "fingerprint": 0.034,
+          "cache_lookup": 0.006,
+          "artifact_scan": 0.269,
+          "ranking": 0.015,
+          "total": 0.42
         }
       },
-      "created_at": "2026-05-04T22:51:02.562996+00:00",
+      "created_at": "2026-05-05T00:19:36.429209+00:00",
       "failures": []
     },
     {
-      "run_id": "auth-repeat-2-18173d82",
-      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n14: from src.client import VelocityBrainClient\n15: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n16: from src.core.config import settings\n314: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n315: if isinstance(exc, AuthenticationError):\n316: return {\n317: 'status': 'authentication_failed',\n318: 'message': 'The hosted API key was rejected.',\n661: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n662: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1270: return 1\n1271: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1272: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
+      "run_id": "auth-repeat-2-5e2d15ba",
+      "result": "[README.md]\n14: Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.\n24: - **Enterprise Security**: SQL injection protection, XSS prevention, authentication, rate limiting\n25: - **Comprehensive Monitoring**: Health checks, metrics collection, performance tracking\n54: ### \ud83d\udd12 **Security & Authentication**\n55: - **Enterprise-grade authentication** with JWT tokens and scope-based authorization\n56: - **Input validation and sanitization** preventing SQL injection and XSS attacks\n69: ###   **Signal Detection & Thought Capture**\n70: A lightweight intent layer routes requests into ingestion, query, planning, execution, or maintenance flows. The agent loop preserves the original signal, captures entities, and writes back useful memory with **enhanced error handling and logging**.\n72: ### \ud83d\udd0d **Brain-First Lookup Protocol**\n\n[src/cli.py]\n15: from src.client import VelocityBrainClient\n16: from src.client.exceptions import APIError, AuthenticationError, NetworkError, RateLimitError\n17: from src.core.config import settings\n378: def _cloud_error_details(exc: Exception) -> dict[str, Any]:\n379: if isinstance(exc, AuthenticationError):\n380: return {\n381: 'status': 'authentication_failed',\n382: 'message': 'The hosted API key was rejected.',\n725: print(_style('  tools: ' + ', '.join(capabilities.get('tools', [])), SLATE, color=use_color))\n726: print(_style('  smoke_flow: ' + ' -> '.join(payload.get('recommended_smoke_flow', [])), SLATE, color=use_color))\n1336: return 1\n1337: _print_legacy_warning('repository sync is a deprecated self-hosted workflow.')\n1338: repos = args.repo or [str(Path(settings.workspace_root).resolve())]\n\n[src/core_api/auth.py]\n1: \"\"\"\n2: VelocityBrain Core API - Authentication\n4: Handles API key authentication and token management for the core engine.\n5: Integrates with Node.js backend for API key validation.\n14: from fastapi import APIRouter, HTTPException, Depends, status\n15: from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n16: from pydantic import BaseModel\n24: logger = get_logger(\"core_api.auth\")\n29: # Models\n30: class AuthRequest(BaseModel):\n31: api_key: str\n\n[backend/server.js]\n11: const { initializeDatabase } = require('./config/firebase');\n12: const authRoutes = require('./routes/auth');\n13: const apiKeyRoutes = require('./routes/apiKeys');\n132: app.use('/v1', hostedRoutes);\n133: app.use('/api/auth', authRoutes);\n134: app.use('/api/settings', settingsRoutes);",
       "reuse": {
         "hit_type": "exact",
         "artifacts_used": [
-          "e0c514b9-afb4-4cfc-b5d7-179e2fd95e2a"
+          "b3ea1b1e-a503-4ea0-82f8-cf95c2b42c7b"
         ],
         "confidence": 1.0,
         "reuse_confidence": 1.0,
         "reused": true
       },
       "savings": {
-        "avoided_input_tokens": 28395,
-        "estimated_cost_without_reuse": 0.087096,
+        "avoided_input_tokens": 31451,
+        "estimated_cost_without_reuse": 0.096264,
         "estimated_cost_actual": 0.001911,
-        "estimated_cost_saved": 0.085185,
-        "saved_percent": 97.8,
-        "estimated_latency_saved_ms": 34084,
+        "estimated_cost_saved": 0.094353,
+        "saved_percent": 98.0,
+        "estimated_latency_saved_ms": 37751,
         "input_tokens_actual": 637,
-        "input_tokens_without_reuse": 29032
+        "input_tokens_without_reuse": 32088
       },
       "truth_report": {
         "reused": true,
-        "tokens_saved": 28395,
-        "percent_saved": 97.8,
+        "tokens_saved": 31451,
+        "percent_saved": 98.0,
         "correct_reuse": true
       },
       "debug": {
@@ -304,51 +304,51 @@
           "repo_context_same_repo": 0,
           "semantic": 0
         },
-        "matched_artifact_id": "e0c514b9-afb4-4cfc-b5d7-179e2fd95e2a",
+        "matched_artifact_id": "b3ea1b1e-a503-4ea0-82f8-cf95c2b42c7b",
         "matched_artifact_kind": "repo_map",
-        "matched_source_run_id": "auth-repeat-1-5fc3e137",
+        "matched_source_run_id": "auth-repeat-1-b71c0136",
         "confidence": 0.74,
         "path_overlap": 1.0,
         "skipped": [
           "retrieval pipeline skipped because exact cache hit"
         ],
         "latency_ms": {
-          "fingerprint": 0.022,
-          "cache_lookup": 0.009,
+          "fingerprint": 0.027,
+          "cache_lookup": 0.011,
           "artifact_scan": 0.0,
           "ranking": 0.0,
-          "total": 0.18
+          "total": 0.221
         }
       },
-      "created_at": "2026-05-04T22:51:02.584308+00:00",
+      "created_at": "2026-05-05T00:19:36.459871+00:00",
       "failures": []
     }
   ],
   "savings_events": [
     {
-      "run_id": "auth-repeat-1-5fc3e137",
+      "run_id": "auth-repeat-1-b71c0136",
       "avoided_input_tokens": 0,
-      "estimated_cost_without_reuse": 0.087096,
-      "estimated_cost_actual": 0.087096,
+      "estimated_cost_without_reuse": 0.096264,
+      "estimated_cost_actual": 0.096264,
       "estimated_cost_saved": 0.0,
       "saved_percent": 0.0,
       "estimated_latency_saved_ms": 0,
-      "input_tokens_actual": 29032,
-      "input_tokens_without_reuse": 29032,
+      "input_tokens_actual": 32088,
+      "input_tokens_without_reuse": 32088,
       "hit_type": "none",
       "repo_id": "velocitybrain",
       "user_id": "velocitybrain-validation"
     },
     {
-      "run_id": "auth-repeat-2-18173d82",
-      "avoided_input_tokens": 28395,
-      "estimated_cost_without_reuse": 0.087096,
+      "run_id": "auth-repeat-2-5e2d15ba",
+      "avoided_input_tokens": 31451,
+      "estimated_cost_without_reuse": 0.096264,
       "estimated_cost_actual": 0.001911,
-      "estimated_cost_saved": 0.085185,
-      "saved_percent": 97.8,
-      "estimated_latency_saved_ms": 34084,
+      "estimated_cost_saved": 0.094353,
+      "saved_percent": 98.0,
+      "estimated_latency_saved_ms": 37751,
       "input_tokens_actual": 637,
-      "input_tokens_without_reuse": 29032,
+      "input_tokens_without_reuse": 32088,
       "hit_type": "exact",
       "repo_id": "velocitybrain",
       "user_id": "velocitybrain-validation"
@@ -357,24 +357,24 @@
   "failure_events": [],
   "latency_events": [
     {
-      "fingerprint_ms": 0.016699996194802225,
-      "cache_lookup_ms": 0.0039000005926936865,
-      "artifact_scan_ms": 0.15320000238716602,
-      "ranking_ms": 0.008800008799880743,
-      "total_ms": 0.23580000561196357
+      "fingerprint_ms": 0.03429999924264848,
+      "cache_lookup_ms": 0.005900001269765198,
+      "artifact_scan_ms": 0.26889999571722,
+      "ranking_ms": 0.014699995517730713,
+      "total_ms": 0.42039999971166253
     },
     {
-      "fingerprint_ms": 0.02160000440198928,
-      "cache_lookup_ms": 0.009099996532313526,
+      "fingerprint_ms": 0.02680000034160912,
+      "cache_lookup_ms": 0.010700008715502918,
       "artifact_scan_ms": 0.0,
       "ranking_ms": 0.0,
-      "total_ms": 0.1795999996829778
+      "total_ms": 0.22050000552553684
     }
   ],
   "exact_cache": [
     [
       "bf30579429152e5bfc25ce0b2812248ba9e2b7254af8dde25870866aa8e9c07e",
-      "e47e7266-5c87-4ce9-be99-0926dc4b349d"
+      "ebd65372-fb96-4a9c-af81-ae857cbb5216"
     ]
   ]
 }

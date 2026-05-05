@@ -1,7 +1,7 @@
 import React from 'react';
 import axios from 'axios';
 import { useQuery } from 'react-query';
-import { Activity, TrendingUp, AlertTriangle, CheckCircle } from '../components/Icons';
+import { Activity, TrendingUp, AlertTriangle, CheckCircle, Cpu, Database } from '../components/Icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { estimateTokenSavings } from '../lib/agentRuntime';
 import { resolveApiUrl } from '../lib/api';
@@ -21,50 +21,6 @@ const Usage = () => {
     }
   );
 
-  // Mock data for demonstration
-  const mockData = {
-    dailyUsage: [
-      { date: '2024-03-01', calls: 45 },
-      { date: '2024-03-02', calls: 52 },
-      { date: '2024-03-03', calls: 38 },
-      { date: '2024-03-04', calls: 65 },
-      { date: '2024-03-05', calls: 71 },
-      { date: '2024-03-06', calls: 43 },
-      { date: '2024-03-07', calls: 89 }
-    ],
-    endpointBreakdown: [
-      { endpoint: 'query', calls: 2340, percentage: 45 },
-      { endpoint: 'ingest', calls: 1560, percentage: 30 },
-      { endpoint: 'run', calls: 780, percentage: 15 },
-      { endpoint: 'skills', calls: 520, percentage: 10 }
-    ],
-    repoBreakdown: [],
-    recentActivity: [],
-    hourlyDistribution: [
-      { hour: '00:00', calls: 12 },
-      { hour: '04:00', calls: 8 },
-      { hour: '08:00', calls: 45 },
-      { hour: '12:00', calls: 78 },
-      { hour: '16:00', calls: 92 },
-      { hour: '20:00', calls: 56 }
-    ],
-    stats: {
-      totalCalls: 0,
-      callsToday: 0,
-      avgResponseTime: 0,
-      errorRate: 0,
-      remainingQuota: 100,
-      quotaLimit: 100,
-      peakHour: 'N/A',
-      avgPerMin: 'N/A',
-      resetIn: 'N/A',
-      savedTokensToday: 0,
-      savedCostToday: 0,
-      reuseHitRate: 0
-    }
-  };
-
-  // Map backend response fields to frontend expected fields
   const rawData = usageData || {};
   const data = {
     stats: {
@@ -80,294 +36,342 @@ const Usage = () => {
       resetIn: rawData.stats?.resetIn ?? 'N/A',
       savedTokensToday: rawData.stats?.savedTokensToday ?? 0,
       savedCostToday: rawData.stats?.savedCostToday ?? 0,
-      reuseHitRate: rawData.stats?.reuseHitRate ?? 0
+      reuseHitRate: rawData.stats?.reuseHitRate ?? 0,
+      totalTokens: rawData.stats?.totalTokens ?? 0,
+      totalCostUsd: rawData.stats?.totalCostUsd ?? 0,
+      uniqueAgents: rawData.stats?.uniqueAgents ?? 0,
+      uniqueRepos: rawData.stats?.uniqueRepos ?? 0
     },
-    dailyUsage: rawData.dailyUsage || mockData.dailyUsage,
-    usageOverTime: rawData.dailyUsage || rawData.apiCallsOverTime || mockData.dailyUsage,
-    latencyDistribution: (rawData.hourlyDistribution || mockData.hourlyDistribution).map((item) => ({
-      range: item.range || item.hour,
-      count: item.count ?? item.calls ?? 0
-    })),
-    endpointBreakdown: rawData.endpointBreakdown || mockData.endpointBreakdown,
-    repoBreakdown: rawData.repoBreakdown || mockData.repoBreakdown,
-    recentActivity: rawData.recentActivity || mockData.recentActivity,
-    hourlyDistribution: rawData.hourlyDistribution || mockData.hourlyDistribution
+    usageOverTime: rawData.dailyUsage || [],
+    endpointBreakdown: rawData.endpointBreakdown || [],
+    repoBreakdown: rawData.repoBreakdown || [],
+    modelBreakdown: rawData.modelBreakdown || [],
+    agentBreakdown: rawData.agentBreakdown || [],
+    taskBreakdown: rawData.taskBreakdown || [],
+    recentActivity: rawData.recentActivity || [],
+    timeline: rawData.timeline || [],
+    anomalies: rawData.anomalies || [],
+    insights: rawData.insights || [],
+    hourlyDistribution: rawData.hourlyDistribution || []
   };
-  const COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6'];
+
   const tokenStats = estimateTokenSavings(data.stats.totalCalls);
+  const quotaPercentage = Math.min(100, ((data.stats.callsToday || 0) / Math.max(data.stats.quotaLimit || 1, 1)) * 100);
 
   if (isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <BlobLoader size={72} label="" />
+        <BlobLoader size={48} label="" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-6xl mx-auto w-full space-y-8 pb-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2a2a2a] pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Usage</h1>
-          <p className="text-sm text-zinc-500 mt-1">All features are currently free for everyone for a limited time. Usage limits still apply and reset daily.</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
+            Usage & Observability
+          </h1>
+          <p className="text-sm text-zinc-400 mt-1">
+            Real-time view of request volume, model spend, repository activity, and coding-agent behavior.
+          </p>
         </div>
         <button
-          className="px-8 py-3 rounded-xl font-bold text-black text-base transition-all"
-          style={{ 
-            fontFamily: 'Syne, sans-serif',
-            background: '#EA803A',
-            boxShadow: '4px 4px 0 #c4612a'
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#f0965a'}
-          onMouseLeave={e => e.currentTarget.style.background = '#EA803A'}
+          className="px-5 py-2.5 rounded-lg font-semibold text-black text-sm bg-[#EA803A] hover:bg-[#f0965a] transition-colors"
+          style={{ fontFamily: 'Syne, sans-serif' }}
         >
           Export Report
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Total API Calls</p>
-              <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.totalCalls.toLocaleString()}</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-black flex-shrink-0" style={{ background: '#7c9cf5' }}>
-              <Activity className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Average Response Time</p>
-              <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.avgResponseTime}ms</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-black flex-shrink-0" style={{ background: '#5fd1b3' }}>
-              <TrendingUp className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Success Rate</p>
-              <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.successRate}%</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-black flex-shrink-0" style={{ background: '#EA803A' }}>
-              <CheckCircle className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Error Rate</p>
-              <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.errorRate}%</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-black flex-shrink-0" style={{ background: '#f4b183' }}>
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Saved Tokens Today</p>
-              <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.savedTokensToday.toLocaleString()}</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-black flex-shrink-0" style={{ background: '#f4b183' }}>
-              <TrendingUp className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quota Usage */}
-      <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Daily Quota Usage</p>
-        <p className="text-xs text-zinc-500 mb-3">{rawData.stats?.accessMessage || 'Limited-time free access with standard usage caps.'}</p>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-zinc-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{data.stats.callsToday} / {data.stats.quotaLimit} requests</span>
-          <span className="text-sm font-bold text-[#f2b07d]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{Math.round(((data.stats.callsToday || 0) / Math.max(data.stats.quotaLimit || 1, 1)) * 100)}%</span>
-        </div>
-        <div className="w-full h-2 rounded-full bg-[#1a1a1a] overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, ((data.stats.callsToday || 0) / Math.max(data.stats.quotaLimit || 1, 1)) * 100)}%`, background: 'linear-gradient(90deg, #EA803A 0%, #f4b183 100%)' }}
-          />
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-          <div>
-            <p className="text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Peak Hour</p>
-            <p className="font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.peakHour}</p>
-          </div>
-          <div>
-            <p className="text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Avg/Min</p>
-            <p className="font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.avgPerMin}</p>
-          </div>
-          <div>
-            <p className="text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reset In</p>
-            <p className="font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.resetIn}</p>
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Saved Cost Today</p>
-            <p className="text-xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>${Number(data.stats.savedCostToday || 0).toFixed(6)}</p>
-          </div>
-          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reuse Hit Rate</p>
-            <p className="text-xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{data.stats.reuseHitRate}%</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Token Efficiency</p>
-            <h3 className="text-lg text-white font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>Why memory-backed prompts cost less context</h3>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-lg border border-[#EA803A33] bg-[#EA803A14] px-3 py-2 text-[11px] text-[#f2b07d]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-            ~{tokenStats.percentSaved}% estimated prompt-token reduction
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Without Velocity Brain</p>
-            <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{tokenStats.estimatedWithoutBrain.toLocaleString()}</p>
-            <p className="text-xs text-zinc-500">Estimated prompt tokens if users keep repeating repo context manually.</p>
-          </div>
-          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>With Velocity Brain</p>
-            <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{tokenStats.estimatedWithBrain.toLocaleString()}</p>
-            <p className="text-xs text-zinc-500">Estimated prompt tokens after retrieval, filtering, and compression before execution.</p>
-          </div>
-          <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Context Saved</p>
-            <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{tokenStats.saved.toLocaleString()}</p>
-            <p className="text-xs text-zinc-500">Estimated prompt-token waste avoided by using the memory layer first.</p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#202020] bg-[#111] p-4">
-          <p className="text-sm text-zinc-300 leading-7">
-            Velocity Brain lowers prompt cost by retrieving only the relevant memory, repo facts, and prior decisions for each task.
-            Instead of asking the user to resend architecture, conventions, and past findings every time, the agent starts with a smaller,
-            denser context package.
-          </p>
-        </div>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Request Volume</p>
-          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Calls over time</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={data.usageOverTime}>
-              <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" />
-              <XAxis dataKey="date" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip contentStyle={{ background: '#121212', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff' }} />
-              <Line type="monotone" dataKey="calls" stroke="#EA803A" strokeWidth={2} dot={{ fill: '#EA803A', strokeWidth: 0 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Response Performance</p>
-          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Latency distribution</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={data.latencyDistribution}>
-              <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" />
-              <XAxis dataKey="range" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip contentStyle={{ background: '#121212', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff' }} />
-              <Bar dataKey="count" fill="#7c9cf5" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {data.endpointBreakdown.map((item, index) => (
-              <div key={item.endpoint} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
-                  <span className="text-zinc-300 truncate">{item.endpoint}</span>
-                </div>
-                <span className="text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{item.percentage}%</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[
+          { label: 'Total API Calls', value: data.stats.totalCalls.toLocaleString(), detail: `${data.stats.uniqueAgents} active agents`, icon: Activity, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+          { label: 'Avg Response Time', value: `${data.stats.avgResponseTime}ms`, detail: `${data.stats.uniqueRepos} repositories observed`, icon: TrendingUp, color: 'text-[#5fd1b3]', bg: 'bg-[#5fd1b3]/10' },
+          { label: 'Success Rate', value: `${data.stats.successRate}%`, detail: `${data.stats.totalTokens.toLocaleString()} total tokens`, icon: CheckCircle, color: 'text-[#EA803A]', bg: 'bg-[#EA803A]/10' },
+          { label: 'Error Rate', value: `${data.stats.errorRate}%`, detail: `$${Number(data.stats.totalCostUsd || 0).toFixed(4)} observed spend`, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-400/10' }
+        ].map((stat) => (
+          <div key={stat.label} className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-5 hover:border-[#2a2a2a] transition-colors">
+            <div className="flex items-center justify-between text-zinc-400 mb-3">
+              <span className="text-sm font-medium">{stat.label}</span>
+              <div className={`w-8 h-8 rounded-md flex items-center justify-center ${stat.bg} ${stat.color}`}>
+                <stat.icon className="w-4 h-4" />
               </div>
-            ))}
+            </div>
+            <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{stat.value}</p>
+            <p className="text-xs text-zinc-500 mt-1">{stat.detail}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-6">
+          <h3 className="text-base font-semibold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>Daily Quota Usage</h3>
+          <p className="text-xs text-zinc-500 mb-6">Resets in {data.stats.resetIn} | {rawData.stats?.accessMessage || 'Standard usage caps apply.'}</p>
+
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-zinc-400">
+                <strong className="text-white">{data.stats.callsToday.toLocaleString()}</strong> / {data.stats.quotaLimit.toLocaleString()} requests
+              </span>
+              <span className="text-sm font-medium text-[#EA803A]">{Math.round(quotaPercentage)}%</span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-[#1a1a1a] overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500 bg-[#EA803A]" style={{ width: `${quotaPercentage}%` }} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[#1c1c1c]">
+            <div>
+              <p className="text-xs text-zinc-500 mb-1">Peak Hour</p>
+              <p className="font-medium text-white text-sm">{data.stats.peakHour}</p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 mb-1">Avg/Min</p>
+              <p className="font-medium text-white text-sm">{data.stats.avgPerMin}</p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 mb-1">Reuse Rate</p>
+              <p className="font-medium text-[#5fd1b3] text-sm">{data.stats.reuseHitRate}%</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-semibold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>Context Efficiency</h3>
+              <p className="text-xs text-zinc-500">Savings from memory-backed context retrieval and reuse</p>
+            </div>
+            <span className="inline-flex items-center rounded-md bg-[#5fd1b3]/10 px-2.5 py-1 text-xs font-medium text-[#5fd1b3]">
+              ~{tokenStats.percentSaved}% Saved
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mb-4 flex-1">
+            <div className="bg-[#111111] border border-[#202020] rounded-lg p-4 flex flex-col justify-center">
+              <p className="text-xs text-zinc-500 mb-1">Standard Prompting</p>
+              <p className="text-lg font-bold text-white">{tokenStats.estimatedWithoutBrain.toLocaleString()}</p>
+            </div>
+            <div className="bg-[#111111] border border-[#202020] rounded-lg p-4 flex flex-col justify-center">
+              <p className="text-xs text-zinc-500 mb-1">With Velocity Brain</p>
+              <p className="text-lg font-bold text-[#5fd1b3]">{tokenStats.estimatedWithBrain.toLocaleString()}</p>
+            </div>
+            <div className="bg-[#111111] border border-[#202020] rounded-lg p-4 flex flex-col justify-center">
+              <p className="text-xs text-zinc-500 mb-1">Tokens Saved</p>
+              <p className="text-lg font-bold text-[#EA803A]">{tokenStats.saved.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between border-t border-[#1c1c1c] pt-4">
+            <span className="text-sm text-zinc-400">Total cost saved today</span>
+            <span className="text-sm font-semibold text-white">${Number(data.stats.savedCostToday || 0).toFixed(4)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-6">
+          <h3 className="text-base font-semibold text-white mb-6" style={{ fontFamily: 'Syne, sans-serif' }}>Request Volume (7 Days)</h3>
+          <div className="h-[240px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.usageOverTime} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid stroke="#1c1c1c" vertical={false} />
+                <XAxis dataKey="date" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ background: '#121212', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff', fontSize: '12px' }} itemStyle={{ color: '#EA803A' }} />
+                <Line type="monotone" dataKey="calls" stroke="#EA803A" strokeWidth={2} dot={{ r: 3, fill: '#0d0d0d', stroke: '#EA803A', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-6">
+          <h3 className="text-base font-semibold text-white mb-6" style={{ fontFamily: 'Syne, sans-serif' }}>Hourly Distribution</h3>
+          <div className="h-[240px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.hourlyDistribution} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid stroke="#1c1c1c" vertical={false} />
+                <XAxis dataKey="hour" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{ fill: '#161616' }} contentStyle={{ background: '#121212', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff', fontSize: '12px' }} />
+                <Bar dataKey="calls" fill="#EA803A" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Repo Usage</p>
-          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Top connected repos</h3>
-          <div className="space-y-3">
-            {data.repoBreakdown.length ? data.repoBreakdown.map((repo) => (
-              <div key={repo.repoId} className="rounded-xl border border-[#202020] bg-[#111] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{repo.repoId}</p>
-                  <span className="text-xs text-zinc-500" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{repo.calls} calls</span>
-                </div>
-                <div className="mt-2 flex items-center justify-between text-xs text-zinc-400">
-                  <span>Saved tokens: {repo.savedTokens.toLocaleString()}</span>
-                  <span>Saved cost: ${Number(repo.savedCost || 0).toFixed(6)}</span>
-                </div>
+        <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl overflow-hidden">
+          <div className="p-5 border-b border-[#1c1c1c] flex items-center justify-between">
+            <h3 className="text-base font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Agent & Model Breakdown</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#1c1c1c]">
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Cpu className="w-4 h-4 text-[#EA803A]" />
+                <p className="text-sm font-medium text-white">Agents</p>
               </div>
-            )) : (
-              <p className="text-sm text-zinc-500">No repo-linked usage has been reported yet.</p>
-            )}
+              <div className="space-y-3 max-h-[240px] overflow-auto pr-1">
+                {data.agentBreakdown.length > 0 ? data.agentBreakdown.map((agent) => (
+                  <div key={agent.agentId} className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="text-white truncate">{agent.agentId}</p>
+                      <p className="text-[10px] text-zinc-500">{agent.repoCount || 0} repos | {agent.modelCount || 0} models</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-zinc-200">{agent.calls || 0} req</p>
+                      <p className="text-[10px] text-zinc-500">${Number(agent.costUsd || 0).toFixed(4)}</p>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-sm text-zinc-500">No agent telemetry yet.</p>
+                )}
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-4 h-4 text-[#5fd1b3]" />
+                <p className="text-sm font-medium text-white">Models</p>
+              </div>
+              <div className="space-y-3 max-h-[240px] overflow-auto pr-1">
+                {data.modelBreakdown.length > 0 ? data.modelBreakdown.map((model) => (
+                  <div key={`${model.modelProvider}-${model.modelName}`} className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="text-white truncate">{model.modelName}</p>
+                      <p className="text-[10px] text-zinc-500">{model.modelProvider || 'provider unknown'}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-zinc-200">{model.calls || 0} req</p>
+                      <p className="text-[10px] text-zinc-500">${Number(model.costUsd || 0).toFixed(4)}</p>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-sm text-zinc-500">No model telemetry yet.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Recent Activity</p>
-          <h3 className="text-lg text-white font-bold mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Latest query, run, and writeback events</h3>
-          <div className="space-y-3">
-            {data.recentActivity.length ? data.recentActivity.map((item, index) => (
-              <div key={`${item.timestamp}-${index}`} className="rounded-xl border border-[#202020] bg-[#111] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>{item.description}</p>
-                  <span className={`rounded-full border px-2 py-1 text-[10px] ${item.status === 'failed' ? 'border-[#5a1f1f] bg-[#2a1111] text-[#ff9b9b]' : 'border-[#17301f] bg-[#13261d] text-[#7fe3c8]'}`}>
-                    {item.status}
-                  </span>
-                </div>
-                <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-zinc-400 sm:grid-cols-2">
-                  <span>Repo: {item.repoId || 'default-workspace'}</span>
-                  <span>Reuse: {item.reuseHitType || 'none'}</span>
-                  <span>Saved tokens: {(item.avoidedInputTokens || 0).toLocaleString()}</span>
-                  <span>{item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown time'}</span>
-                </div>
+        <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl overflow-hidden">
+          <div className="p-5 border-b border-[#1c1c1c] flex items-center justify-between">
+            <h3 className="text-base font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Repository & Task Breakdown</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#1c1c1c]">
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Database className="w-4 h-4 text-[#EA803A]" />
+                <p className="text-sm font-medium text-white">Repositories</p>
               </div>
-            )) : (
-              <p className="text-sm text-zinc-500">No recent usage activity has been reported yet.</p>
-            )}
+              <div className="space-y-3 max-h-[240px] overflow-auto pr-1">
+                {data.repoBreakdown.length > 0 ? data.repoBreakdown.map((repo) => (
+                  <div key={`${repo.repoId}-${repo.branch || 'default'}`} className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="text-white truncate">{repo.repoName || repo.repoId}</p>
+                      <p className="text-[10px] text-zinc-500 truncate">{repo.branch || 'default'} | {(repo.agents || []).join(', ') || 'workspace'}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-zinc-200">{repo.calls || 0} req</p>
+                      <p className="text-[10px] text-zinc-500">{Number(repo.savedTokens || 0).toLocaleString()} saved</p>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-sm text-zinc-500">No repository telemetry yet.</p>
+                )}
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle className="w-4 h-4 text-[#5fd1b3]" />
+                <p className="text-sm font-medium text-white">Task Types</p>
+              </div>
+              <div className="space-y-3 max-h-[240px] overflow-auto pr-1">
+                {data.taskBreakdown.length > 0 ? data.taskBreakdown.map((task) => (
+                  <div key={task.taskType} className="flex items-center justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="text-white truncate uppercase tracking-wide">{task.taskType}</p>
+                      <p className="text-[10px] text-zinc-500">{task.operationType || 'operation unknown'}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-zinc-200">{task.calls || 0} req</p>
+                      <p className="text-[10px] text-zinc-500">{Math.round(task.avgLatencyMs || 0)}ms avg</p>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-sm text-zinc-500">No task attribution yet.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Hourly Distribution */}
-      <div className="rounded-2xl border border-[#242424] bg-[#0d0d0d] p-5" style={{ boxShadow: '4px 4px 0 #00000055' }}>
-        <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mb-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Hourly Distribution</p>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data.hourlyDistribution}>
-            <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" />
-            <XAxis dataKey="hour" stroke="#6b7280" />
-            <YAxis stroke="#6b7280" />
-            <Tooltip contentStyle={{ background: '#121212', border: '1px solid #2a2a2a', borderRadius: '12px', color: '#fff' }} />
-            <Bar dataKey="calls" fill="#EA803A" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-[#1c1c1c]">
+            <h3 className="text-base font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Repository Activity Timeline</h3>
+          </div>
+          <div className="flex-1 overflow-auto max-h-[320px]">
+            {data.timeline.length > 0 ? (
+              <div className="divide-y divide-[#1c1c1c]">
+                {data.timeline.slice(0, 20).map((item, index) => (
+                  <div key={`${item.timestamp}-${index}`} className="p-4 hover:bg-[#111111] transition-colors">
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <p className="text-sm font-medium text-white truncate">{item.description}</p>
+                      <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${item.status === 'failed' ? 'bg-red-500/10 text-red-400' : 'bg-[#5fd1b3]/10 text-[#5fd1b3]'}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+                      <span>{item.repoId || 'workspace'}</span>
+                      <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                      <span>{item.branch || 'default'}</span>
+                      <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                      <span>{item.agentId || 'agent'}</span>
+                      <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                      <span>{item.taskType || item.operationType || 'unknown task'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-sm text-zinc-500">No timeline events yet.</div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-5">
+            <h3 className="text-base font-semibold text-white mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Signals</h3>
+            <div className="space-y-3">
+              {(data.anomalies.length > 0 ? data.anomalies.slice(0, 2) : data.insights.slice(0, 2)).map((item, index) => (
+                <div key={`${item.type || item.title}-${index}`} className={`rounded-lg border p-3 ${item.message ? 'border-red-500/20 bg-red-500/5' : 'border-[#202020] bg-[#111]'}`}>
+                  <p className={`text-sm font-medium ${item.message ? 'text-red-300' : 'text-white'}`}>{item.message || item.title}</p>
+                  <p className="text-xs text-zinc-500 mt-1">{item.body || `${item.agentId || 'agent'} | ${item.repoId || 'workspace'}`}</p>
+                </div>
+              ))}
+              {data.anomalies.length === 0 && data.insights.length === 0 && (
+                <p className="text-sm text-zinc-500">No anomalies or optimization insights yet.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-5">
+            <h3 className="text-base font-semibold text-white mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Recent Activity</h3>
+            <div className="space-y-3 max-h-[260px] overflow-auto">
+              {data.recentActivity.length > 0 ? data.recentActivity.slice(0, 8).map((item, index) => (
+                <div key={`${item.timestamp}-${index}`} className="rounded-lg border border-[#202020] bg-[#111] p-3">
+                  <p className="text-sm text-white truncate">{item.description}</p>
+                  <p className="text-[10px] text-zinc-500 mt-1">{item.repoId || 'workspace'} | {item.modelName || 'unknown model'}</p>
+                </div>
+              )) : (
+                <p className="text-sm text-zinc-500">No recent activity to display.</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 from pathlib import Path
 import builtins
 import json
+import shutil
+import tempfile
 
 from src import cli
 from src.client.exceptions import AuthenticationError
@@ -145,6 +147,44 @@ def test_cloud_error_details_for_authentication_failure():
 
 def test_connect_codex_command_available():
     assert cli._connect_command_for_client('codex') == 'codex mcp add velocitybrain -- velocitybrain serve mcp'
+
+
+def test_connect_pair_code_stores_agent_credentials(monkeypatch):
+    root = Path(tempfile.mkdtemp(prefix='vb-pairing-', dir=str(Path.cwd())))
+    state = {'base_url': 'https://api.example.com'}
+    try:
+        monkeypatch.setattr(cli, '_load_cli_config', lambda: dict(state))
+        monkeypatch.setattr(cli, '_save_cli_config', lambda payload: state.clear() or state.update(payload))
+        monkeypatch.setattr(cli, '_run_connect_command', lambda command: type('Completed', (), {'returncode': 0, 'stdout': 'connected', 'stderr': ''})())
+        monkeypatch.setattr(cli, '_ensure_velocitybrain_agents_md', lambda repo_path=None: (False, 'AGENTS ok'))
+        monkeypatch.setattr(cli, '_ensure_velocitybrain_identity_spec', lambda repo_path=None: (False, 'identity ok'))
+        monkeypatch.setattr(cli, '_report_agent_connection', lambda *args, **kwargs: (True, 'integration ok'))
+        monkeypatch.setattr(cli, '_detect_repo_context', lambda repo_path=None: {
+            'repo_id': 'repo-x',
+            'repo_name': 'repo-x',
+            'repo_path': str(root),
+            'cwd': str(root),
+            'project_id': 'repo-x',
+            'branch': 'main',
+        })
+        monkeypatch.setattr(cli.VelocityBrainClient, 'complete_agent_pairing', lambda **kwargs: {
+            'agent_connection_id': 'conn_123',
+            'access_token': 'agent_access',
+            'refresh_token': 'agent_refresh',
+            'expires_in': 3600,
+        })
+
+        parser = cli.build_parser()
+        args = parser.parse_args(['connect', 'codex', '--pair-code', 'vbp_pair_code', '--apply', '--repo-path', str(root)])
+
+        exit_code = cli.cmd_connect(args)
+
+        assert exit_code == 0
+        assert state['preferred_agent'] == 'codex'
+        assert state['agent_credentials']['codex']['agent_connection_id'] == 'conn_123'
+        assert state['agent_credentials']['codex']['access_token'] == 'agent_access'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def test_default_cloud_base_url_matches_current_hosted_backend():

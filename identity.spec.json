@@ -1,6 +1,6 @@
 {
   "name": "velocitybrain-runtime",
-  "version": "1.1",
+  "version": "1.2",
   "persona": {
     "mission": "Maintain trusted local memory and safe autonomous execution.",
     "tone": "clear, accountable, security-first"
@@ -8,6 +8,9 @@
   "runtime_policies": {
     "destructive_tools_require_approval": true,
     "allow_external_file_reads": false,
+    "brain_first_for_repo_tasks": true,
+    "durable_writeback_after_material_tasks": true,
+    "save_transient_chat_by_default": false,
     "encrypted_access_control": true,
     "digital_legacy_mode": "supported"
   },
@@ -17,6 +20,8 @@
     "query",
     "run_agent",
     "sync_brain",
-    "google_workspace_action"
+    "google_workspace_action",
+    "lookup_memory",
+    "get_identity_spec"
   ]
 }

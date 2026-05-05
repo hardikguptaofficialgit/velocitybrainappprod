@@ -7,6 +7,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import time
 import webbrowser
 from pathlib import Path
 from typing import Any
@@ -127,15 +128,78 @@ def _cloud_config() -> dict[str, Any]:
     }
 
 
+def _agent_credentials(agent_id: str | None = None) -> dict[str, Any]:
+    config = _load_cli_config()
+    preferred = agent_id or config.get('preferred_agent')
+    if not preferred:
+        return {}
+    credentials = config.get('agent_credentials') or {}
+    if not isinstance(credentials, dict):
+        return {}
+    record = credentials.get(preferred) or {}
+    return record if isinstance(record, dict) else {}
+
+
+def _store_agent_credentials(agent_id: str, payload: dict[str, Any]) -> None:
+    config = _load_cli_config()
+    credentials = config.get('agent_credentials') or {}
+    if not isinstance(credentials, dict):
+        credentials = {}
+    credentials[agent_id] = payload
+    config['agent_credentials'] = credentials
+    config['preferred_agent'] = agent_id
+    _save_cli_config(config)
+
+
+def _detect_repo_context(repo_path: str | None = None) -> dict[str, Any]:
+    cwd = Path(repo_path).resolve() if repo_path else Path.cwd().resolve()
+    current = cwd
+    while True:
+        if (current / '.git').exists() or (current / 'AGENTS.md').exists() or (current / 'identity.spec.json').exists():
+            break
+        if current.parent == current:
+            break
+        current = current.parent
+
+    branch = ''
+    try:
+        completed = subprocess.run(
+            ['git', '-C', str(current), 'rev-parse', '--abbrev-ref', 'HEAD'],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        branch = completed.stdout.strip()
+    except Exception:
+        branch = ''
+
+    return {
+        'repo_id': current.name or 'default-workspace',
+        'repo_name': current.name or 'default-workspace',
+        'repo_path': str(current),
+        'cwd': str(cwd),
+        'project_id': current.name or 'default-workspace',
+        'branch': branch,
+    }
+
+
 def _cloud_client() -> VelocityBrainClient:
     config = _cloud_config()
     api_key = config.get('api_key')
-    if not api_key:
+    preferred_agent = (_load_cli_config().get('preferred_agent') or 'mcp-client')
+    agent_creds = _agent_credentials(preferred_agent)
+    if not api_key and not agent_creds.get('refresh_token') and not agent_creds.get('access_token'):
         raise ValueError(
             'VelocityBrain API key not found. Run `velocitybrain login --api-key <key>` '
-            'or set `VELOCITYBRAIN_API_KEY`.'
+            'or set `VELOCITYBRAIN_API_KEY`, or pair an agent with `velocitybrain connect <client> --pair-code <code>`.'
         )
-    return VelocityBrainClient(api_key, config['base_url'])
+    return VelocityBrainClient(
+        api_key=api_key,
+        base_url=config['base_url'],
+        access_token=agent_creds.get('access_token'),
+        refresh_token=agent_creds.get('refresh_token'),
+        token_expires_at=agent_creds.get('token_expires_at'),
+    )
 
 
 def _normalize_cloud_query(result: dict[str, Any], trace_id: str) -> dict[str, Any]:
@@ -1882,6 +1946,34 @@ def _run_connect_command(command: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(shlex.split(command, posix=False), capture_output=True, text=True)
 
 
+def _complete_pairing_for_client(client_name: str, pair_code: str, repo_path: str | None = None) -> dict[str, Any]:
+    repo = _detect_repo_context(repo_path)
+    agent_id = 'claude-code' if client_name == 'claude' else client_name
+    payload = VelocityBrainClient.complete_agent_pairing(
+        pair_code=pair_code,
+        base_url=_cloud_config()['base_url'],
+        agent_instance_id=f'{agent_id}-{repo["repo_id"]}',
+        repo_id=repo['repo_id'],
+        repo_name=repo['repo_name'],
+        repo_path=repo['repo_path'],
+        branch=repo.get('branch'),
+        project_id=repo.get('project_id'),
+        metadata={
+            'cwd': repo['cwd'],
+            'paired_via': 'cli_connect',
+            'client': client_name,
+        },
+    )
+    _store_agent_credentials(agent_id, {
+        'agent_connection_id': payload.get('agent_connection_id'),
+        'access_token': payload.get('access_token'),
+        'refresh_token': payload.get('refresh_token'),
+        'token_expires_at': time.time() + int(payload.get('expires_in', 3600)),
+        'paired_at': time.time(),
+    })
+    return payload
+
+
 def cmd_connect(args: argparse.Namespace) -> int:
     runtime_mode = _resolve_runtime_mode(args)
     payload: dict[str, Any] = {
@@ -1890,6 +1982,18 @@ def cmd_connect(args: argparse.Namespace) -> int:
         'applied': False,
         'trace_id': f'connect-{args.client}',
     }
+
+    if getattr(args, 'pair_code', None):
+        try:
+            pairing = _complete_pairing_for_client(args.client, args.pair_code, getattr(args, 'repo_path', None))
+            payload['paired'] = True
+            payload['agent_connection_id'] = pairing.get('agent_connection_id')
+            payload['hint'] = 'Agent pairing completed successfully.'
+        except Exception as exc:
+            payload['hint'] = f'Agent pairing failed: {exc}'
+            payload['_color'] = _use_color(args)
+            _emit(args, payload, _render_connect)
+            return 1
 
     if args.client in {'codex', 'claude'}:
         command = _connect_command_for_client(args.client)
@@ -1901,12 +2005,15 @@ def cmd_connect(args: argparse.Namespace) -> int:
             if completed.returncode == 0:
                 _, agents_note = _ensure_velocitybrain_agents_md()
                 _, identity_note = _ensure_velocitybrain_identity_spec()
+                repo = _detect_repo_context(getattr(args, 'repo_path', None))
                 _, integration_note = _report_agent_connection(
-                    args.client,
+                    'claude-code' if args.client == 'claude' else args.client,
+                    repo['repo_path'],
                     metadata={
                         'source': 'connect',
                         'agents_md_managed': True,
                         'identity_spec_managed': True,
+                        'branch': repo.get('branch'),
                     },
                 )
                 payload['hint'] = f'{note}\n{agents_note}\n{identity_note}\n{integration_note}'
@@ -2055,6 +2162,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_connect = sub.add_parser('connect', help='Show or apply MCP client setup for Codex, Claude, Hermes, OpenClaw, or a generic client.')
     p_connect.add_argument('client', choices=['codex', 'claude', 'hermes', 'openclaw', 'generic'])
     p_connect.add_argument('--apply', action='store_true', help='Run the client registration command when supported.')
+    p_connect.add_argument('--pair-code', help='Complete a browser-issued agent pairing session before applying local MCP setup.')
+    p_connect.add_argument('--repo-path', help='Repository path to associate with the pairing and connection flow.')
     p_connect.set_defaults(func=cmd_connect)
 
     p_smoke = sub.add_parser('smoke', help='Run a lightweight end-to-end smoke test for the active runtime mode.')

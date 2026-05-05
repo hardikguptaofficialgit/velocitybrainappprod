@@ -62,6 +62,12 @@ const COLLECTIONS = {
   USAGE_LOGS: 'usage_logs',
   HOSTED_INGESTS: 'hosted_ingests',
   AGENT_CONNECTIONS: 'agent_connections',
+  AGENT_PAIRING_SESSIONS: 'agent_pairing_sessions',
+  AGENT_TOKENS: 'agent_tokens',
+  AGENT_ACTIVITY_RUNS: 'agent_activity_runs',
+  AGENT_ACTIVITY_STEPS: 'agent_activity_steps',
+  REPO_REGISTRATIONS: 'repo_registrations',
+  INSIGHT_EVENTS: 'insight_events',
   BILLING: 'billing',
   SKILLS: 'skills'
 };

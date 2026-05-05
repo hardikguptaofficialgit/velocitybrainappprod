@@ -1,8 +1,10 @@
+import { getAgentPrimaryLogo } from './agentLogos';
+
 export const supportedAgents = [
   {
     id: 'claude-code',
     name: 'Claude Code',
-    icon: 'https://svgl.app/library/claude-ai-icon.svg',
+    icon: getAgentPrimaryLogo('claude-code'),
     status: 'Ready',
     surface: 'MCP',
     setup: 'claude mcp add velocitybrain -- velocitybrain serve mcp',
@@ -12,7 +14,7 @@ export const supportedAgents = [
   {
     id: 'codex',
     name: 'OpenAI Codex',
-    icon: 'https://svgl.app/library/openai_dark.svg',
+    icon: getAgentPrimaryLogo('codex'),
     status: 'Ready',
     surface: 'MCP',
     setup: 'codex mcp add velocitybrain -- velocitybrain serve mcp',
@@ -22,7 +24,7 @@ export const supportedAgents = [
   {
     id: 'hermes',
     name: 'Hermes Agent',
-    icon: 'https://hermes-agent.nousresearch.com/docs/img/logo.png',
+    icon: getAgentPrimaryLogo('hermes'),
     status: 'Ready',
     surface: 'MCP',
     setup: 'velocitybrain connect hermes --apply',
@@ -32,7 +34,7 @@ export const supportedAgents = [
   {
     id: 'gemini-cli',
     name: 'Gemini CLI',
-    icon: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_1920x1920_d13d3bcde5f6c17d4f6ef49f4a1e5d80.png',
+    icon: getAgentPrimaryLogo('gemini-cli'),
     status: 'Ready',
     surface: 'MCP',
     setup: 'velocitybrain serve mcp',
@@ -42,7 +44,7 @@ export const supportedAgents = [
   {
     id: 'openclaw',
     name: 'OpenClaw',
-    icon: 'https://svgl.app/library/openai.svg',
+    icon: getAgentPrimaryLogo('openclaw'),
     status: 'Profile Export',
     surface: 'MCP',
     setup: 'velocitybrain openclaw',
@@ -52,7 +54,7 @@ export const supportedAgents = [
   {
     id: 'cline',
     name: 'Cline',
-    icon: 'https://svgl.app/library/visual-studio-code.svg',
+    icon: getAgentPrimaryLogo('cline'),
     status: 'Ready',
     surface: 'MCP',
     setup: 'velocitybrain serve mcp',

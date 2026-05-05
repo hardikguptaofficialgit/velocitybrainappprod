@@ -12,16 +12,33 @@ from .exceptions import AuthenticationError, APIError, NetworkError
 class AuthManager:
     """Manages authentication with VelocityBrain API."""
     
-    def __init__(self, api_key: str, base_url: str = "https://velocity.linkitapp.in", timeout: int = 30):
+    def __init__(
+        self,
+        api_key: Optional[str],
+        base_url: str = "https://velocity.linkitapp.in",
+        timeout: int = 30,
+        access_token: Optional[str] = None,
+        refresh_token: Optional[str] = None,
+        token_expires_at: Optional[float] = None
+    ):
         self.api_key = api_key
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
-        self._access_token: Optional[str] = None
-        self._refresh_token: Optional[str] = None
-        self._token_expires_at: Optional[float] = None
+        self._access_token: Optional[str] = access_token
+        self._refresh_token: Optional[str] = refresh_token
+        self._token_expires_at: Optional[float] = token_expires_at
         
     def authenticate(self) -> Dict[str, Any]:
         """Authenticate with the API and store tokens."""
+        if not self.api_key:
+            if self._refresh_token:
+                self._refresh_access_token()
+                return {
+                    "access_token": self._access_token,
+                    "refresh_token": self._refresh_token,
+                    "expires_in": max(0, int((self._token_expires_at or time.time()) - time.time()))
+                }
+            raise AuthenticationError("No API key or refresh token available")
         try:
             response = requests.post(
                 f"{self.base_url}/v1/auth/authorize",
@@ -81,8 +98,11 @@ class AuthManager:
             self._token_expires_at = time.time() + data.get("expires_in", 3600)
             
         except requests.RequestException:
-            # If refresh fails due to network error, re-authenticate
-            self.authenticate()
+            # If refresh fails due to network error, re-authenticate only when an API key is available
+            if self.api_key:
+                self.authenticate()
+            else:
+                raise
     
     def get_auth_headers(self) -> Dict[str, str]:
         """Get authentication headers for API requests."""

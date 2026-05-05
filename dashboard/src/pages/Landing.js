@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Dialog from '../components/ui/Dialog';
+import AgentBrandIcon from '../components/AgentBrandIcon';
 import {
   ArrowRight,
   Database,
@@ -157,15 +158,6 @@ const integrationCardThemes = {
     keyword: 'text-[#9cb8ff]',
     hexColor: '#5d89ff',
   },
-};
-
-const agentIconFallbacks = {
-  'claude-code': 'https://svgl.app/library/claude-ai-icon.svg',
-  codex: 'https://svgl.app/library/openai_dark.svg',
-  hermes: 'https://hermes-agent.nousresearch.com/docs/img/logo.png',
-  'gemini-cli': 'https://svgl.app/library/gemini.svg',
-  openclaw: 'https://svgl.app/library/openai.svg',
-  cline: 'https://svgl.app/library/visual-studio-code.svg',
 };
 
 const howItWorks = [
@@ -1023,26 +1015,12 @@ export default function Landing() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 mb-2.5">
-                                <div
-                                  className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
-                                    agent.id === 'hermes'
-                                      ? 'border-[#d9d9d9] bg-white'
-                                      : 'border-[#262626] bg-[#161616]'
-                                  }`}
-                                >
-                                  <img
-                                    src={agent.icon}
-                                    alt={`${agent.name} logo`}
-                                    className="h-4 w-4 object-contain"
-                                    loading="lazy"
-                                    onError={(event) => {
-                                      const fallback = agentIconFallbacks[agent.id];
-                                      if (fallback && event.currentTarget.src !== fallback) {
-                                        event.currentTarget.src = fallback;
-                                      }
-                                    }}
-                                  />
-                                </div>
+                                <AgentBrandIcon
+                                  agentId={agent.id}
+                                  name={agent.name}
+                                  containerClassName="h-8 w-8"
+                                  size="h-4 w-4"
+                                />
                                 <div>
                                   <h3 className="syne text-base font-bold tracking-tight text-white leading-tight">{agent.name}</h3>
                                   <span className={`inline-block mt-0.5 rounded border px-1 py-[2px] mono text-[7px] uppercase tracking-[0.15em] ${theme.badge}`}>

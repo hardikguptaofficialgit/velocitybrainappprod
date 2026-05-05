@@ -2,6 +2,7 @@ const express = require('express');
 const { db, COLLECTIONS } = require('../config/firebase');
 const { authenticate } = require('../middleware/auth');
 const { ACCESS_POLICY } = require('../config/access');
+const { aggregateObservability } = require('../utils/observability');
 
 const router = express.Router();
 const internalUsageSecret = process.env.INTERNAL_USAGE_SECRET;
@@ -78,74 +79,36 @@ router.get('/', authenticate, async (req, res) => {
         const userId = req.user.id;
         const now = new Date();
         const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
-        const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-        // Get all usage logs for user (single field query - no composite index needed)
-        const allUsageSnapshot = await db.collection(COLLECTIONS.USAGE_LOGS)
-            .where('user_id', '==', userId)
-            .limit(10000)
-            .get();
-        const allUsageData = allUsageSnapshot.docs.map(doc => doc.data());
+        const [allUsageSnapshot, connectionSnapshot, apiKeysSnapshot] = await Promise.all([
+            db.collection(COLLECTIONS.USAGE_LOGS)
+                .where('user_id', '==', userId)
+                .limit(10000)
+                .get(),
+            db.collection(COLLECTIONS.AGENT_CONNECTIONS)
+                .where('user_id', '==', userId)
+                .limit(500)
+                .get(),
+            db.collection(COLLECTIONS.API_KEYS)
+                .where('user_id', '==', userId)
+                .limit(200)
+                .get()
+        ]);
+        const allUsageData = allUsageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const connections = connectionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const apiKeys = apiKeysSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const observability = aggregateObservability({ logs: allUsageData, connections, apiKeys, now });
 
         // Filter in memory
         const dailyUsage = allUsageData.filter(log => new Date(log.created_at) >= oneDayAgo);
-        const monthlyUsage = allUsageData.filter(log => new Date(log.created_at) >= thirtyDaysAgo);
 
         // Calculate stats
-        const totalCalls = dailyUsage.length;
+        const totalCalls = observability.summary.totalCalls;
         const callsToday = dailyUsage.length;
-        
-        const avgResponseTime = dailyUsage.length > 0
-            ? Math.round(dailyUsage.reduce((sum, log) => sum + (log.response_time_ms || 0), 0) / dailyUsage.length)
-            : 0;
+        const avgResponseTime = observability.summary.avgLatency;
         const savedTokensToday = dailyUsage.reduce((sum, log) => sum + (log.avoided_input_tokens || 0), 0);
         const savedCostToday = dailyUsage.reduce((sum, log) => sum + (log.estimated_cost_saved || 0), 0);
         const reuseHitsToday = dailyUsage.filter(log => (log.reuse_hit_type || 'none') !== 'none').length;
-
-        const errorCount = dailyUsage.filter(log => log.status_code >= 400).length;
-        const errorRate = dailyUsage.length > 0
-            ? ((errorCount / dailyUsage.length) * 100).toFixed(1)
-            : 0;
-        const successRate = dailyUsage.length > 0
-            ? (((dailyUsage.length - errorCount) / dailyUsage.length) * 100).toFixed(1)
-            : 100;
-
-        // Endpoint breakdown
-        const endpointStats = {};
-        monthlyUsage.forEach(log => {
-            const endpoint = log.endpoint.split('/').pop() || log.endpoint;
-            endpointStats[endpoint] = (endpointStats[endpoint] || 0) + 1;
-        });
-
-        const totalMonthly = monthlyUsage.length;
-        const endpointBreakdown = Object.entries(endpointStats).map(([endpoint, calls]) => ({
-            endpoint,
-            calls,
-            percentage: totalMonthly > 0 ? Math.round((calls / totalMonthly) * 100) : 0
-        }));
-
-        const repoStats = {};
-        monthlyUsage.forEach(log => {
-            const repoId = log.repo_id || 'default-workspace';
-            if (!repoStats[repoId]) {
-                repoStats[repoId] = {
-                    repoId,
-                    calls: 0,
-                    savedTokens: 0,
-                    savedCost: 0
-                };
-            }
-            repoStats[repoId].calls += 1;
-            repoStats[repoId].savedTokens += log.avoided_input_tokens || 0;
-            repoStats[repoId].savedCost += log.estimated_cost_saved || 0;
-        });
-        const repoBreakdown = Object.values(repoStats)
-            .sort((a, b) => b.calls - a.calls)
-            .slice(0, 10)
-            .map((entry) => ({
-                ...entry,
-                savedCost: Number(entry.savedCost.toFixed(6))
-            }));
 
         // Real hourly distribution for the last 24 hours
         const hourlyBuckets = {};
@@ -193,27 +156,14 @@ router.get('/', authenticate, async (req, res) => {
             });
         }
 
-        const recentActivity = allUsageData
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-            .slice(0, 12)
-            .map(log => ({
-                description: `${log.method} ${log.endpoint}`,
-                status: log.status_code >= 400 ? 'failed' : 'completed',
-                timestamp: log.created_at,
-                reuseHitType: log.reuse_hit_type || 'none',
-                avoidedInputTokens: log.avoided_input_tokens || 0,
-                estimatedCostSaved: log.estimated_cost_saved || 0,
-                repoId: log.repo_id || 'default-workspace'
-            }));
-
         res.json({
             success: true,
             stats: {
                 totalCalls,
                 callsToday,
                 avgResponseTime,
-                successRate: parseFloat(successRate),
-                errorRate: parseFloat(errorRate),
+                successRate: observability.summary.successRate,
+                errorRate: observability.summary.errorRate,
                 remainingQuota: Math.max(0, ACCESS_POLICY.standardQuotas.daily - callsToday),
                 quotaLimit: ACCESS_POLICY.standardQuotas.daily,
                 peakHour: peakHourEntry.calls > 0 ? peakHourEntry.hour : 'N/A',
@@ -222,13 +172,23 @@ router.get('/', authenticate, async (req, res) => {
                 savedTokensToday,
                 savedCostToday: Number(savedCostToday.toFixed(6)),
                 reuseHitRate: dailyUsage.length > 0 ? Number(((reuseHitsToday / dailyUsage.length) * 100).toFixed(1)) : 0,
-                accessMessage: ACCESS_POLICY.publicAccessMessage
+                accessMessage: ACCESS_POLICY.publicAccessMessage,
+                totalTokens: observability.summary.totalTokens,
+                totalCostUsd: observability.summary.totalCostUsd,
+                uniqueAgents: observability.summary.uniqueAgents,
+                uniqueRepos: observability.summary.uniqueRepos
             },
             dailyUsage: dailyTrend,
-            endpointBreakdown,
-            repoBreakdown,
+            endpointBreakdown: observability.endpointBreakdown,
+            repoBreakdown: observability.repoBreakdown,
+            modelBreakdown: observability.modelBreakdown,
+            agentBreakdown: observability.agentBreakdown,
+            taskBreakdown: observability.taskBreakdown,
+            anomalies: observability.anomalies,
+            insights: observability.insights,
+            timeline: observability.timeline,
             hourlyDistribution,
-            recentActivity
+            recentActivity: observability.recentActivity
         });
     } catch (error) {
         console.error('Get usage stats error:', error);

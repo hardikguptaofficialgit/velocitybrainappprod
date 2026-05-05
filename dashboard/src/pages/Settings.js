@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
 import AvatarPicker from '../components/AvatarPicker';
+import AgentBrandIcon from '../components/AgentBrandIcon';
 import BlobLoader from '../components/BlobLoader';
 import MinimalSelect from '../components/MinimalSelect';
 import RoleField from '../components/RoleField';
@@ -203,9 +204,7 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Settings</h1>
-      <div className="rounded-xl border border-[#EA803A]/30 bg-[#130a02] px-4 py-3 text-sm text-zinc-300">
-        Workspace settings are now persisted to the backend, including onboarding data, notification defaults, API preferences, and curated avatar choices.
-      </div>
+     
 
       {(error || success) && (
         <div className={`rounded-xl border px-4 py-3 text-sm ${error ? 'border-red-900/40 bg-red-950/20 text-red-300' : 'border-emerald-900/40 bg-emerald-950/20 text-emerald-300'}`}>
@@ -478,7 +477,15 @@ export default function Settings() {
                 {supportedAgents.map((agent) => (
                   <div key={agent.id} className="rounded-xl border border-[#202020] bg-[#111] p-4">
                     <div className="flex items-center justify-between gap-3 mb-2">
-                      <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{agent.name}</h3>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <AgentBrandIcon
+                          agentId={agent.id}
+                          name={agent.name}
+                          containerClassName="h-9 w-9 shrink-0"
+                          size="h-4 w-4"
+                        />
+                        <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{agent.name}</h3>
+                      </div>
                       <span className="inline-flex items-center gap-1 rounded border border-[#EA803A33] bg-[#EA803A14] px-2 py-0.5 text-[10px] text-[#f2b07d]">
                         {agent.status}
                       </span>

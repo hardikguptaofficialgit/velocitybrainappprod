@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import os
+import subprocess
 from typing import Any
 from pathlib import Path
 
@@ -51,11 +52,23 @@ def _detect_repo_context() -> dict[str, Any]:
     current = cwd
     while True:
         if (current / ".git").exists() or (current / "AGENTS.md").exists() or (current / "identity.spec.json").exists():
+            branch = ""
+            try:
+                branch = subprocess.run(
+                    ["git", "-C", str(current), "rev-parse", "--abbrev-ref", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                ).stdout.strip()
+            except Exception:
+                branch = ""
             return {
                 "repo_id": current.name or "default-workspace",
                 "repo_name": current.name or "default-workspace",
                 "repo_path": str(current),
                 "cwd": str(cwd),
+                "project_id": current.name or "default-workspace",
+                "branch": branch,
             }
         if current.parent == current:
             break
@@ -65,6 +78,8 @@ def _detect_repo_context() -> dict[str, Any]:
         "repo_name": cwd.name or "default-workspace",
         "repo_path": str(cwd),
         "cwd": str(cwd),
+        "project_id": cwd.name or "default-workspace",
+        "branch": "",
     }
 
 
@@ -95,6 +110,11 @@ def _ensure_session_registration(vb: VelocityBrainClient) -> None:
             repo_id=repo["repo_id"],
             repo_name=repo["repo_name"],
             repo_path=repo["repo_path"],
+            agent_instance_id=f"{_infer_agent_id(config)}-{repo['repo_id']}",
+            agent_surface="mcp",
+            branch=repo.get("branch"),
+            project_id=repo.get("project_id"),
+            repo_scopes=[repo["repo_id"]],
             metadata={
                 "source": "mcp_session",
                 "cwd": repo["cwd"],
@@ -111,19 +131,40 @@ def get_client() -> VelocityBrainClient:
     if client is None:
         config = _load_saved_cloud_config()
         api_key = os.getenv("VELOCITYBRAIN_API_KEY") or config.get("api_key")
-        if not api_key:
+        base_url = os.getenv("VELOCITYBRAIN_BASE_URL") or config.get("base_url") or "https://velocity.linkitapp.in"
+        preferred_agent = _infer_agent_id(config)
+        agent_credentials = (config.get("agent_credentials") or {}).get(preferred_agent) or {}
+        if not api_key and not agent_credentials.get("refresh_token") and not agent_credentials.get("access_token"):
             raise ValueError(
                 "VELOCITYBRAIN_API_KEY environment variable is required, or save a key with "
-                "`velocitybrain login --api-key <key>`."
+                "`velocitybrain login --api-key <key>` or pair an agent with `velocitybrain connect <client> --pair-code <code>`."
             )
-        base_url = os.getenv("VELOCITYBRAIN_BASE_URL") or config.get("base_url") or "https://velocity.linkitapp.in"
-        client = VelocityBrainClient(api_key, base_url)
+        client = VelocityBrainClient(
+            api_key=api_key,
+            base_url=base_url,
+            access_token=agent_credentials.get("access_token"),
+            refresh_token=agent_credentials.get("refresh_token"),
+            token_expires_at=agent_credentials.get("token_expires_at"),
+        )
         logger.info("VelocityBrain client initialized")
     return client
 
 
 def _tool_output(payload: dict[str, Any]) -> list[TextContent]:
     return [TextContent(type="text", text=json.dumps(payload, indent=2))]
+
+
+def _infer_task_type(text: str) -> str:
+    lowered = text.lower()
+    if any(token in lowered for token in {"debug", "fix", "error", "bug"}):
+        return "debugging"
+    if any(token in lowered for token in {"refactor", "cleanup"}):
+        return "refactoring"
+    if any(token in lowered for token in {"generate", "create", "write"}):
+        return "code_generation"
+    if any(token in lowered for token in {"analy", "map", "inspect"}):
+        return "analysis"
+    return "coding_task"
 
 
 @server.list_tools()
@@ -215,12 +256,18 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
         if name == "healthz":
             return _tool_output(vb.get_health())
         if name in {"query", "lookup_memory"}:
+            question = arguments["question"]
             return _tool_output(
                 vb.query(
-                    question=arguments["question"],
+                    question=question,
                     response_style=arguments.get("response_style", "normal"),
                     max_results=int(arguments.get("limit", 10)),
                     filters=_with_repo_filters(arguments.get("filters")),
+                    metadata=_with_repo_metadata({
+                        "task_type": "memory_lookup",
+                        "operation_type": name,
+                        "agent_surface": "mcp",
+                    }),
                 )
             )
         if name == "ingest_text":
@@ -228,15 +275,26 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
                 vb.ingest(
                     content=arguments["content"],
                     source=arguments.get("source", _infer_agent_id(_load_saved_cloud_config())),
-                    metadata=_with_repo_metadata(arguments.get("metadata")),
+                    metadata=_with_repo_metadata({
+                        **(arguments.get("metadata") or {}),
+                        "task_type": "writeback",
+                        "operation_type": "ingest",
+                        "agent_surface": "mcp",
+                    }),
                 )
             )
         if name == "run_agent":
+            task = arguments["task"]
             return _tool_output(
                 vb.run(
-                    task=arguments["task"],
+                    task=task,
                     response_style=arguments.get("response_style", "normal"),
-                    metadata=_with_repo_metadata(arguments.get("metadata")),
+                    metadata=_with_repo_metadata({
+                        **(arguments.get("metadata") or {}),
+                        "task_type": _infer_task_type(task),
+                        "operation_type": "run",
+                        "agent_surface": "mcp",
+                    }),
                 )
             )
         if name == "usage":

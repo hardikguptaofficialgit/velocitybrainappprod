@@ -49,10 +49,13 @@ class VelocityBrainClient:
     
     def __init__(
         self,
-        api_key: str,
+        api_key: Optional[str] = None,
         base_url: str = "https://velocity.linkitapp.in",
         timeout: int = 30,
-        max_retries: int = 3
+        max_retries: int = 3,
+        access_token: Optional[str] = None,
+        refresh_token: Optional[str] = None,
+        token_expires_at: Optional[float] = None
     ):
         """
         Initialize VelocityBrain client.
@@ -64,14 +67,22 @@ class VelocityBrainClient:
             max_retries: Maximum number of retries for failed requests
         """
         self.api_key = api_key
-        self.auth = auth_module.AuthManager(api_key, base_url, timeout=timeout)
+        self.auth = auth_module.AuthManager(
+            api_key,
+            base_url,
+            timeout=timeout,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_expires_at=token_expires_at
+        )
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
         self.max_retries = max_retries
         self._session = requests.Session()
         
-        # Authenticate on initialization
-        self.auth.authenticate()
+        # Authenticate on initialization when credentials are available
+        if api_key or refresh_token or access_token:
+            self.auth.authenticate()
     
     def _make_request(
         self,
@@ -193,6 +204,7 @@ class VelocityBrainClient:
                 "response_style": response_style,
                 "max_results": max_results,
                 "filters": filters,
+                "metadata": metadata,
             },
         )
         return self._coerce_response(payload, lambda result: result)
@@ -338,6 +350,11 @@ class VelocityBrainClient:
         repo_id: Optional[str] = None,
         repo_path: Optional[str] = None,
         repo_name: Optional[str] = None,
+        agent_instance_id: Optional[str] = None,
+        agent_surface: Optional[str] = None,
+        branch: Optional[str] = None,
+        project_id: Optional[str] = None,
+        repo_scopes: Optional[List[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         payload = self._make_request(
@@ -349,10 +366,122 @@ class VelocityBrainClient:
                 "repo_id": repo_id,
                 "repo_path": repo_path,
                 "repo_name": repo_name,
+                "agent_instance_id": agent_instance_id,
+                "agent_surface": agent_surface,
+                "branch": branch,
+                "project_id": project_id,
+                "repo_scopes": repo_scopes or [],
                 "metadata": metadata or {},
             },
         )
         return self._coerce_response(payload, lambda result: result)
+
+    def report_agent_run(
+        self,
+        *,
+        endpoint: str,
+        method: str = "POST",
+        status_code: int = 200,
+        latency_ms: int = 0,
+        repo_id: Optional[str] = None,
+        repo_name: Optional[str] = None,
+        repo_path: Optional[str] = None,
+        branch: Optional[str] = None,
+        project_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        agent_instance_id: Optional[str] = None,
+        agent_surface: Optional[str] = None,
+        model_provider: Optional[str] = None,
+        model_name: Optional[str] = None,
+        task_type: Optional[str] = None,
+        operation_type: Optional[str] = None,
+        run_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        request_tokens: int = 0,
+        response_tokens: int = 0,
+        total_tokens: int = 0,
+        cost_usd: float = 0.0,
+        avoided_input_tokens: int = 0,
+        estimated_cost_saved: float = 0.0,
+        estimated_latency_saved_ms: int = 0,
+        reuse_hit_type: str = "none",
+        artifacts_used: int = 0,
+        insight_flags: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        payload = self._make_request(
+            "POST",
+            "/v1/telemetry/runs",
+            data={
+                "endpoint": endpoint,
+                "method": method,
+                "status_code": status_code,
+                "latency_ms": latency_ms,
+                "repo_id": repo_id,
+                "repo_name": repo_name,
+                "repo_path": repo_path,
+                "branch": branch,
+                "project_id": project_id,
+                "agent_id": agent_id,
+                "agent_instance_id": agent_instance_id,
+                "agent_surface": agent_surface,
+                "model_provider": model_provider,
+                "model_name": model_name,
+                "task_type": task_type,
+                "operation_type": operation_type,
+                "run_id": run_id,
+                "session_id": session_id,
+                "request_tokens": request_tokens,
+                "response_tokens": response_tokens,
+                "total_tokens": total_tokens,
+                "cost_usd": cost_usd,
+                "avoided_input_tokens": avoided_input_tokens,
+                "estimated_cost_saved": estimated_cost_saved,
+                "estimated_latency_saved_ms": estimated_latency_saved_ms,
+                "reuse_hit_type": reuse_hit_type,
+                "artifacts_used": artifacts_used,
+                "insight_flags": insight_flags or [],
+                "metadata": metadata or {},
+            },
+        )
+        return self._coerce_response(payload, lambda result: result)
+
+    @classmethod
+    def complete_agent_pairing(
+        cls,
+        pair_code: str,
+        *,
+        base_url: str = "https://velocity.linkitapp.in",
+        timeout: int = 30,
+        agent_instance_id: Optional[str] = None,
+        repo_id: Optional[str] = None,
+        repo_name: Optional[str] = None,
+        repo_path: Optional[str] = None,
+        branch: Optional[str] = None,
+        project_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        response = requests.post(
+            f"{base_url.rstrip('/')}/v1/agent/pairings/complete",
+            json={
+                "pair_code": pair_code,
+                "agent_instance_id": agent_instance_id,
+                "repo_id": repo_id,
+                "repo_name": repo_name,
+                "repo_path": repo_path,
+                "branch": branch,
+                "project_id": project_id,
+                "metadata": metadata or {},
+            },
+            headers={"Content-Type": "application/json"},
+            timeout=timeout
+        )
+        if not response.ok:
+            raise APIError(
+                f"Agent pairing failed: {response.text}",
+                status_code=response.status_code
+            )
+        return response.json()
     
     def close(self):
         """Close the client session."""

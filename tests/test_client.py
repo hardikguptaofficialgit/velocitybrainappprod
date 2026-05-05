@@ -58,7 +58,8 @@ class TestVelocityBrainClient:
                     "question": "What is AI?",
                     "response_style": "normal",
                     "max_results": 10,
-                    "filters": None
+                    "filters": None,
+                    "metadata": None
                 }
             )
     
@@ -213,6 +214,48 @@ class TestVelocityBrainClient:
                 await mock_client.query("Test question")
             
             assert exc_info.value.status_code == 500
+
+    def test_complete_agent_pairing_success(self):
+        """Test successful browser-assisted agent pairing."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {
+            "success": True,
+            "agent_connection_id": "conn_123",
+            "access_token": "agent_access",
+            "refresh_token": "agent_refresh",
+            "expires_in": 3600
+        }
+
+        with patch('src.client.client.requests.post', return_value=mock_response) as mock_post:
+            result = VelocityBrainClient.complete_agent_pairing(
+                "vbp_pair_code",
+                base_url="https://test.api.com",
+                agent_instance_id="codex-repo",
+                repo_id="repo-x",
+                repo_name="repo-x",
+                repo_path="/tmp/repo-x",
+                branch="main",
+                project_id="repo-x",
+                metadata={"paired_via": "test"}
+            )
+
+            assert result["agent_connection_id"] == "conn_123"
+            mock_post.assert_called_once_with(
+                "https://test.api.com/v1/agent/pairings/complete",
+                json={
+                    "pair_code": "vbp_pair_code",
+                    "agent_instance_id": "codex-repo",
+                    "repo_id": "repo-x",
+                    "repo_name": "repo-x",
+                    "repo_path": "/tmp/repo-x",
+                    "branch": "main",
+                    "project_id": "repo-x",
+                    "metadata": {"paired_via": "test"},
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
     
     @pytest.mark.asyncio
     async def test_context_manager(self):

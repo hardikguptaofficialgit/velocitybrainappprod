@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
 const { authenticate } = require('../middleware/auth');
+const { aggregateObservability } = require('../utils/observability');
 
 const router = express.Router();
 const repoRoot = path.resolve(__dirname, '../..');
@@ -295,16 +296,26 @@ router.get('/stats', authenticate, async (req, res) => {
             .where('user_id', '==', userId)
             .limit(10000)
             .get();
-        const allUsageData = allUsageSnapshot.docs.map(doc => doc.data());
+        const allUsageData = allUsageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const connectionSnapshot = firebaseInitialized
+            ? await db.collection(COLLECTIONS.AGENT_CONNECTIONS).where('user_id', '==', userId).limit(500).get()
+            : { docs: [] };
+        const connectionDocs = connectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const observability = aggregateObservability({
+            logs: allUsageData,
+            connections: connectionDocs,
+            apiKeys: apiKeys.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+            now
+        });
 
         // Filter to last 30 days in memory
         const usageLogsData = allUsageData.filter(log => new Date(log.created_at) >= thirtyDaysAgo);
 
         // Calculate hosted reuse and savings stats
-        const totalApiCalls = usageLogsData.length;
+        const totalApiCalls = observability.summary.totalCalls;
         const activeApiKeys = apiKeysData.filter(k => k.status === 'active').length;
-        const savedTokens = usageLogsData.reduce((sum, log) => sum + (log.avoided_input_tokens || 0), 0);
-        const savedCost = usageLogsData.reduce((sum, log) => sum + (log.estimated_cost_saved || 0), 0);
+        const savedTokens = observability.summary.totalSavedTokens;
+        const savedCost = observability.summary.totalSavedUsd;
         const reuseHits = usageLogsData.filter(log => (log.reuse_hit_type || 'none') !== 'none');
         const averageSavedPercent = totalApiCalls > 0
             ? Math.round((reuseHits.reduce((sum, log) => sum + ((log.avoided_input_tokens || 0) > 0 ? 1 : 0), 0) / totalApiCalls) * 100)
@@ -317,9 +328,7 @@ router.get('/stats', authenticate, async (req, res) => {
         const successfulCalls = usageLogsData.filter(
             log => log.status_code >= 200 && log.status_code < 300
         ).length;
-        const successRate = totalApiCalls > 0 
-            ? ((successfulCalls / totalApiCalls) * 100).toFixed(1)
-            : 0;
+        const successRate = observability.summary.successRate;
 
         // API calls over time (last 7 days) - filter in memory
         const apiCallsOverTime = [];
@@ -345,26 +354,17 @@ router.get('/stats', authenticate, async (req, res) => {
         }
 
         // Usage by reuse hit type
-        const endpointStats = {};
-        usageLogsData.forEach(log => {
-            const endpoint = log.reuse_hit_type || 'none';
-            endpointStats[endpoint] = (endpointStats[endpoint] || 0) + 1;
-        });
-
-        const usageByEndpoint = Object.entries(endpointStats).map(([endpoint, calls]) => ({
-            endpoint,
-            calls
-        }));
-
-        const repoStats = {};
-        usageLogsData.forEach((log) => {
-            const repoId = log.repo_id || 'default-workspace';
-            repoStats[repoId] = (repoStats[repoId] || 0) + (log.avoided_input_tokens || 0);
-        });
-        const topReusableRepos = Object.entries(repoStats)
-            .map(([repoId, saved]) => ({ repoId, saved }))
-            .sort((a, b) => b.saved - a.saved)
-            .slice(0, 5);
+        const usageByEndpoint = observability.endpointBreakdown;
+        const topReusableRepos = observability.repoBreakdown
+            .slice(0, 5)
+            .map((repo) => ({
+                repoId: repo.repoId,
+                repoName: repo.repoName,
+                branch: repo.branch,
+                saved: repo.savedTokens,
+                calls: repo.calls,
+                agents: repo.agents
+            }));
 
         const hourlyDistribution = Array.from({ length: 24 }, (_, hour) => ({
             hour: `${String(hour).padStart(2, '0')}:00`,
@@ -377,18 +377,21 @@ router.get('/stats', authenticate, async (req, res) => {
         });
 
         // Recent activity - sort in memory
-        const recentActivity = allUsageData
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        const recentActivity = observability.recentActivity
             .slice(0, 10)
-            .map(log => ({
-                type: log.status_code >= 400 ? 'error' : 'success',
-                description: `${log.method} ${log.endpoint}`,
-                timestamp: log.created_at,
-                status: log.status_code >= 400 ? 'failed' : 'completed',
-                reuseHitType: log.reuse_hit_type || 'none',
-                avoidedInputTokens: log.avoided_input_tokens || 0,
-                estimatedCostSaved: log.estimated_cost_saved || 0,
-                estimatedLatencySavedMs: log.estimated_latency_saved_ms || 0
+            .map((item) => ({
+                type: item.status === 'failed' ? 'error' : 'success',
+                description: item.description,
+                timestamp: item.timestamp,
+                status: item.status,
+                reuseHitType: item.insightFlags?.includes('memory_hit') ? 'memory' : 'none',
+                avoidedInputTokens: item.avoidedInputTokens || 0,
+                estimatedCostSaved: item.costUsd || 0,
+                estimatedLatencySavedMs: item.latencyMs || 0,
+                repoId: item.repoId,
+                branch: item.branch,
+                modelName: item.modelName,
+                agentId: item.agentId
             }));
 
         console.info('[DashboardRoute] Stats response ready', {
@@ -413,13 +416,20 @@ router.get('/stats', authenticate, async (req, res) => {
                 successRate: reuseHitRate,
                 successRateChange: 6.8,
                 averageSavedPercent,
-                requestSuccessRate: parseFloat(successRate)
+                requestSuccessRate: Number(successRate),
+                totalTokens: observability.summary.totalTokens,
+                connectedAgents: observability.summary.uniqueAgents,
+                connectedRepos: observability.summary.uniqueRepos
             },
             apiCallsOverTime,
             hourlyDistribution,
             usageByEndpoint,
             recentActivity,
-            topReusableRepos
+            topReusableRepos,
+            modelBreakdown: observability.modelBreakdown,
+            agentBreakdown: observability.agentBreakdown,
+            anomalies: observability.anomalies,
+            insights: observability.insights
         });
     } catch (error) {
         console.error('[DashboardRoute] Dashboard stats error', {
@@ -436,6 +446,8 @@ router.get('/agents', authenticate, async (req, res) => {
         const userId = req.user.id;
 
         let connectionDocs = [];
+        let apiKeyDocs = [];
+        let usageDocs = [];
         if (firebaseInitialized) {
             const snapshot = await db.collection(COLLECTIONS.AGENT_CONNECTIONS)
                 .where('user_id', '==', userId)
@@ -445,7 +457,54 @@ router.get('/agents', authenticate, async (req, res) => {
                 id: doc.id,
                 ...doc.data()
             }));
+
+            const apiKeysSnapshot = await db.collection(COLLECTIONS.API_KEYS)
+                .where('user_id', '==', userId)
+                .limit(200)
+                .get();
+            apiKeyDocs = apiKeysSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            const usageSnapshot = await db.collection(COLLECTIONS.USAGE_LOGS)
+                .where('user_id', '==', userId)
+                .limit(10000)
+                .get();
+            usageDocs = usageSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            }));
         }
+
+        const observability = aggregateObservability({
+            logs: usageDocs,
+            connections: connectionDocs,
+            apiKeys: apiKeyDocs
+        });
+        const usageByAgent = new Map(observability.agentBreakdown.map((item) => [item.agentId, item]));
+        const recentByAgent = new Map();
+        observability.recentActivity.forEach((item) => {
+            const list = recentByAgent.get(item.agentId) || [];
+            if (list.length < 5) {
+                list.push(item);
+            }
+            recentByAgent.set(item.agentId, list);
+        });
+
+        const apiKeyMap = new Map(
+            apiKeyDocs.map((key) => [
+                key.id,
+                {
+                    id: key.id,
+                    name: key.name || 'Unnamed key',
+                    keyPrefix: key.key_prefix || '',
+                    status: key.status || 'unknown',
+                    createdAt: key.created_at || null,
+                    lastUsedAt: key.last_used_at || null
+                }
+            ])
+        );
 
         const connectionsByAgent = new Map();
         connectionDocs.forEach((record) => {
@@ -465,7 +524,13 @@ router.get('/agents', authenticate, async (req, res) => {
                 repoPath: connection.repo_path || '',
                 status: connection.status || 'connected',
                 updatedAt: connection.updated_at || connection.created_at || null,
-                metadata: connection.metadata || {}
+                metadata: connection.metadata || {},
+                apiKey: connection.api_key_id ? (apiKeyMap.get(connection.api_key_id) || {
+                    id: connection.api_key_id,
+                    name: 'Unknown key',
+                    keyPrefix: '',
+                    status: 'unknown'
+                }) : null
             }));
 
             return {
@@ -473,7 +538,30 @@ router.get('/agents', authenticate, async (req, res) => {
                 accountConnected: connections.length > 0,
                 connectionCount: connections.length,
                 latestConnectionAt: latestConnection?.updated_at || latestConnection?.created_at || null,
-                connectedRepos
+                observability: usageByAgent.get(agent.id) || {
+                    calls: 0,
+                    totalTokens: 0,
+                    costUsd: 0,
+                    avgLatencyMs: 0,
+                    repoCount: 0,
+                    modelCount: 0,
+                    taskTypes: []
+                },
+                connectedRepos,
+                recentRuns: recentByAgent.get(agent.id) || [],
+                apiKeys: Array.from(new Map(
+                    connections
+                        .filter((connection) => connection.api_key_id)
+                        .map((connection) => {
+                            const key = apiKeyMap.get(connection.api_key_id) || {
+                                id: connection.api_key_id,
+                                name: 'Unknown key',
+                                keyPrefix: '',
+                                status: 'unknown'
+                            };
+                            return [key.id, key];
+                        })
+                ).values())
             };
         });
 
@@ -496,6 +584,14 @@ router.get('/agents', authenticate, async (req, res) => {
             },
             agents: enrichedAgents,
             workspaceFiles: payload.workspaceFiles,
+            apiKeys: apiKeyDocs.map((key) => ({
+                id: key.id,
+                name: key.name || 'Unnamed key',
+                keyPrefix: key.key_prefix || '',
+                status: key.status || 'unknown',
+                createdAt: key.created_at || null,
+                lastUsedAt: key.last_used_at || null
+            })),
             connections: {
                 repos: allRepos.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)),
                 recent: connectionDocs
