@@ -16,7 +16,6 @@ const {
 } = require('../utils/account');
 
 const router = express.Router();
-const restrictedAccessMessage = 'Access is limited to approved accounts. Ask an admin to add your email or enable public signup.';
 
 const getWorkspacePayload = async (workspaceId) => {
     if (!workspaceId) return null;
@@ -45,13 +44,6 @@ router.post('/register', [
         }
 
         const { email, password, name } = req.body;
-
-        if (!ACCESS_POLICY.allowPublicSignup && !ACCESS_POLICY.isUserApproved(email)) {
-            return res.status(403).json({
-                success: false,
-                message: restrictedAccessMessage
-            });
-        }
 
         // Check if user exists
         const existingUsers = await db.collection(COLLECTIONS.USERS).where('email', '==', email).get();
@@ -425,13 +417,6 @@ router.post('/firebase-session', [
                 email: userData.email
             });
         } else {
-            if (!ACCESS_POLICY.allowPublicSignup && !ACCESS_POLICY.isUserApproved(email)) {
-                return res.status(403).json({
-                    success: false,
-                    message: restrictedAccessMessage
-                });
-            }
-
             // Create new user from Firebase OAuth
             const userPayload = {
                 ...buildUserDefaults({

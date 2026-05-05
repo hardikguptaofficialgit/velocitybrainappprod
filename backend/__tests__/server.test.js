@@ -237,7 +237,7 @@ describe('Backend API', () => {
         expect(response.body.status).toBe('healthy');
     });
 
-    test('auth register creates a user payload with approved-access metadata', async () => {
+    test('auth register creates a user payload with open-signup access metadata', async () => {
         const response = await request(app)
             .post('/api/auth/register')
             .send({
@@ -249,7 +249,7 @@ describe('Backend API', () => {
         expect(response.statusCode).toBe(201);
         expect(response.body.success).toBe(true);
         expect(response.body.user.email).toBe('new@example.com');
-        expect(response.body.access.label).toBe('Approved accounts only');
+        expect(response.body.access.label).toBe('Open signup');
     });
 
     test('auth me returns the authenticated user payload', async () => {
@@ -437,7 +437,7 @@ describe('Backend API', () => {
         expect(response.body.token).toBeTruthy();
     });
 
-    test('firebase session blocks unapproved new users when public signup is disabled', async () => {
+    test('firebase session creates a new user for open signup accounts', async () => {
         firebase.__setMockData({
             users: [],
             apiKeys: [],
@@ -454,8 +454,9 @@ describe('Backend API', () => {
             .post('/api/auth/firebase-session')
             .send({ idToken: 'valid-id-token' });
 
-        expect(response.statusCode).toBe(403);
-        expect(response.body.success).toBe(false);
+        expect(response.statusCode).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.user.email).toBe('outsider@blocked.com');
     });
 
     test('api key delete blocks access to another user key', async () => {
