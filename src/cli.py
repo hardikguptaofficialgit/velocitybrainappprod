@@ -319,6 +319,15 @@ def _doctor_details(runtime_mode: str) -> dict[str, Any]:
     }
 
 
+def _cloud_connected_sources() -> list[str]:
+    try:
+        with _cloud_client() as client:
+            result = client.get_integrations()
+        return result.get('connectedSources') or []
+    except Exception:
+        return []
+
+
 def _smoke_cloud(question: str) -> dict[str, Any]:
     steps: list[dict[str, Any]] = []
     with _cloud_client() as client:
@@ -558,12 +567,14 @@ def _render_banner(banner: str, color: bool) -> None:
 def _render_about(payload: dict[str, Any]) -> None:
     use_color = payload.get('_color', False)
     _render_banner(BANNER, use_color)
+    company_sources = payload.get('company_sources') or []
     _print_section(
         BRAND,
         [
             f"mode: {payload['mode']}",
             "positioning: hosted memory and reuse for coding agents",
             "core_value: avoid paying for the same tokens twice",
+            f"company_sources: {', '.join(company_sources) if company_sources else 'none'}",
             f"commands: {', '.join(payload['commands'])}",
             f"mcp_entry: {payload['entrypoints']['mcp']}",
             "open_source: sdk + mcp bridge + integrations",
@@ -664,9 +675,28 @@ def _render_doctor(payload: dict[str, Any]) -> None:
         print(_style(f'  - {key}: {mark}', tone, color=use_color))
     details = payload.get('details', {})
     if details:
-        for key in ['runtime_mode', 'base_url', 'dashboard_url', 'config_path', 'api_key']:
+        for key in ['runtime_mode', 'base_url', 'dashboard_url', 'config_path', 'api_key', 'connected_sources']:
             if key in details:
                 print(_style(f"  {key}: {details[key]}", SLATE, color=use_color))
+
+
+def _render_integrations(payload: dict[str, Any]) -> None:
+    use_color = payload.get('_color', False)
+    _print_section(
+        'integrations',
+        [
+            f"trace_id: {payload.get('trace_id', 'n/a')}",
+            f"count: {payload.get('connected_source_count', 0)}",
+            f"summary: {payload.get('source_coverage_summary', 'No company sources connected yet')}",
+        ],
+        color=use_color,
+    )
+    for item in payload.get('integrations', []):
+        status = item.get('status') or ('connected' if item.get('connected') else 'not_connected')
+        line = f"  - {item.get('provider')}: {status}"
+        if item.get('display_name'):
+            line += f" ({item['display_name']})"
+        print(_style(line, SLATE, color=use_color))
 
 
 def _render_sync(payload: dict[str, Any]) -> None:
@@ -985,6 +1015,7 @@ def _payload_init(bootstrap: bool = False) -> dict[str, Any]:
 
 def cmd_about(args: argparse.Namespace) -> int:
     runtime_mode = _resolve_runtime_mode(args)
+    connected_sources = _cloud_connected_sources() if runtime_mode == RUNTIME_MODE_CLOUD else []
     payload = {
         'app': settings.app_name,
         'mode': runtime_mode,
@@ -996,6 +1027,7 @@ def cmd_about(args: argparse.Namespace) -> int:
             'dim': settings.embed_dim,
             'router': settings.model_router,
         },
+        'company_sources': connected_sources,
         'trace_id': f'about-{runtime_mode}',
         '_color': _use_color(args),
     }
@@ -1281,11 +1313,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         try:
             with _cloud_client() as client:
                 result = client.get_health()
+                integrations = client.get_integrations()
             payload = _normalize_cloud_health(result, trace_id='doctor-cloud')
             payload['checks'].setdefault('api_key', bool(cloud_cfg.get('api_key')))
             payload['checks'].setdefault('base_url', bool(cloud_cfg.get('base_url')))
+            payload['checks'].setdefault('company_sources', (integrations.get('connectedSourceCount') or 0) > 0)
             _, sync_note = _flush_pending_integrations()
             payload['integration_sync'] = sync_note
+            payload['details'] = {
+                **payload.get('details', {}),
+                'connected_sources': ', '.join(integrations.get('connectedSources') or []) or 'none'
+            }
             exit_code = 0 if payload['ok'] else 1
         except Exception as exc:
             details = _cloud_error_details(exc)
@@ -1974,6 +2012,134 @@ def _complete_pairing_for_client(client_name: str, pair_code: str, repo_path: st
     return payload
 
 
+def _open_browser_url(url: str) -> bool:
+    try:
+        return bool(webbrowser.open(url))
+    except Exception:
+        return False
+
+
+def _integration_payload(result: dict[str, Any]) -> dict[str, Any]:
+    coverage_summary = result.get('sourceCoverageSummary') or result.get('source_coverage_summary') or 'No company sources connected yet'
+    connected_count = result.get('connectedSourceCount', result.get('connected_source_count', 0))
+    integrations = result.get('integrations') or []
+    return {
+        'connected_source_count': connected_count,
+        'source_coverage_summary': coverage_summary,
+        'integrations': [
+            {
+                'provider': item.get('provider'),
+                'status': item.get('status') or ('connected' if item.get('connected') else 'not_connected'),
+                'connected': item.get('connected', False),
+                'display_name': item.get('displayName') or item.get('display_name') or '',
+            }
+            for item in integrations
+        ],
+        'trace_id': result.get('trace_id', 'integrations-cloud'),
+    }
+
+
+def cmd_integrations_status(args: argparse.Namespace) -> int:
+    try:
+        with _cloud_client() as client:
+            result = client.get_integrations()
+        payload = _integration_payload(result)
+        payload['_color'] = _use_color(args)
+        _emit(args, payload, _render_integrations)
+        return 0
+    except Exception as exc:
+        payload = {
+            'connected_source_count': 0,
+            'source_coverage_summary': f'Failed to load integrations: {exc}',
+            'integrations': [],
+            'trace_id': 'integrations-cloud-failed',
+            '_color': _use_color(args),
+        }
+        _emit(args, payload, _render_integrations)
+        return 1
+
+
+def cmd_integrations_connect(args: argparse.Namespace) -> int:
+    try:
+        with _cloud_client() as client:
+            result = client.start_integration(args.provider, from_surface='integrations')
+        auth_url = result.get('authUrl') or result.get('auth_url')
+        payload = {
+            'connected_source_count': 0,
+            'source_coverage_summary': f'Started {args.provider} browser-assisted connect flow.',
+            'integrations': [{'provider': args.provider, 'status': 'pending', 'connected': False, 'display_name': ''}],
+            'trace_id': result.get('trace_id', f'integration-start-{args.provider}'),
+            '_color': _use_color(args),
+        }
+        _emit(args, payload, _render_integrations)
+        if auth_url:
+            opened = _open_browser_url(auth_url)
+            print(auth_url)
+            if not opened:
+                print('Open the URL above in your browser to finish the OAuth flow.')
+        return 0
+    except Exception as exc:
+        payload = {
+            'connected_source_count': 0,
+            'source_coverage_summary': f'Failed to start {args.provider}: {exc}',
+            'integrations': [],
+            'trace_id': f'integration-start-failed-{args.provider}',
+            '_color': _use_color(args),
+        }
+        _emit(args, payload, _render_integrations)
+        return 1
+
+
+def cmd_integrations_resync(args: argparse.Namespace) -> int:
+    try:
+        with _cloud_client() as client:
+            result = client.resync_integration(args.provider)
+        payload = {
+            'connected_source_count': 0,
+            'source_coverage_summary': f'Resync queued for {args.provider}.',
+            'integrations': [{'provider': args.provider, 'status': 'queued', 'connected': True, 'display_name': ''}],
+            'trace_id': result.get('trace_id', f'integration-resync-{args.provider}'),
+            '_color': _use_color(args),
+        }
+        _emit(args, payload, _render_integrations)
+        return 0
+    except Exception as exc:
+        payload = {
+            'connected_source_count': 0,
+            'source_coverage_summary': f'Failed to resync {args.provider}: {exc}',
+            'integrations': [],
+            'trace_id': f'integration-resync-failed-{args.provider}',
+            '_color': _use_color(args),
+        }
+        _emit(args, payload, _render_integrations)
+        return 1
+
+
+def cmd_integrations_disconnect(args: argparse.Namespace) -> int:
+    try:
+        with _cloud_client() as client:
+            result = client.disconnect_integration(args.provider)
+        payload = {
+            'connected_source_count': 0,
+            'source_coverage_summary': f'{args.provider} disconnected.',
+            'integrations': [{'provider': args.provider, 'status': 'disconnected', 'connected': False, 'display_name': ''}],
+            'trace_id': result.get('trace_id', f'integration-disconnect-{args.provider}'),
+            '_color': _use_color(args),
+        }
+        _emit(args, payload, _render_integrations)
+        return 0
+    except Exception as exc:
+        payload = {
+            'connected_source_count': 0,
+            'source_coverage_summary': f'Failed to disconnect {args.provider}: {exc}',
+            'integrations': [],
+            'trace_id': f'integration-disconnect-failed-{args.provider}',
+            '_color': _use_color(args),
+        }
+        _emit(args, payload, _render_integrations)
+        return 1
+
+
 def cmd_connect(args: argparse.Namespace) -> int:
     runtime_mode = _resolve_runtime_mode(args)
     payload: dict[str, Any] = {
@@ -2165,6 +2331,25 @@ def build_parser() -> argparse.ArgumentParser:
     p_connect.add_argument('--pair-code', help='Complete a browser-issued agent pairing session before applying local MCP setup.')
     p_connect.add_argument('--repo-path', help='Repository path to associate with the pairing and connection flow.')
     p_connect.set_defaults(func=cmd_connect)
+
+    p_integrations = sub.add_parser('integrations', help='Manage hosted company integrations such as Slack, Google Workspace, and GitHub.')
+    p_integrations.set_defaults(func=cmd_integrations_status)
+    integrations_sub = p_integrations.add_subparsers(dest='integrations_command')
+
+    p_integrations_status = integrations_sub.add_parser('status', help='Show connected company sources.')
+    p_integrations_status.set_defaults(func=cmd_integrations_status)
+
+    p_integrations_connect = integrations_sub.add_parser('connect', help='Start a browser-assisted OAuth flow for a company source.')
+    p_integrations_connect.add_argument('provider', choices=['slack', 'google', 'github'])
+    p_integrations_connect.set_defaults(func=cmd_integrations_connect)
+
+    p_integrations_resync = integrations_sub.add_parser('resync', help='Queue a resync for a connected provider.')
+    p_integrations_resync.add_argument('provider', choices=['slack', 'google', 'github'])
+    p_integrations_resync.set_defaults(func=cmd_integrations_resync)
+
+    p_integrations_disconnect = integrations_sub.add_parser('disconnect', help='Disconnect a company source without deleting history.')
+    p_integrations_disconnect.add_argument('provider', choices=['slack', 'google', 'github'])
+    p_integrations_disconnect.set_defaults(func=cmd_integrations_disconnect)
 
     p_smoke = sub.add_parser('smoke', help='Run a lightweight end-to-end smoke test for the active runtime mode.')
     p_smoke.add_argument('--question', default='What do we know about auth and API keys?', help='Smoke-test query to send.')

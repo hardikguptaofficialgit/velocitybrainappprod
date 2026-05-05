@@ -68,6 +68,10 @@ const COLLECTIONS = {
   AGENT_ACTIVITY_STEPS: 'agent_activity_steps',
   REPO_REGISTRATIONS: 'repo_registrations',
   INSIGHT_EVENTS: 'insight_events',
+  SOURCE_CONNECTIONS: 'source_connections',
+  SOURCE_SYNC_JOBS: 'source_sync_jobs',
+  SOURCE_ARTIFACTS: 'source_artifacts',
+  SOURCE_CONNECTION_EVENTS: 'source_connection_events',
   BILLING: 'billing',
   SKILLS: 'skills'
 };

@@ -124,6 +124,25 @@ class VelocityBrainClient:
     def get_usage_stats(self) -> dict[str, Any]:
         return self._make_request("GET", "/v1/usage")
 
+    def get_integrations(self) -> dict[str, Any]:
+        return self._make_request("GET", "/api/integrations")
+
+    def get_integration_status(self, provider: str) -> dict[str, Any]:
+        return self._make_request("GET", f"/api/integrations/{provider}/status")
+
+    def start_integration(self, provider: str, *, from_surface: str = "integrations") -> dict[str, Any]:
+        return self._make_request(
+            "POST",
+            f"/api/integrations/{provider}/start",
+            data={"from": from_surface},
+        )
+
+    def resync_integration(self, provider: str) -> dict[str, Any]:
+        return self._make_request("POST", f"/api/integrations/{provider}/resync")
+
+    def disconnect_integration(self, provider: str) -> dict[str, Any]:
+        return self._make_request("POST", f"/api/integrations/{provider}/disconnect")
+
     def close(self) -> None:
         self._session.close()
 

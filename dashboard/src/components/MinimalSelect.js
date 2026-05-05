@@ -7,7 +7,10 @@ export default function MinimalSelect({
   onChange,
   options,
   placeholder = 'Select an option',
-  className = ''
+  className = '',
+  buttonClassName = '',
+  menuClassName = '',
+  optionClassName = ''
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
@@ -46,16 +49,16 @@ export default function MinimalSelect({
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-[#111111] px-4 py-3 text-left text-sm text-white outline-none transition-colors focus:border-[#EA803A] focus:bg-[#1A1A1A]"
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#111111] px-4 py-3 text-left text-sm text-white outline-none transition-all duration-200 focus:border-[#EA803A] focus:bg-[#1A1A1A] focus:ring-2 focus:ring-[#EA803A]/20 ${open ? 'border-[#EA803A]/70 bg-[#161616] shadow-[0_14px_40px_rgba(0,0,0,0.35)]' : 'hover:border-white/15 hover:bg-[#151515]'} ${buttonClassName}`}
       >
-        <span className={selectedOption ? 'text-white' : 'text-zinc-500'}>
+        <span className={`min-w-0 flex-1 truncate ${selectedOption ? 'text-white' : 'text-zinc-500'}`}>
           {selectedOption?.label || placeholder}
         </span>
-        <ChevronDown className={`h-4 w-4 flex-shrink-0 text-zinc-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 flex-shrink-0 text-zinc-400 transition-transform duration-200 ${open ? 'rotate-180 text-[#EA803A]' : ''}`} />
       </button>
 
       {open ? (
-        <div className="absolute z-20 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-white/10 bg-[#111111] p-2 shadow-2xl">
+        <div className={`absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-white/10 bg-[#111111]/95 p-2 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur ${menuClassName}`}>
           {options.map((option) => {
             const selected = option.value === value;
             return (
@@ -66,9 +69,9 @@ export default function MinimalSelect({
                   onChange(option.value);
                   setOpen(false);
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-zinc-300 transition-colors hover:bg-[#1A1A1A] hover:text-white"
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${selected ? 'bg-[#EA803A]/10 text-white' : 'text-zinc-300 hover:bg-[#1A1A1A] hover:text-white'} ${optionClassName}`}
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate">{option.label}</p>
                   {option.description ? (
                     <p className="mt-0.5 truncate text-xs text-zinc-500">{option.description}</p>

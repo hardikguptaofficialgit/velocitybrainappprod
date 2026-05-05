@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Activity, ArrowRight, Cpu, Shield, TrendingUp } from '../components/Icons';
+import { Activity, ArrowRight, Cpu, Database, Shield, TrendingUp } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
 import { promptLifecycle, supportedAgents } from '../lib/agentRuntime';
@@ -30,7 +30,7 @@ const fallbackStats = {
   connectedRepos: 0
 };
 
-const fallbackData = {
+  const fallbackData = {
   apiCallsOverTime: [],
   usageByEndpoint: [],
   recentActivity: [],
@@ -78,7 +78,13 @@ const Dashboard = () => {
         modelBreakdown: payload.modelBreakdown || fallbackData.modelBreakdown,
         agentBreakdown: payload.agentBreakdown || fallbackData.agentBreakdown,
         anomalies: payload.anomalies || fallbackData.anomalies,
-        insights: payload.insights || fallbackData.insights
+        insights: payload.insights || fallbackData.insights,
+        connectedSources: payload.connectedSources || [],
+        sourceCoverage: payload.sourceCoverage || {
+          connectedSourceCount: 0,
+          connectedSources: [],
+          sourceCoverageSummary: 'No company sources connected yet'
+        }
       };
     },
     {
@@ -96,6 +102,12 @@ const Dashboard = () => {
   const agentBreakdown = data?.agentBreakdown || fallbackData.agentBreakdown;
   const anomalies = data?.anomalies || fallbackData.anomalies;
   const insights = data?.insights || fallbackData.insights;
+  const connectedSources = data?.connectedSources || [];
+  const sourceCoverage = data?.sourceCoverage || {
+    connectedSourceCount: 0,
+    connectedSources: [],
+    sourceCoverageSummary: 'No company sources connected yet'
+  };
 
   if (isLoading) {
     return (
@@ -129,6 +141,34 @@ const Dashboard = () => {
         <StatCard title="Connected Agents" value={stats.connectedAgents || 0} detail={`${stats.connectedRepos || 0} repositories currently linked`} icon={Cpu} color="text-blue-400" bg="bg-blue-400/10" />
         <StatCard title="Active API Keys" value={stats.activeApiKeys || 0} detail="Available for direct API access or agent pairing" icon={Shield} color="text-[#5fd1b3]" bg="bg-[#5fd1b3]/10" />
         <StatCard title="Saved Cost" value={`$${Number(stats.totalSavedUsd || 0).toFixed(2)}`} detail={`${stats.successRate || 0}% reuse hit rate`} icon={TrendingUp} color="text-[#f4b183]" bg="bg-[#f4b183]/10" />
+      </div>
+
+      <div className="rounded-2xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-[#EA803A]" />
+              <h3 className="text-base font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Company Source Coverage</h3>
+            </div>
+            <p className="mt-2 text-sm text-zinc-400">{sourceCoverage.sourceCoverageSummary}</p>
+          </div>
+          <Link
+            to="/dashboard/integrations"
+            className="inline-flex items-center gap-2 self-start rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#181818]"
+          >
+            Manage Integrations
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {connectedSources.length > 0 ? connectedSources.map((source) => (
+            <span key={source.provider} className="rounded-full border border-[#202020] bg-[#111] px-3 py-1.5 text-xs text-zinc-300">
+              {source.label || source.provider} · {source.lastSyncStatus || 'idle'}
+            </span>
+          )) : (
+            <p className="text-sm text-zinc-500">Connect Slack, Google Workspace, or GitHub to warm up the Company Brain.</p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

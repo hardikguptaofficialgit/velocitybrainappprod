@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 import AvatarPicker from '../components/AvatarPicker';
 import AgentBrandIcon from '../components/AgentBrandIcon';
@@ -55,6 +56,14 @@ export default function Settings() {
       responseStyle: 'normal',
       webhookUrl: '',
       allowedOrigins: []
+    },
+    agents: {
+      preferredAgent: 'codex',
+      preferredSurface: 'mcp',
+      primaryWorkflow: 'coding',
+      observabilityFocus: 'repository_activity',
+      pairingPreference: 'browser_assisted',
+      autoOpenAgentManager: true
     }
   });
   const [profileForm, setProfileForm] = useState({
@@ -188,6 +197,20 @@ export default function Settings() {
       setBanner('API settings saved.');
     } catch (err) {
       setFailure(getErrorMessage(err, 'Failed to save API settings.'));
+    } finally {
+      setSavingKey('');
+    }
+  };
+
+  const handleAgentSubmit = async (event) => {
+    event.preventDefault();
+    setSavingKey('agents');
+    try {
+      const response = await axios.patch(resolveApiUrl('/api/settings/agents'), settings.agents);
+      setSettings(response.data.settings);
+      setBanner('Agent preferences saved.');
+    } catch (err) {
+      setFailure(getErrorMessage(err, 'Failed to save agent preferences.'));
     } finally {
       setSavingKey('');
     }
@@ -461,16 +484,118 @@ export default function Settings() {
           )}
 
           {activeTab === 'agents' && (
-            <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
+            <form onSubmit={handleAgentSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
               <div>
                 <h2 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Agent integrations</h2>
                 <p className="text-sm text-zinc-500 leading-7">
-                  Keep one MCP memory layer behind every supported coding agent.
+                  Set your default agent strategy, then jump directly into key creation and secure pairing.
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#EA803A]/30 bg-[#130a02] px-4 py-3 text-sm text-zinc-300 leading-7">
-                Ideal flow: prompt arrives, Velocity Brain retrieves context, the agent executes, and useful results can be written back.
+                Ideal flow: create or select an API key, click <span className="text-white font-medium">Connect Your Agent</span>, let Velocity Brain exchange the short-lived pairing code, and then watch repo, model, and task telemetry appear automatically.
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Preferred agent</span>
+                  <MinimalSelect
+                    value={settings.agents.preferredAgent}
+                    onChange={(value) => setSettings((current) => ({
+                      ...current,
+                      agents: { ...current.agents, preferredAgent: value }
+                    }))}
+                    options={supportedAgents.map((agent) => ({ value: agent.id, label: agent.name }))}
+                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Primary workflow</span>
+                  <MinimalSelect
+                    value={settings.agents.primaryWorkflow}
+                    onChange={(value) => setSettings((current) => ({
+                      ...current,
+                      agents: { ...current.agents, primaryWorkflow: value }
+                    }))}
+                    options={[
+                      { value: 'coding', label: 'Coding workflows' },
+                      { value: 'debugging', label: 'Debugging and incident response' },
+                      { value: 'research', label: 'Research and planning' },
+                      { value: 'automation', label: 'Internal automation' }
+                    ]}
+                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Observability focus</span>
+                  <MinimalSelect
+                    value={settings.agents.observabilityFocus}
+                    onChange={(value) => setSettings((current) => ({
+                      ...current,
+                      agents: { ...current.agents, observabilityFocus: value }
+                    }))}
+                    options={[
+                      { value: 'repository_activity', label: 'Repository activity' },
+                      { value: 'model_costs', label: 'Model costs and token burn' },
+                      { value: 'task_timeline', label: 'Task timeline and logs' },
+                      { value: 'anomaly_detection', label: 'Anomalies and inefficiencies' }
+                    ]}
+                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Pairing preference</span>
+                  <MinimalSelect
+                    value={settings.agents.pairingPreference}
+                    onChange={(value) => setSettings((current) => ({
+                      ...current,
+                      agents: { ...current.agents, pairingPreference: value }
+                    }))}
+                    options={[
+                      { value: 'browser_assisted', label: 'Browser-assisted secure pairing' },
+                      { value: 'cli_guided', label: 'CLI-guided token exchange' }
+                    ]}
+                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </label>
+              </div>
+
+              <label className="flex items-center justify-between rounded-xl border border-[#202020] bg-[#111] px-4 py-3">
+                <div>
+                  <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Open agent setup after onboarding</p>
+                  <p className="text-xs text-zinc-500 mt-1">Drop new users straight into the API key and pairing workflow.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={Boolean(settings.agents.autoOpenAgentManager)}
+                  onChange={() => setSettings((current) => ({
+                    ...current,
+                    agents: { ...current.agents, autoOpenAgentManager: !current.agents.autoOpenAgentManager }
+                  }))}
+                  className="h-4 w-4 accent-[#EA803A]"
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/dashboard/api-keys"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#EA803A] px-4 py-2 text-sm font-bold text-black hover:opacity-90"
+                  style={{ fontFamily: 'Syne, sans-serif' }}
+                >
+                  Open API Keys
+                </Link>
+                <Link
+                  to="/dashboard/agents"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#2a2a2a] bg-[#111] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a1a1a]"
+                >
+                  Open Agent Manager
+                </Link>
+                <Link
+                  to="/dashboard/integrations"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#2a2a2a] bg-[#111] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a1a1a]"
+                >
+                  Open Company Integrations
+                </Link>
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -502,7 +627,11 @@ export default function Settings() {
                   </div>
                 ))}
               </div>
-            </div>
+
+              <div className="flex justify-end">
+                <SaveButton saving={savingKey === 'agents'}>Save agent preferences</SaveButton>
+              </div>
+            </form>
           )}
 
           {activeTab === 'security' && (

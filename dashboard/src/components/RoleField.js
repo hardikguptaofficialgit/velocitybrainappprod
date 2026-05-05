@@ -25,7 +25,10 @@ export default function RoleField({
   label = 'Role',
   value,
   onChange,
-  className = ''
+  className = '',
+  selectClassName = '',
+  inputClassName = '',
+  helperText = ''
 }) {
   const [mode, setMode] = useState(getModeFromValue(value));
 
@@ -63,7 +66,8 @@ export default function RoleField({
             onChange(next);
           }}
           options={options}
-          className="h-9 text-sm"
+          className={`min-w-[11rem] flex-1 text-sm ${selectClassName}`}
+          buttonClassName="min-h-[2.25rem]"
         />
 
         {mode === 'other' && (
@@ -71,10 +75,14 @@ export default function RoleField({
             value={presetValues.has(value) ? '' : value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Custom"
-            className="h-9 w-full rounded-md border border-zinc-800 bg-transparent px-2 text-sm text-zinc-200 outline-none focus:border-zinc-600"
+            className={inputClassName || 'h-9 w-full rounded-md border border-zinc-800 bg-transparent px-2 text-sm text-zinc-200 outline-none focus:border-zinc-600'}
           />
         )}
       </div>
+
+      {helperText ? (
+        <p className="text-xs text-zinc-500">{helperText}</p>
+      ) : null}
     </div>
   );
 }

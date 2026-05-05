@@ -27,6 +27,31 @@ const DEFAULT_API_SETTINGS = {
     allowedOrigins: []
 };
 
+const DEFAULT_AGENT_SETTINGS = {
+    preferredAgent: 'codex',
+    preferredSurface: 'mcp',
+    primaryWorkflow: 'coding',
+    observabilityFocus: 'repository_activity',
+    pairingPreference: 'browser_assisted',
+    autoOpenAgentManager: true
+};
+
+const DEFAULT_COMPANY_SOURCE_ENTRY = {
+    connected: false,
+    skipped: false,
+    status: 'not_connected',
+    displayName: '',
+    lastSyncAt: null,
+    lastSyncStatus: 'idle',
+    scopesGranted: []
+};
+
+const DEFAULT_COMPANY_SOURCES = {
+    slack: { ...DEFAULT_COMPANY_SOURCE_ENTRY },
+    google: { ...DEFAULT_COMPANY_SOURCE_ENTRY },
+    github: { ...DEFAULT_COMPANY_SOURCE_ENTRY }
+};
+
 const DEFAULT_WORKSPACE_SETTINGS = {
     timezone: 'UTC',
     industry: '',
@@ -139,6 +164,13 @@ const buildUserDefaults = ({ email, name = '', tier = 'free' }) => ({
 const buildDefaultUserSettings = () => ({
     notifications: { ...DEFAULT_NOTIFICATION_SETTINGS },
     api: { ...DEFAULT_API_SETTINGS },
+    agents: { ...DEFAULT_AGENT_SETTINGS },
+    companySources: {
+        slack: { ...DEFAULT_COMPANY_SOURCE_ENTRY },
+        google: { ...DEFAULT_COMPANY_SOURCE_ENTRY },
+        github: { ...DEFAULT_COMPANY_SOURCE_ENTRY }
+    },
+    onboardingSelections: {},
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
 });
@@ -151,6 +183,27 @@ const mergeSettings = (settings = {}) => ({
     api: {
         ...DEFAULT_API_SETTINGS,
         ...(settings.api || {})
+    },
+    agents: {
+        ...DEFAULT_AGENT_SETTINGS,
+        ...(settings.agents || {})
+    },
+    companySources: {
+        slack: {
+            ...DEFAULT_COMPANY_SOURCE_ENTRY,
+            ...((settings.companySources || {}).slack || {})
+        },
+        google: {
+            ...DEFAULT_COMPANY_SOURCE_ENTRY,
+            ...((settings.companySources || {}).google || {})
+        },
+        github: {
+            ...DEFAULT_COMPANY_SOURCE_ENTRY,
+            ...((settings.companySources || {}).github || {})
+        }
+    },
+    onboardingSelections: {
+        ...(settings.onboardingSelections || {})
     },
     created_at: settings.created_at || new Date().toISOString(),
     updated_at: settings.updated_at || new Date().toISOString()
@@ -256,6 +309,8 @@ module.exports = {
     PROFILE_IMAGE_TARGET,
     DEFAULT_NOTIFICATION_SETTINGS,
     DEFAULT_API_SETTINGS,
+    DEFAULT_AGENT_SETTINGS,
+    DEFAULT_COMPANY_SOURCES,
     DEFAULT_WORKSPACE_SETTINGS,
     sanitizeText,
     sanitizeLongText,

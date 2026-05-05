@@ -256,6 +256,55 @@ class TestVelocityBrainClient:
                 headers={"Content-Type": "application/json"},
                 timeout=30
             )
+
+    @pytest.mark.asyncio
+    async def test_get_integrations_success(self, mock_client):
+        mock_response = {
+            "success": True,
+            "connectedSourceCount": 2,
+            "connectedSources": ["slack", "github"],
+            "integrations": [{"provider": "slack", "connected": True}]
+        }
+
+        with patch.object(mock_client, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.return_value = mock_response
+
+            result = await mock_client.get_integrations()
+
+            assert result["connectedSourceCount"] == 2
+            mock_request.assert_called_once_with("GET", "/api/integrations")
+
+    @pytest.mark.asyncio
+    async def test_start_integration_success(self, mock_client):
+        mock_response = {
+            "success": True,
+            "provider": "slack",
+            "authUrl": "https://example.com/oauth"
+        }
+
+        with patch.object(mock_client, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.return_value = mock_response
+
+            result = await mock_client.start_integration("slack", from_surface="onboarding")
+
+            assert result["provider"] == "slack"
+            mock_request.assert_called_once_with(
+                "POST",
+                "/api/integrations/slack/start",
+                data={"from": "onboarding"}
+            )
+
+    @pytest.mark.asyncio
+    async def test_resync_integration_success(self, mock_client):
+        mock_response = {"success": True, "provider": "github"}
+
+        with patch.object(mock_client, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.return_value = mock_response
+
+            result = await mock_client.resync_integration("github")
+
+            assert result["provider"] == "github"
+            mock_request.assert_called_once_with("POST", "/api/integrations/github/resync")
     
     @pytest.mark.asyncio
     async def test_context_manager(self):

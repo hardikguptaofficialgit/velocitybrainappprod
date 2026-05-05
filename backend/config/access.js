@@ -3,7 +3,7 @@ const parseCsv = (value) => (value || '')
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
 
-const publicSignupEnabled = process.env.ALLOW_PUBLIC_SIGNUP === 'true';
+const publicSignupEnabled = process.env.ALLOW_PUBLIC_SIGNUP !== 'false';
 const approvedEmails = new Set(parseCsv(process.env.APPROVED_USER_EMAILS));
 const approvedDomains = new Set(
     parseCsv(process.env.APPROVED_USER_DOMAINS).map((domain) => domain.replace(/^@/, ''))
@@ -29,9 +29,9 @@ const isUserApproved = (email) => {
 
 const ACCESS_POLICY = {
     publicAccessMessage: publicSignupEnabled
-        ? 'Velocity Brain is free for everyone for a limited time, with usage limits in place.'
+        ? 'Anyone can create an account and start using Velocity Brain.'
         : 'Velocity Brain access is restricted to approved accounts.',
-    limitedAccessLabel: publicSignupEnabled ? 'Limited-time free access' : 'Approved accounts only',
+    limitedAccessLabel: publicSignupEnabled ? 'Open signup' : 'Approved accounts only',
     defaultUserTier: 'free',
     allowPublicSignup: publicSignupEnabled,
     standardQuotas: {

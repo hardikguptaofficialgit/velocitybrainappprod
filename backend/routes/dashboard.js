@@ -4,6 +4,7 @@ const path = require('path');
 const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
 const { authenticate } = require('../middleware/auth');
 const { aggregateObservability } = require('../utils/observability');
+const { listSourceConnectionsForWorkspace, summarizeWorkspaceCoverage } = require('../utils/sourceIntegrations');
 
 const router = express.Router();
 const repoRoot = path.resolve(__dirname, '../..');
@@ -307,6 +308,10 @@ router.get('/stats', authenticate, async (req, res) => {
             apiKeys: apiKeys.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
             now
         });
+        const sourceConnections = req.user.workspaceId
+            ? await listSourceConnectionsForWorkspace(req.user.workspaceId)
+            : [];
+        const sourceCoverage = summarizeWorkspaceCoverage(sourceConnections);
 
         // Filter to last 30 days in memory
         const usageLogsData = allUsageData.filter(log => new Date(log.created_at) >= thirtyDaysAgo);
@@ -419,7 +424,8 @@ router.get('/stats', authenticate, async (req, res) => {
                 requestSuccessRate: Number(successRate),
                 totalTokens: observability.summary.totalTokens,
                 connectedAgents: observability.summary.uniqueAgents,
-                connectedRepos: observability.summary.uniqueRepos
+                connectedRepos: observability.summary.uniqueRepos,
+                connectedSourceCount: sourceCoverage.connectedSourceCount
             },
             apiCallsOverTime,
             hourlyDistribution,
@@ -429,7 +435,9 @@ router.get('/stats', authenticate, async (req, res) => {
             modelBreakdown: observability.modelBreakdown,
             agentBreakdown: observability.agentBreakdown,
             anomalies: observability.anomalies,
-            insights: observability.insights
+            insights: observability.insights,
+            connectedSources: sourceConnections,
+            sourceCoverage
         });
     } catch (error) {
         console.error('[DashboardRoute] Dashboard stats error', {

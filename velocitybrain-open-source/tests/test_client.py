@@ -8,6 +8,10 @@ def test_public_client_exposes_hosted_endpoints_only():
     assert "get_status" in methods
     assert "get_health" in methods
     assert "get_usage_stats" in methods
+    assert "get_integrations" in methods
+    assert "start_integration" in methods
+    assert "resync_integration" in methods
+    assert "disconnect_integration" in methods
     assert "ingest" not in methods
     assert "execute_skill" not in methods
     assert "store_artifact" not in methods

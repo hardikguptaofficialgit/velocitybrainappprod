@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+import webbrowser
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +88,37 @@ def cmd_status(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_integrations(args: argparse.Namespace) -> int:
+    config = load_config()
+    try:
+        with VelocityBrainClient(config["api_key"], config["base_url"]) as client:
+            payload = client.get_integrations()
+        _emit_json(payload) if args.json else print(json.dumps(payload, indent=2))
+        return 0
+    except VelocityBrainError as exc:
+        print(f"VelocityBrain integrations failed: {exc}")
+        return 1
+
+
+def cmd_integrations_connect(args: argparse.Namespace) -> int:
+    config = load_config()
+    try:
+        with VelocityBrainClient(config["api_key"], config["base_url"]) as client:
+            payload = client.start_integration(args.provider)
+        auth_url = payload.get("authUrl")
+        if auth_url:
+            try:
+                webbrowser.open(auth_url)
+            except Exception:
+                pass
+            print(auth_url)
+        _emit_json(payload) if args.json else print(json.dumps(payload, indent=2))
+        return 0
+    except VelocityBrainError as exc:
+        print(f"VelocityBrain integration connect failed: {exc}")
+        return 1
+
+
 def cmd_config(args: argparse.Namespace) -> int:
     config_dir = _config_path().parent
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -113,6 +145,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_status = sub.add_parser("status", help="Get hosted reuse usage metrics")
     p_status.set_defaults(func=cmd_status)
+
+    p_integrations = sub.add_parser("integrations", help="Show connected company integrations")
+    p_integrations.set_defaults(func=cmd_integrations)
+
+    p_integrations_connect = sub.add_parser("integrations-connect", help="Start a browser-assisted company integration flow")
+    p_integrations_connect.add_argument("provider", choices=["slack", "google", "github"])
+    p_integrations_connect.set_defaults(func=cmd_integrations_connect)
 
     p_config = sub.add_parser("config", help="Save hosted credentials")
     p_config.add_argument("--set-key", required=True)

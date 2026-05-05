@@ -446,6 +446,30 @@ class VelocityBrainClient:
         )
         return self._coerce_response(payload, lambda result: result)
 
+    def get_integrations(self) -> Dict[str, Any]:
+        payload = self._make_request("GET", "/api/integrations")
+        return self._coerce_response(payload, lambda result: result)
+
+    def get_integration_status(self, provider: str) -> Dict[str, Any]:
+        payload = self._make_request("GET", f"/api/integrations/{provider}/status")
+        return self._coerce_response(payload, lambda result: result)
+
+    def start_integration(self, provider: str, from_surface: str = "integrations") -> Dict[str, Any]:
+        payload = self._make_request(
+            "POST",
+            f"/api/integrations/{provider}/start",
+            data={"from": from_surface}
+        )
+        return self._coerce_response(payload, lambda result: result)
+
+    def resync_integration(self, provider: str) -> Dict[str, Any]:
+        payload = self._make_request("POST", f"/api/integrations/{provider}/resync")
+        return self._coerce_response(payload, lambda result: result)
+
+    def disconnect_integration(self, provider: str) -> Dict[str, Any]:
+        payload = self._make_request("POST", f"/api/integrations/{provider}/disconnect")
+        return self._coerce_response(payload, lambda result: result)
+
     @classmethod
     def complete_agent_pairing(
         cls,

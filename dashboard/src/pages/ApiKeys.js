@@ -7,6 +7,7 @@ import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
 import { supportedAgents } from '../lib/agentRuntime';
 import AgentBrandIcon from '../components/AgentBrandIcon';
+import { useAuth } from '../contexts/AuthContext';
 
 const formatDateTime = (value) => {
   if (!value) return 'Never';
@@ -58,6 +59,7 @@ const TopInsightCard = ({ title, items, danger = false, emptyMessage }) => (
 );
 
 const ApiKeys = () => {
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [copiedKey, setCopiedKey] = useState(null);
@@ -80,6 +82,20 @@ const ApiKeys = () => {
   const apiKeys = apiKeysResponse?.keys ?? [];
   const insights = apiKeysResponse?.insights || [];
   const anomalies = apiKeysResponse?.anomalies || [];
+
+  const { data: integrationsStatus } = useQuery(
+    ['api-keys-integrations-status', user?.id],
+    async () => {
+      const response = await axios.get(resolveApiUrl('/api/integrations/onboarding-status'));
+      return response.data || {};
+    },
+    {
+      enabled: Boolean(user?.accountType === 'company'),
+      retry: (failureCount, queryError) => !isBackendUnavailable(queryError) && failureCount < 1
+    }
+  );
+
+  const companyNeedsSources = user?.accountType === 'company' && (integrationsStatus?.connectedSourceCount || 0) === 0;
 
   const createKeyMutation = useMutation(
     async (keyData) => {
@@ -201,6 +217,21 @@ const ApiKeys = () => {
           emptyMessage="No anomalies detected. Sudden usage spikes, repeated failures, or redundant loops will appear here."
         />
       </div>
+
+      {companyNeedsSources && (
+        <div className="rounded-2xl border border-[#EA803A33] bg-[#EA803A14] p-5">
+          <p className="text-sm font-semibold text-white">Pairing works best after you connect company systems.</p>
+          <p className="mt-1 text-sm text-zinc-400">
+            Your keys and agent pairing flow are ready, but this workspace still has no Slack, Google Workspace, or GitHub sources connected.
+          </p>
+          <a
+            href="/dashboard/integrations"
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#181818]"
+          >
+            Open Integrations
+          </a>
+        </div>
+      )}
 
       <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl shadow-sm overflow-hidden">
         {apiKeys.length > 0 ? (

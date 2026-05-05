@@ -7,6 +7,7 @@ const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ApiKeys = lazy(() => import('./pages/ApiKeys'));
 const Agents = lazy(() => import('./pages/Agents'));
+const Integrations = lazy(() => import('./pages/Integrations'));
 const Usage = lazy(() => import('./pages/Usage'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Login = lazy(() => import('./pages/Login'));
@@ -66,6 +67,7 @@ function App() {
                         <Route path="/dashboard" element={<Layout />}>
                           <Route index element={<Dashboard />} />
                           <Route path="agents" element={<Agents />} />
+                          <Route path="integrations" element={<Integrations />} />
                           <Route path="api-keys" element={<ApiKeys />} />
                           <Route path="billing" element={<Navigate to="/dashboard" replace />} />
                           <Route path="usage" element={<Usage />} />

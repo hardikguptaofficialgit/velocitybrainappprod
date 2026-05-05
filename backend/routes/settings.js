@@ -145,7 +145,10 @@ router.post('/onboarding', authenticate, [
     body('avatarUrl').optional().isString(),
     body('workspaceImageUrl').optional().isString(),
     body('notifications').optional().isObject(),
-    body('api').optional().isObject()
+    body('api').optional().isObject(),
+    body('agents').optional().isObject(),
+    body('companySources').optional().isObject(),
+    body('onboardingSelections').optional().isObject()
 ], async (req, res) => {
     try {
         if (!ensureFirebase(res)) return;
@@ -231,6 +234,18 @@ router.post('/onboarding', authenticate, [
             api: {
                 ...settingsDoc.data.api,
                 ...(req.body.api || {})
+            },
+            agents: {
+                ...settingsDoc.data.agents,
+                ...(req.body.agents || {})
+            },
+            companySources: {
+                ...settingsDoc.data.companySources,
+                ...(req.body.companySources || {})
+            },
+            onboardingSelections: {
+                ...(settingsDoc.data.onboardingSelections || {}),
+                ...(req.body.onboardingSelections || {})
             },
             updated_at: new Date().toISOString()
         });
@@ -406,6 +421,59 @@ router.patch('/api', authenticate, async (req, res) => {
     } catch (error) {
         console.error('API settings update error:', error);
         res.status(500).json({ success: false, message: 'Failed to update API settings' });
+    }
+});
+
+router.patch('/agents', authenticate, async (req, res) => {
+    try {
+        if (!ensureFirebase(res)) return;
+
+        const settingsDoc = await getSettingsDoc(req.user.id);
+        const nextAgents = {
+            ...settingsDoc.data.agents,
+            preferredAgent: sanitizeText(req.body.preferredAgent, 60) || settingsDoc.data.agents.preferredAgent,
+            preferredSurface: sanitizeText(req.body.preferredSurface, 40) || settingsDoc.data.agents.preferredSurface,
+            primaryWorkflow: sanitizeText(req.body.primaryWorkflow, 60) || settingsDoc.data.agents.primaryWorkflow,
+            observabilityFocus: sanitizeText(req.body.observabilityFocus, 80) || settingsDoc.data.agents.observabilityFocus,
+            pairingPreference: sanitizeText(req.body.pairingPreference, 80) || settingsDoc.data.agents.pairingPreference,
+            autoOpenAgentManager: typeof req.body.autoOpenAgentManager === 'boolean'
+                ? req.body.autoOpenAgentManager
+                : settingsDoc.data.agents.autoOpenAgentManager
+        };
+
+        const nextSettings = mergeSettings({
+            ...settingsDoc.data,
+            agents: nextAgents,
+            updated_at: new Date().toISOString()
+        });
+        await settingsDoc.ref.set(nextSettings);
+
+        res.json({ success: true, settings: nextSettings });
+    } catch (error) {
+        console.error('Agent settings update error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update agent settings' });
+    }
+});
+
+router.patch('/company-sources', authenticate, async (req, res) => {
+    try {
+        if (!ensureFirebase(res)) return;
+
+        const settingsDoc = await getSettingsDoc(req.user.id);
+        const nextSettings = mergeSettings({
+            ...settingsDoc.data,
+            companySources: {
+                ...settingsDoc.data.companySources,
+                ...(req.body || {})
+            },
+            updated_at: new Date().toISOString()
+        });
+        await settingsDoc.ref.set(nextSettings);
+
+        res.json({ success: true, settings: nextSettings });
+    } catch (error) {
+        console.error('Company source settings update error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update company source settings' });
     }
 });
 

@@ -13,11 +13,55 @@ Coding agents get smarter and cheaper every time they run.
 
 Velocity Brain is a **hosted memory and reuse platform** for coding agents. It stores reusable outputs once, retrieves only the context that matters, and reports saved tokens, saved cost, and reuse hits across CLI, API, and MCP interfaces.
 
+It now also supports **team/company onboarding with first-class company integrations** so a workspace can start with real context from Slack, Google Workspace, and GitHub before the first agent is paired.
+
 ### Product Shape
 
 - **Product**: hosted memory + reuse layer for coding agents
+- **Team onboarding**: company workspaces can connect Slack, Google Workspace, and GitHub during onboarding
+- **Company brain inputs**: connected sources feed shared context, sync state, and coverage into the dashboard
 - **Open source**: SDK + MCP bridge + integrations
 - **Core value**: less repeated prompt context, lower token cost, faster repeated runs
+
+## Workspace Flows
+
+### Individual workspace
+
+1. Choose `Individual`
+2. Finish profile and workspace setup
+3. Choose agent defaults
+4. Land on `API Keys`
+5. Pair your first agent
+
+### Team / Company workspace
+
+1. Choose `Company workspace`
+2. Finish profile and workspace setup
+3. Connect company systems during onboarding:
+   - Slack
+   - Google Workspace
+   - GitHub
+4. Choose agent defaults
+5. Land on `API Keys`
+6. Pair your first agent
+
+The dashboard now includes a dedicated **Integrations** control plane so teams can reconnect, resync, or disconnect sources later.
+
+## Company Integrations
+
+Velocity Brain now treats company integrations as first-class hosted resources.
+
+- **Slack**: workspace-level OAuth, team identity, sync orchestration, source connection tracking
+- **Google Workspace**: Gmail/Drive/Docs/Calendar-oriented OAuth and sync orchestration
+- **GitHub**: org/user connection flow plus repository-aware source registration
+- **Observability**: connected source count, sync health, and source coverage now show up in onboarding, dashboard overview, integrations, and API key setup
+- **Security**: provider tokens stay server-side only and are never exposed in the dashboard or CLI
+
+Useful routes and surfaces:
+
+- Dashboard onboarding: `/onboarding`
+- Integrations control plane: `/dashboard/integrations`
+- API key + pairing control plane: `/dashboard/api-keys`
 
 ### Production Highlights
 
@@ -227,6 +271,18 @@ velocitybrain connect codex --apply
 
 Velocity Brain runs as a local MCP bridge that forwards requests to the hosted backend. No local DB or Docker setup is required in hosted mode.
 
+### 3) Optional company source setup for team workspaces
+
+If your workspace is team/company-oriented, connect shared systems before or after pairing an agent:
+
+```powershell
+velocitybrain integrations
+velocitybrain integrations connect slack
+velocitybrain integrations connect google
+velocitybrain integrations connect github
+velocitybrain integrations status
+```
+
 ## Legacy Local / Self-Hosted (Dev-Only)
 
 ### 1) Configure environment
@@ -309,6 +365,13 @@ When connected through MCP, external clients (Claude Code/Codex/etc.) call these
 velocitybrain about
 velocitybrain init --bootstrap-schema
 velocitybrain connect codex
+velocitybrain integrations
+velocitybrain integrations status
+velocitybrain integrations connect slack
+velocitybrain integrations connect google
+velocitybrain integrations connect github
+velocitybrain integrations resync slack
+velocitybrain integrations disconnect github
 velocitybrain smoke
 velocitybrain doctor
 velocitybrain doctor --verbose
@@ -749,6 +812,24 @@ python -m pytest -q
 Legacy commands still work:
 - `velocityx ...`
 - `python velocityx.py ...`
+
+## Repo Layout
+
+This repository currently contains both the **main product codebase** and a separate **public package boundary**:
+
+- `backend/`, `dashboard/`, `src/`, `skills/`, `tests/`
+  - the main hosted product and internal runtime
+- `velocitybrain-open-source/`
+  - the safe public distribution layer for the hosted client SDK, CLI, MCP bridge, examples, and package tests
+
+That second folder exists on purpose. It lets you:
+
+- publish an installable open-source client without leaking private backend/runtime code
+- enforce a clean import boundary between public SDK code and proprietary product internals
+- ship MCP/CLI/client examples that match the hosted product surface
+- test the public package independently before publishing
+
+If you want the formal boundary definition, see [docs/REPO_BOUNDARY.md](/c:/Disk%20E/Projects/VelocityX/velocitybrain/docs/REPO_BOUNDARY.md) and [docs/public/README.md](/c:/Disk%20E/Projects/VelocityX/velocitybrain/docs/public/README.md).
 
 ## Documentation
 
