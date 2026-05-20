@@ -6,6 +6,7 @@ import AvatarPicker from '../components/AvatarPicker';
 import AgentBrandIcon from '../components/AgentBrandIcon';
 import BlobLoader from '../components/BlobLoader';
 import MinimalSelect from '../components/MinimalSelect';
+import DropdownField from '../components/ui/DropdownField';
 import RoleField from '../components/RoleField';
 import { Bell, Cpu, Globe, Settings as SettingsIcon, Shield, User } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,10 +31,17 @@ const SaveButton = ({ saving, children }) => (
   <button
     type="submit"
     disabled={saving}
-    className="inline-flex min-w-[148px] items-center justify-center rounded-xl bg-[#EA803A] px-5 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+    className="inline-flex min-w-[148px] items-center justify-center rounded-xl bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 px-5 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
     style={{ fontFamily: 'Syne, sans-serif' }}
   >
-    {saving ? 'Saving...' : children}
+    {saving ? (
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+        Saving...
+      </div>
+    ) : (
+      children
+    )}
   </button>
 );
 
@@ -225,293 +233,264 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Settings</h1>
-     
-
+    <div className="space-y-6 max-w-6xl mx-auto w-full pb-12">
+      <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
+        Settings
+      </h1>
+      
       {(error || success) && (
-        <div className={`rounded-xl border px-4 py-3 text-sm ${error ? 'border-red-900/40 bg-red-950/20 text-red-300' : 'border-emerald-900/40 bg-emerald-950/20 text-emerald-300'}`}>
+        <div className={`rounded-xl border px-4 py-3 text-sm shadow-inner ${error ? 'border-red-900/40 bg-red-950/20 text-red-300' : 'border-[#5fd1b3]/30 bg-[#5fd1b3]/10 text-[#5fd1b3]'}`}>
           {error || success}
         </div>
       )}
 
       <div className="flex flex-col gap-6 lg:flex-row">
-        <div className="lg:w-56 flex-shrink-0">
-          <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-3">
-            <nav className="space-y-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-[#EA803A] text-black'
-                      : 'text-zinc-400 hover:bg-[#111] hover:text-white'
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </nav>
+        <div className="lg:w-64 flex-shrink-0">
+          <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+            <div className="bg-[#0d0d0d] rounded-xl p-3 h-full">
+              <nav className="space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-gradient-to-b from-[#EA803A] to-[#d66a25] text-black shadow-md shadow-[#EA803A]/20'
+                        : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-white'
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
           </div>
         </div>
 
         <div className="flex-1">
           {activeTab === 'profile' && (
-            <form onSubmit={handleProfileSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Profile information</h2>
+            <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+              <form onSubmit={handleProfileSubmit} className="rounded-xl bg-[#0d0d0d] p-6 space-y-6 h-full">
+                <h2 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Profile information</h2>
 
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-[#EA803A]">
-                  {profileForm.avatarUrl ? (
-                    <img src={profileForm.avatarUrl} alt="Profile avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-xl font-medium text-black" style={{ fontFamily: 'Syne, sans-serif' }}>
-                      {(user?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
-                    </span>
-                  )}
+                <AvatarPicker
+                  value={profileForm.avatarUrl}
+                  options={curatedAvatarOptions}
+                  onChange={(url) => setProfileForm((current) => ({ ...current, avatarUrl: url }))}
+                  title="Pick your avatar"
+                  description="Only avatars from our list are available here."
+                  triggerLabel="Open picker"
+                  helperText="Compact popup with curated choices"
+                  shape="rounded-full"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <label className="space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Full name</span>
+                    <input
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm((current) => ({ ...current, name: e.target.value }))}
+                      className="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors focus:bg-[#111]"
+                      placeholder="John Doe"
+                    />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Email</span>
+                    <input
+                      value={user.email || ''}
+                      disabled
+                      className="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/30 px-4 py-2.5 text-sm text-zinc-500 shadow-inner cursor-not-allowed"
+                    />
+                  </label>
+                  <div className="space-y-2">
+                    <RoleField
+                      label="Title"
+                      value={profileForm.title}
+                      onChange={(value) => setProfileForm((current) => ({ ...current, title: value }))}
+                      selectClassName="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-zinc-900/50 [&_button]:px-4 [&_button]:py-2.5 [&_button]:shadow-inner [&_button]:transition-colors"
+                      inputClassName="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors"
+                      helperText="Choose a common title fast, or use Other for a custom one."
+                    />
+                  </div>
+                  <label className="space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Company</span>
+                    <input
+                      value={profileForm.company}
+                      onChange={(e) => setProfileForm((current) => ({ ...current, company: e.target.value }))}
+                      className="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors focus:bg-[#111]"
+                      placeholder="Your company"
+                    />
+                  </label>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Profile avatar</p>
-                  <p className="mt-2 text-xs text-zinc-500">Choose from our curated DiceBear set instead of uploading custom images.</p>
+
+                <div className="flex justify-end pt-4">
+                  <SaveButton saving={savingKey === 'profile'}>Save profile</SaveButton>
                 </div>
-              </div>
-
-              <AvatarPicker
-                value={profileForm.avatarUrl}
-                options={curatedAvatarOptions}
-                onChange={(url) => setProfileForm((current) => ({ ...current, avatarUrl: url }))}
-                title="Pick your avatar"
-                description="Only avatars from our list are available here."
-                triggerLabel="Open picker"
-                helperText="Compact popup with curated choices"
-                shape="rounded-full"
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Full name</span>
-                  <input
-                    value={profileForm.name}
-                    onChange={(e) => setProfileForm((current) => ({ ...current, name: e.target.value }))}
-                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="John Doe"
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Email</span>
-                  <input
-                    value={user.email || ''}
-                    disabled
-                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-zinc-500"
-                  />
-                </label>
-                <div className="space-y-2">
-                  <RoleField
-                    label="Title"
-                    value={profileForm.title}
-                    onChange={(value) => setProfileForm((current) => ({ ...current, title: value }))}
-                    selectClassName="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
-                    inputClassName="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    helperText="Choose a common title fast, or use Other for a custom one."
-                  />
-                </div>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Company</span>
-                  <input
-                    value={profileForm.company}
-                    onChange={(e) => setProfileForm((current) => ({ ...current, company: e.target.value }))}
-                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="Your company"
-                  />
-                </label>
-              </div>
-
-              <div className="flex justify-end">
-                <SaveButton saving={savingKey === 'profile'}>Save profile</SaveButton>
-              </div>
-            </form>
+              </form>
+            </div>
           )}
 
           {activeTab === 'workspace' && (
-            <form onSubmit={handleWorkspaceSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Workspace settings</h2>
-                  <p className="text-sm text-zinc-500 mt-1">Manage the shared identity and defaults tied to your workspace.</p>
+            <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+              <form onSubmit={handleWorkspaceSubmit} className="rounded-xl bg-[#0d0d0d] p-6 space-y-6 h-full">
+                <div className="flex items-start justify-between gap-4 border-b border-[#1c1c1c] pb-5">
+                  <div>
+                    <h2 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Workspace settings</h2>
+                    <p className="text-sm text-zinc-500 mt-1">Manage the shared identity and defaults tied to your workspace.</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">Workspace type</p>
+                    <p className="mt-1 text-sm font-semibold text-white capitalize">{workspace?.type || user?.accountType || 'individual'}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">Workspace type</p>
-                  <p className="mt-1 text-sm font-semibold text-white">{workspace?.type || user?.accountType || 'individual'}</p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl border border-[#2a2a2a] bg-[#111]">
-                  {workspaceForm.imageUrl ? (
-                    <img src={workspaceForm.imageUrl} alt="Workspace avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-2xl font-bold text-[#f2b07d]" style={{ fontFamily: 'Syne, sans-serif' }}>{initials}</span>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Workspace avatar</p>
-                  <p className="mt-2 text-xs text-zinc-500">Use one of the curated DiceBear marks shown across onboarding and settings.</p>
-                </div>
-              </div>
 
-              <AvatarPicker
-                value={workspaceForm.imageUrl}
-                options={curatedAvatarOptions}
-                onChange={(url) => setWorkspaceForm((current) => ({ ...current, imageUrl: url }))}
-                title="Pick a workspace avatar"
-                description="Only curated avatars from our list can be used here."
-                triggerLabel="Open picker"
-                helperText="Compact popup with curated choices"
-                shape="rounded-3xl"
-              />
+                <AvatarPicker
+                  value={workspaceForm.imageUrl}
+                  options={curatedAvatarOptions}
+                  onChange={(url) => setWorkspaceForm((current) => ({ ...current, imageUrl: url }))}
+                  title="Pick a workspace avatar"
+                  description="Only curated avatars from our list can be used here."
+                  triggerLabel="Open picker"
+                  helperText="Compact popup with curated choices"
+                  shape="rounded-2xl"
+                />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Workspace name</span>
-                  <input
-                    value={workspaceForm.name}
-                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, name: e.target.value }))}
-                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="Workspace name"
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Industry</span>
-                  <input
-                    value={workspaceForm.industry}
-                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, industry: e.target.value }))}
-                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="Developer tools, fintech..."
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Company size</span>
-                  <MinimalSelect
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Workspace name</span>
+                    <input
+                      value={workspaceForm.name}
+                      onChange={(e) => setWorkspaceForm((current) => ({ ...current, name: e.target.value }))}
+                      className="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors"
+                      placeholder="Workspace name"
+                    />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Industry</span>
+                    <input
+                      value={workspaceForm.industry}
+                      onChange={(e) => setWorkspaceForm((current) => ({ ...current, industry: e.target.value }))}
+                      className="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors"
+                      placeholder="Developer tools, fintech..."
+                    />
+                  </label>
+                  <DropdownField
+                    label="Company size"
                     value={workspaceForm.companySize}
                     onChange={(value) => setWorkspaceForm((current) => ({ ...current, companySize: value }))}
                     placeholder="Select a range"
                     options={companySizes.map((size) => ({ value: size, label: size }))}
-                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
                   />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Website</span>
-                  <input
-                    value={workspaceForm.website}
-                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, website: e.target.value }))}
-                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="https://your-company.com"
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Timezone</span>
-                  <MinimalSelect
+                  <label className="space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Website</span>
+                    <input
+                      value={workspaceForm.website}
+                      onChange={(e) => setWorkspaceForm((current) => ({ ...current, website: e.target.value }))}
+                      className="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors"
+                      placeholder="https://your-company.com"
+                    />
+                  </label>
+                  <DropdownField
+                    label="Timezone"
                     value={workspaceForm.timezone}
                     onChange={(value) => setWorkspaceForm((current) => ({ ...current, timezone: value }))}
                     options={timezones.map((timezone) => ({ value: timezone, label: timezone }))}
-                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
                   />
-                </label>
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Primary use case</span>
-                  <textarea
-                    value={workspaceForm.primaryUseCase}
-                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, primaryUseCase: e.target.value }))}
-                    className="h-24 w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="What workflows should the workspace support first?"
-                  />
-                </label>
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Description</span>
-                  <textarea
-                    value={workspaceForm.description}
-                    onChange={(e) => setWorkspaceForm((current) => ({ ...current, description: e.target.value }))}
-                    className="h-28 w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="A short summary of the team, products, or operating context."
-                  />
-                </label>
-              </div>
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Primary use case</span>
+                    <textarea
+                      value={workspaceForm.primaryUseCase}
+                      onChange={(e) => setWorkspaceForm((current) => ({ ...current, primaryUseCase: e.target.value }))}
+                      className="h-24 w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors resize-none"
+                      placeholder="What workflows should the workspace support first?"
+                    />
+                  </label>
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Description</span>
+                    <textarea
+                      value={workspaceForm.description}
+                      onChange={(e) => setWorkspaceForm((current) => ({ ...current, description: e.target.value }))}
+                      className="h-28 w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors resize-none"
+                      placeholder="A short summary of the team, products, or operating context."
+                    />
+                  </label>
+                </div>
 
-              <div className="flex justify-end">
-                <SaveButton saving={savingKey === 'workspace'}>Save workspace</SaveButton>
-              </div>
-            </form>
+                <div className="flex justify-end pt-4">
+                  <SaveButton saving={savingKey === 'workspace'}>Save workspace</SaveButton>
+                </div>
+              </form>
+            </div>
           )}
 
           {activeTab === 'notifications' && (
-            <form onSubmit={handleNotificationsSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-4">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Notification preferences</h2>
+            <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+              <form onSubmit={handleNotificationsSubmit} className="rounded-xl bg-[#0d0d0d] p-6 space-y-6 h-full">
+                <h2 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Notification preferences</h2>
 
-              <div className="space-y-3">
-                {[
-                  { key: 'emailAlerts', label: 'Email Alerts', description: 'Receive alerts about API usage and errors' },
-                  { key: 'usageWarnings', label: 'Usage Warnings', description: 'Get notified when approaching rate limits' },
-                  { key: 'monthlyReports', label: 'Monthly Reports', description: 'Receive monthly usage and analytics reports' },
-                  { key: 'productUpdates', label: 'Product Updates', description: 'Get notified about new features and improvements' }
-                ].map((item) => (
-                  <label key={item.key} className="flex items-center justify-between py-3 border-b border-[#202020] last:border-0">
-                    <div>
-                      <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{item.label}</p>
-                      <p className="text-xs text-zinc-500">{item.description}</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(settings.notifications[item.key])}
-                      onChange={() => setSettings((current) => ({
-                        ...current,
-                        notifications: {
-                          ...current.notifications,
-                          [item.key]: !current.notifications[item.key]
-                        }
-                      }))}
-                      className="h-4 w-4 accent-[#EA803A]"
-                    />
-                  </label>
-                ))}
-              </div>
+                <div className="space-y-2">
+                  {[
+                    { key: 'emailAlerts', label: 'Email Alerts', description: 'Receive alerts about API usage and errors' },
+                    { key: 'usageWarnings', label: 'Usage Warnings', description: 'Get notified when approaching rate limits' },
+                    { key: 'monthlyReports', label: 'Monthly Reports', description: 'Receive monthly usage and analytics reports' },
+                    { key: 'productUpdates', label: 'Product Updates', description: 'Get notified about new features and improvements' }
+                  ].map((item) => (
+                    <label key={item.key} className="flex items-center justify-between p-4 rounded-xl border border-zinc-800/50 bg-zinc-900/40 hover:bg-zinc-900/60 transition-colors shadow-inner cursor-pointer">
+                      <div>
+                        <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{item.label}</p>
+                        <p className="text-xs text-zinc-500 mt-1">{item.description}</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.notifications[item.key])}
+                        onChange={() => setSettings((current) => ({
+                          ...current,
+                          notifications: {
+                            ...current.notifications,
+                            [item.key]: !current.notifications[item.key]
+                          }
+                        }))}
+                        className="h-4 w-4 accent-[#EA803A] cursor-pointer"
+                      />
+                    </label>
+                  ))}
+                </div>
 
-              <div className="flex justify-end">
-                <SaveButton saving={savingKey === 'notifications'}>Save notifications</SaveButton>
-              </div>
-            </form>
+                <div className="flex justify-end pt-2">
+                  <SaveButton saving={savingKey === 'notifications'}>Save notifications</SaveButton>
+                </div>
+              </form>
+            </div>
           )}
 
           {activeTab === 'agents' && (
-            <form onSubmit={handleAgentSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
-              <div>
-                <h2 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Agent integrations</h2>
-                <p className="text-sm text-zinc-500 leading-7">
-                  Set your default agent strategy, then jump directly into key creation and secure pairing.
-                </p>
-              </div>
+            <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+              <form onSubmit={handleAgentSubmit} className="rounded-xl bg-[#0d0d0d] p-6 space-y-6 h-full">
+                <div>
+                  <h2 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Agent integrations</h2>
+                  <p className="text-sm text-zinc-500 leading-relaxed">
+                    Set your default agent strategy, then jump directly into key creation and secure pairing.
+                  </p>
+                </div>
 
-              <div className="rounded-xl border border-[#EA803A]/30 bg-[#130a02] px-4 py-3 text-sm text-zinc-300 leading-7">
-                Ideal flow: create or select an API key, click <span className="text-white font-medium">Connect Your Agent</span>, let Velocity Brain exchange the short-lived pairing code, and then watch repo, model, and task telemetry appear automatically.
-              </div>
+                <div className="rounded-xl border border-[#EA803A]/30 bg-gradient-to-r from-[#EA803A]/10 to-transparent p-4 text-sm text-zinc-300 leading-relaxed shadow-inner">
+                  Ideal flow: create or select an API key, click <span className="text-white font-medium">Connect Your Agent</span>, let Velocity Brain exchange the short-lived pairing code, and then watch repo, model, and task telemetry appear automatically.
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Preferred agent</span>
-                  <MinimalSelect
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <DropdownField
+                    label="Preferred agent"
                     value={settings.agents.preferredAgent}
                     onChange={(value) => setSettings((current) => ({
                       ...current,
                       agents: { ...current.agents, preferredAgent: value }
                     }))}
                     options={supportedAgents.map((agent) => ({ value: agent.id, label: agent.name }))}
-                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
                   />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Primary workflow</span>
-                  <MinimalSelect
+                  <DropdownField
+                    label="Primary workflow"
                     value={settings.agents.primaryWorkflow}
                     onChange={(value) => setSettings((current) => ({
                       ...current,
@@ -523,12 +502,9 @@ export default function Settings() {
                       { value: 'research', label: 'Research and planning' },
                       { value: 'automation', label: 'Internal automation' }
                     ]}
-                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
                   />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Observability focus</span>
-                  <MinimalSelect
+                  <DropdownField
+                    label="Observability focus"
                     value={settings.agents.observabilityFocus}
                     onChange={(value) => setSettings((current) => ({
                       ...current,
@@ -540,12 +516,9 @@ export default function Settings() {
                       { value: 'task_timeline', label: 'Task timeline and logs' },
                       { value: 'anomaly_detection', label: 'Anomalies and inefficiencies' }
                     ]}
-                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
                   />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Pairing preference</span>
-                  <MinimalSelect
+                  <DropdownField
+                    label="Pairing preference"
                     value={settings.agents.pairingPreference}
                     onChange={(value) => setSettings((current) => ({
                       ...current,
@@ -555,114 +528,117 @@ export default function Settings() {
                       { value: 'browser_assisted', label: 'Browser-assisted secure pairing' },
                       { value: 'cli_guided', label: 'CLI-guided token exchange' }
                     ]}
-                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
+                  />
+                </div>
+
+                <label className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-900/40 px-4 py-4 shadow-inner cursor-pointer hover:bg-zinc-900/60 transition-colors">
+                  <div>
+                    <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Open agent setup after onboarding</p>
+                    <p className="text-xs text-zinc-500 mt-1">Drop new users straight into the API key and pairing workflow.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(settings.agents.autoOpenAgentManager)}
+                    onChange={() => setSettings((current) => ({
+                      ...current,
+                      agents: { ...current.agents, autoOpenAgentManager: !current.agents.autoOpenAgentManager }
+                    }))}
+                    className="h-4 w-4 accent-[#EA803A] cursor-pointer"
                   />
                 </label>
-              </div>
 
-              <label className="flex items-center justify-between rounded-xl border border-[#202020] bg-[#111] px-4 py-3">
-                <div>
-                  <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Open agent setup after onboarding</p>
-                  <p className="text-xs text-zinc-500 mt-1">Drop new users straight into the API key and pairing workflow.</p>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    to="/dashboard/api-keys"
+                    className="inline-flex items-center justify-center rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] px-4 py-2.5 text-sm font-bold text-black shadow-md shadow-[#EA803A]/20 hover:opacity-90 transition-opacity"
+                    style={{ fontFamily: 'Syne, sans-serif' }}
+                  >
+                    Open API Keys
+                  </Link>
+                  <Link
+                    to="/dashboard/agents"
+                    className="inline-flex items-center justify-center rounded-lg border border-[#2a2a2a] bg-[#111] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1a1a1a] transition-colors"
+                  >
+                    Open Agent Manager
+                  </Link>
+                  <Link
+                    to="/dashboard/integrations"
+                    className="inline-flex items-center justify-center rounded-lg border border-[#2a2a2a] bg-[#111] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1a1a1a] transition-colors"
+                  >
+                    Open Company Integrations
+                  </Link>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={Boolean(settings.agents.autoOpenAgentManager)}
-                  onChange={() => setSettings((current) => ({
-                    ...current,
-                    agents: { ...current.agents, autoOpenAgentManager: !current.agents.autoOpenAgentManager }
-                  }))}
-                  className="h-4 w-4 accent-[#EA803A]"
-                />
-              </label>
 
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/dashboard/api-keys"
-                  className="inline-flex items-center justify-center rounded-xl bg-[#EA803A] px-4 py-2 text-sm font-bold text-black hover:opacity-90"
-                  style={{ fontFamily: 'Syne, sans-serif' }}
-                >
-                  Open API Keys
-                </Link>
-                <Link
-                  to="/dashboard/agents"
-                  className="inline-flex items-center justify-center rounded-xl border border-[#2a2a2a] bg-[#111] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a1a1a]"
-                >
-                  Open Agent Manager
-                </Link>
-                <Link
-                  to="/dashboard/integrations"
-                  className="inline-flex items-center justify-center rounded-xl border border-[#2a2a2a] bg-[#111] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a1a1a]"
-                >
-                  Open Company Integrations
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                {supportedAgents.map((agent) => (
-                  <div key={agent.id} className="rounded-xl border border-[#202020] bg-[#111] p-4">
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <AgentBrandIcon
-                          agentId={agent.id}
-                          name={agent.name}
-                          containerClassName="h-9 w-9 shrink-0"
-                          size="h-4 w-4"
-                        />
-                        <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{agent.name}</h3>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {supportedAgents.map((agent) => (
+                    <div key={agent.id} className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-5 shadow-inner">
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <AgentBrandIcon
+                            agentId={agent.id}
+                            name={agent.name}
+                            containerClassName="h-10 w-10 shrink-0 border border-current/10"
+                            size="h-5 w-5"
+                          />
+                          <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{agent.name}</h3>
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded border border-[#EA803A33] bg-[#EA803A14] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#f2b07d]">
+                          {agent.status}
+                        </span>
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded border border-[#EA803A33] bg-[#EA803A14] px-2 py-0.5 text-[10px] text-[#f2b07d]">
-                        {agent.status}
-                      </span>
+                      <p className="text-sm text-zinc-400 leading-relaxed mb-4">{agent.summary}</p>
+                      <div className="rounded-lg border border-[#2a2a2a] bg-[#0c0c0c] px-3 py-2 shadow-inner">
+                        <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1.5">
+                          Setup command
+                        </p>
+                        <code className="text-xs text-zinc-300 break-all font-mono">
+                          {agent.setup}
+                        </code>
+                      </div>
                     </div>
-                    <p className="text-sm text-zinc-400 leading-6 mb-3">{agent.summary}</p>
-                    <div className="rounded-lg border border-[#2a2a2a] bg-[#0c0c0c] px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-1">
-                        Setup command
-                      </p>
-                      <code className="text-xs text-zinc-300 break-all">
-                        {agent.setup}
-                      </code>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              <div className="flex justify-end">
-                <SaveButton saving={savingKey === 'agents'}>Save agent preferences</SaveButton>
-              </div>
-            </form>
+                <div className="flex justify-end pt-4">
+                  <SaveButton saving={savingKey === 'agents'}>Save agent preferences</SaveButton>
+                </div>
+              </form>
+            </div>
           )}
 
           {activeTab === 'security' && (
-            <div className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-4">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Security settings</h2>
-              <div className="space-y-3">
-                <div className="rounded-xl border border-[#202020] bg-[#111] px-4 py-4">
-                  <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Two-factor authentication</p>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    The backend 2FA endpoints are available, and this workspace now preserves the account metadata needed to manage them safely.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-[#202020] bg-[#111] px-4 py-4">
-                  <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Account identity</p>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    Workspace ownership, onboarding completion, avatar URLs, and profile details are all persisted and available through the authenticated backend.
-                  </p>
+            <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+              <div className="rounded-xl bg-[#0d0d0d] p-6 space-y-5 h-full">
+                <h2 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Security settings</h2>
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 px-5 py-4 shadow-inner">
+                    <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Two-factor authentication</p>
+                    <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">
+                      The backend 2FA endpoints are available, and this workspace now preserves the account metadata needed to manage them safely.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 px-5 py-4 shadow-inner">
+                    <p className="font-bold text-white text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Account identity</p>
+                    <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">
+                      Workspace ownership, onboarding completion, avatar URLs, and profile details are all persisted and available through the authenticated backend.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'api' && (
-            <form onSubmit={handleApiSubmit} className="rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] p-5 space-y-5">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>API configuration</h2>
-              <p className="text-sm text-zinc-500">These preferences are stored in your user settings document and applied as your workspace defaults.</p>
+            <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+              <form onSubmit={handleApiSubmit} className="rounded-xl bg-[#0d0d0d] p-6 space-y-6 h-full">
+                <div>
+                  <h2 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>API configuration</h2>
+                  <p className="text-sm text-zinc-500 mt-1">These preferences are stored in your user settings document and applied as your workspace defaults.</p>
+                </div>
 
-              <div className="space-y-4">
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Default response style</span>
-                  <MinimalSelect
+                <div className="space-y-5">
+                  <DropdownField
+                    label="Default response style"
                     value={settings.api.responseStyle}
                     onChange={(value) => setSettings((current) => ({
                       ...current,
@@ -677,48 +653,47 @@ export default function Settings() {
                       { value: 'full', label: 'Full' },
                       { value: 'ultra', label: 'Ultra' }
                     ]}
-                    className="[&_button]:rounded-lg [&_button]:border-[#2a2a2a] [&_button]:bg-[#111] [&_button]:px-3 [&_button]:py-2"
                   />
-                </label>
 
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Webhook URL</span>
-                  <input
-                    type="url"
-                    value={settings.api.webhookUrl}
-                    onChange={(e) => setSettings((current) => ({
-                      ...current,
-                      api: {
-                        ...current.api,
-                        webhookUrl: e.target.value
-                      }
-                    }))}
-                    className="w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="https://your-app.com/webhook"
-                  />
-                </label>
+                  <label className="block space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Webhook URL</span>
+                    <input
+                      type="url"
+                      value={settings.api.webhookUrl}
+                      onChange={(e) => setSettings((current) => ({
+                        ...current,
+                        api: {
+                          ...current.api,
+                          webhookUrl: e.target.value
+                        }
+                      }))}
+                      className="w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors"
+                      placeholder="https://your-app.com/webhook"
+                    />
+                  </label>
 
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Allowed origins (one per line)</span>
-                  <textarea
-                    value={(settings.api.allowedOrigins || []).join('\n')}
-                    onChange={(e) => setSettings((current) => ({
-                      ...current,
-                      api: {
-                        ...current.api,
-                        allowedOrigins: e.target.value.split(/\r?\n/).filter(Boolean)
-                      }
-                    }))}
-                    className="h-24 w-full rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm text-white focus:border-[#EA803A] focus:outline-none"
-                    placeholder="https://your-app.com"
-                  />
-                </label>
-              </div>
+                  <label className="block space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Allowed origins (one per line)</span>
+                    <textarea
+                      value={(settings.api.allowedOrigins || []).join('\n')}
+                      onChange={(e) => setSettings((current) => ({
+                        ...current,
+                        api: {
+                          ...current.api,
+                          allowedOrigins: e.target.value.split(/\r?\n/).filter(Boolean)
+                        }
+                      }))}
+                      className="h-28 w-full rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-4 py-2.5 text-sm text-white focus:border-[#EA803A] focus:outline-none shadow-inner transition-colors resize-none"
+                      placeholder="https://your-app.com"
+                    />
+                  </label>
+                </div>
 
-              <div className="flex justify-end">
-                <SaveButton saving={savingKey === 'api'}>Save API settings</SaveButton>
-              </div>
-            </form>
+                <div className="flex justify-end pt-2">
+                  <SaveButton saving={savingKey === 'api'}>Save API settings</SaveButton>
+                </div>
+              </form>
+            </div>
           )}
         </div>
       </div>

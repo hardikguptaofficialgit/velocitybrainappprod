@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">VelocityBrain client surface</title>
+  <desc id="desc">A diagram of the open-source VelocityBrain client package showing the CLI, Python SDK, and MCP bridge.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f1117" />
+      <stop offset="100%" stop-color="#171717" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="640" fill="url(#bg)" />
+  <text x="70" y="84" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="700">
+    VelocityBrain public client
+  </text>
+  <text x="70" y="120" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="20">
+    One package, three surfaces: CLI, Python SDK, and MCP bridge for the hosted API.
+  </text>
+
+  <rect x="70" y="180" width="300" height="340" rx="28" fill="#201710" stroke="#ea803a" stroke-width="2" />
+  <text x="100" y="236" fill="#ea803a" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">CLI</text>
+  <text x="100" y="278" fill="#ffffff" font-family="Consolas, monospace" font-size="28">velocitybrain</text>
+  <text x="100" y="330" fill="#f2d0b5" font-family="Segoe UI, Arial, sans-serif" font-size="20">run</text>
+  <text x="100" y="364" fill="#f2d0b5" font-family="Segoe UI, Arial, sans-serif" font-size="20">status</text>
+  <text x="100" y="398" fill="#f2d0b5" font-family="Segoe UI, Arial, sans-serif" font-size="20">integrations</text>
+  <text x="100" y="432" fill="#f2d0b5" font-family="Segoe UI, Arial, sans-serif" font-size="20">integrations-connect</text>
+  <text x="100" y="478" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">Configurable with env vars</text>
+
+  <rect x="450" y="180" width="300" height="340" rx="28" fill="#0f1d19" stroke="#5fd1b3" stroke-width="2" />
+  <text x="480" y="236" fill="#5fd1b3" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">PYTHON SDK</text>
+  <text x="480" y="278" fill="#ffffff" font-family="Consolas, monospace" font-size="28">VelocityBrainClient</text>
+  <text x="480" y="330" fill="#b8f0e2" font-family="Segoe UI, Arial, sans-serif" font-size="20">run(task)</text>
+  <text x="480" y="364" fill="#b8f0e2" font-family="Segoe UI, Arial, sans-serif" font-size="20">get_usage_stats()</text>
+  <text x="480" y="398" fill="#b8f0e2" font-family="Segoe UI, Arial, sans-serif" font-size="20">get_integrations()</text>
+  <text x="480" y="432" fill="#b8f0e2" font-family="Segoe UI, Arial, sans-serif" font-size="20">start/resync/disconnect</text>
+  <text x="480" y="478" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">Hosted endpoints only</text>
+
+  <rect x="830" y="180" width="300" height="340" rx="28" fill="#151827" stroke="#78a5ff" stroke-width="2" />
+  <text x="860" y="236" fill="#78a5ff" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">MCP BRIDGE</text>
+  <text x="860" y="278" fill="#ffffff" font-family="Consolas, monospace" font-size="28">velocitybrain-mcp</text>
+  <text x="860" y="330" fill="#cadcff" font-family="Segoe UI, Arial, sans-serif" font-size="20">run_agent</text>
+  <text x="860" y="364" fill="#cadcff" font-family="Segoe UI, Arial, sans-serif" font-size="20">usage</text>
+  <text x="860" y="432" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">Requires VELOCITYBRAIN_API_KEY</text>
+  <text x="860" y="466" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">Compatible with MCP clients</text>
+
+  <text x="70" y="586" fill="#71717a" font-family="Segoe UI, Arial, sans-serif" font-size="18">
+    Public boundary: no private backend imports, no hosted dashboard code, no internal ranking engine.
+  </text>
+</svg>

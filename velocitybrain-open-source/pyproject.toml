@@ -8,7 +8,7 @@ version = "1.0.1"
 description = "Open-source CLI, SDK, and MCP bridge for the hosted VelocityBrain coding-agent reuse API"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
+license = { text = "MIT" }
 authors = [{name = "VelocityBrain Team", email = "team@velocitybrain.ai"}]
 keywords = ["ai", "agents", "memory", "reuse", "llm", "mcp"]
 classifiers = [

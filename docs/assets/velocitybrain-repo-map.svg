@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Velocity Brain repository map</title>
+  <desc id="desc">A repository map showing the hosted product code and the open-source client boundary.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f1117" />
+      <stop offset="100%" stop-color="#171717" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <rect width="1280" height="760" fill="url(#bg)" />
+  <text x="76" y="86" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="42" font-weight="700">
+    Repository layout
+  </text>
+  <text x="76" y="124" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="20">
+    The main repo ships the hosted product. The public client is published from its own clean distribution folder.
+  </text>
+
+  <rect x="76" y="184" width="700" height="470" rx="30" fill="#18181b" stroke="#2c2c31" stroke-width="2" filter="url(#shadow)" />
+  <text x="110" y="238" fill="#ea803a" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="1">HOSTED PRODUCT</text>
+  <text x="110" y="278" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">Root repository</text>
+
+  <rect x="110" y="322" width="286" height="112" rx="22" fill="#111827" stroke="#30374a" />
+  <text x="136" y="366" fill="#ffffff" font-family="Consolas, monospace" font-size="22">backend/</text>
+  <text x="136" y="400" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">Hosted API, auth, integrations</text>
+
+  <rect x="420" y="322" width="320" height="112" rx="22" fill="#111827" stroke="#30374a" />
+  <text x="446" y="366" fill="#ffffff" font-family="Consolas, monospace" font-size="22">dashboard/</text>
+  <text x="446" y="400" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">React admin and onboarding surfaces</text>
+
+  <rect x="110" y="466" width="286" height="112" rx="22" fill="#111827" stroke="#30374a" />
+  <text x="136" y="510" fill="#ffffff" font-family="Consolas, monospace" font-size="22">src/ and skills/</text>
+  <text x="136" y="544" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">Runtime logic, routing, memory workflows</text>
+
+  <rect x="420" y="466" width="320" height="112" rx="22" fill="#111827" stroke="#30374a" />
+  <text x="446" y="510" fill="#ffffff" font-family="Consolas, monospace" font-size="22">tests/ and docs/</text>
+  <text x="446" y="544" fill="#a1a1aa" font-family="Segoe UI, Arial, sans-serif" font-size="18">Validation, deployment, architecture notes</text>
+
+  <rect x="836" y="184" width="368" height="470" rx="30" fill="#121917" stroke="#5fd1b3" stroke-width="2" filter="url(#shadow)" />
+  <text x="868" y="238" fill="#5fd1b3" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="1">PUBLIC DISTRIBUTION</text>
+  <text x="868" y="278" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">velocitybrain-open-source/</text>
+
+  <rect x="868" y="322" width="304" height="96" rx="22" fill="#0f1d19" stroke="#2c6a59" />
+  <text x="894" y="362" fill="#ffffff" font-family="Consolas, monospace" font-size="22">src/velocitybrain_client/</text>
+  <text x="894" y="392" fill="#b8f0e2" font-family="Segoe UI, Arial, sans-serif" font-size="18">Python SDK, CLI, MCP bridge</text>
+
+  <rect x="868" y="442" width="304" height="96" rx="22" fill="#0f1d19" stroke="#2c6a59" />
+  <text x="894" y="482" fill="#ffffff" font-family="Consolas, monospace" font-size="22">tests/ and scripts/</text>
+  <text x="894" y="512" fill="#b8f0e2" font-family="Segoe UI, Arial, sans-serif" font-size="18">Boundary checks and release validation</text>
+
+  <rect x="868" y="562" width="304" height="64" rx="22" fill="#0f1d19" stroke="#2c6a59" />
+  <text x="894" y="603" fill="#ffffff" font-family="Consolas, monospace" font-size="22">README, docs, examples, dist</text>
+
+  <path d="M776 418 C 810 418, 808 418, 836 418" fill="none" stroke="#ea803a" stroke-width="8" stroke-linecap="round" />
+  <polygon points="826,402 858,418 826,434" fill="#ea803a" />
+
+  <text x="76" y="710" fill="#71717a" font-family="Segoe UI, Arial, sans-serif" font-size="18">
+    Release rule: public package code should stay free of imports from private runtime modules such as src.services and src.core_api.
+  </text>
+</svg>

@@ -8,6 +8,24 @@ import { resolveApiUrl } from '../lib/api';
 import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
 
+// Curly scalloped shape with an engraved styling trick
+const CustomShapeIcon = ({ className }) => (
+  <svg 
+    viewBox="0 0 100 100" 
+    className={className} 
+    style={{ filter: 'drop-shadow(0 1px 0px rgba(255,255,255,0.12))' }} 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M50 3 C 60 3 63 12 72 12 C 81 12 87 6 92 12 C 97 18 91 26 91 35 C 91 44 98 48 98 50 C 98 52 91 56 91 65 C 91 74 97 82 92 88 C 87 94 81 88 72 88 C 63 88 60 97 50 97 C 40 97 37 88 28 88 C 19 88 13 94 8 88 C 3 82 9 74 9 65 C 9 56 2 52 2 50 C 2 48 9 44 9 35 C 9 26 3 18 8 12 C 13 6 19 12 28 12 C 37 12 40 3 50 3 Z"
+      fill="#000000"
+      stroke="currentColor"
+      strokeOpacity="0.4"
+      strokeWidth="3"
+    />
+  </svg>
+);
+
 const Usage = () => {
   const { data: usageData, isLoading } = useQuery(
     'usage-data',
@@ -85,20 +103,21 @@ const Usage = () => {
         </button>
       </div>
 
-      {/* Stats Cards Grid with Techy Border & ClipText */}
+      {/* Stats Cards Grid with Curly Engraved Border & ClipText */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { label: 'Total API Calls', value: data.stats.totalCalls.toLocaleString(), detail: `${data.stats.uniqueAgents} active agents`, icon: Activity, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-          { label: 'Avg Response Time', value: `${data.stats.avgResponseTime}ms`, detail: `${data.stats.uniqueRepos} repositories observed`, icon: TrendingUp, color: 'text-[#5fd1b3]', bg: 'bg-[#5fd1b3]/10' },
-          { label: 'Success Rate', value: `${data.stats.successRate}%`, detail: `${data.stats.totalTokens.toLocaleString()} total tokens`, icon: CheckCircle, color: 'text-[#EA803A]', bg: 'bg-[#EA803A]/10' },
-          { label: 'Error Rate', value: `${data.stats.errorRate}%`, detail: `$${Number(data.stats.totalCostUsd || 0).toFixed(4)} observed spend`, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-400/10' }
+          { label: 'Total API Calls', value: data.stats.totalCalls.toLocaleString(), detail: `${data.stats.uniqueAgents} active agents`, icon: Activity, color: 'text-blue-400' },
+          { label: 'Avg Response Time', value: `${data.stats.avgResponseTime}ms`, detail: `${data.stats.uniqueRepos} repositories observed`, icon: TrendingUp, color: 'text-[#5fd1b3]' },
+          { label: 'Success Rate', value: `${data.stats.successRate}%`, detail: `${data.stats.totalTokens.toLocaleString()} total tokens`, icon: CheckCircle, color: 'text-[#EA803A]' },
+          { label: 'Error Rate', value: `${data.stats.errorRate}%`, detail: `$${Number(data.stats.totalCostUsd || 0).toFixed(4)} observed spend`, icon: AlertTriangle, color: 'text-red-400' }
         ].map((stat) => (
           <div key={stat.label} className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-700/40 to-zinc-900/10 shadow-md">
             <div className="bg-[#0d0d0d] rounded-xl p-5 h-full flex flex-col justify-between">
               <div className="flex items-center justify-between text-zinc-400 mb-4">
                 <span className="text-sm font-medium tracking-wide">{stat.label}</span>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border border-current/20 ${stat.bg} ${stat.color}`}>
-                  <stat.icon className="w-5 h-5" />
+                <div className={`relative w-9 h-9 flex items-center justify-center ${stat.color}`}>
+                  <CustomShapeIcon className="absolute inset-0 w-full h-full" />
+                  <stat.icon className="w-4 h-4 relative z-10 opacity-90" />
                 </div>
               </div>
               <div>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { Key, Plus, Eye, Copy, RefreshCw, AlertTriangle, X } from '../components/Icons';
+import { Key, Plus, Eye, Copy, RefreshCw, AlertTriangle, X, ChevronDown } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
+import MinimalSelect from '../components/MinimalSelect';
 import { supportedAgents } from '../lib/agentRuntime';
 import AgentBrandIcon from '../components/AgentBrandIcon';
 import { useAuth } from '../contexts/AuthContext';
@@ -70,6 +71,7 @@ const ApiKeys = () => {
   const [newlyCreatedKeys, setNewlyCreatedKeys] = useState({});
   const [pairingModal, setPairingModal] = useState({ open: false, key: null, pairing: null });
   const [selectedAgents, setSelectedAgents] = useState({});
+  const [expandedKey, setExpandedKey] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: apiKeysResponse, isLoading } = useQuery(
@@ -110,6 +112,7 @@ const ApiKeys = () => {
       onSuccess: (data) => {
         if (data?.apiKey?.id && data?.key) {
           setNewlyCreatedKeys((prev) => ({ ...prev, [data.apiKey.id]: data.key }));
+          setExpandedKey(data.apiKey.id); // Auto-expand newly created key
         }
         queryClient.invalidateQueries('api-keys');
         setShowCreateModal(false);
@@ -145,6 +148,7 @@ const ApiKeys = () => {
       onSuccess: (data) => {
         if (data?.apiKey?.id && data?.key) {
           setNewlyCreatedKeys((prev) => ({ ...prev, [data.apiKey.id]: data.key }));
+          setExpandedKey(data.apiKey.id); // Auto-expand rotated key
         }
         queryClient.invalidateQueries('api-keys');
       }
@@ -177,6 +181,10 @@ const ApiKeys = () => {
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  };
+
+  const toggleExpand = (keyId) => {
+    setExpandedKey(expandedKey === keyId ? null : keyId);
   };
 
   if (isLoading) {
@@ -247,161 +255,192 @@ const ApiKeys = () => {
                 const isNewlyCreated = newlyCreatedKeys[key.id];
                 const maskedKey = `${key.keyPrefix}${'•'.repeat(20)}`;
                 const displayKey = isNewlyCreated || maskedKey;
+                const isExpanded = expandedKey === key.id;
 
                 return (
-                  <div key={key.id} className="p-5 bg-transparent flex flex-col gap-5">
-                    <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-5">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="text-base font-semibold text-white truncate" style={{ fontFamily: 'Syne, sans-serif' }}>
-                            {key.name}
-                          </h3>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium tracking-wide uppercase ${badgeClassName(key.status)}`}>
-                            {key.status}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-                          <span>Created {formatDateTime(key.createdAt)}</span>
-                          <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                          <span>Last rotated {formatDateTime(key.lastRotatedAt)}</span>
-                          <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                          <span>Last activity {formatDateTime(key.intelligence?.lastSeen)}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 bg-[#161616] border border-[#2a2a2a] rounded-md px-3 py-2 w-full shadow-inner">
-                          <code className="text-sm text-zinc-300 tracking-wider truncate flex-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                            {displayKey}
-                          </code>
-                          <button
-                            onClick={() => copyToClipboard(displayKey, key.id)}
-                            className="p-1.5 rounded hover:bg-[#2a2a2a] text-zinc-400 hover:text-white transition-colors shrink-0"
-                            title="Copy key"
-                          >
-                            {copiedKey === key.id ? <Eye className="h-3.5 w-3.5 text-[#5fd1b3]" /> : <Copy className="h-3.5 w-3.5" />}
-                          </button>
-                        </div>
-                        {isNewlyCreated && (
-                          <span className="text-[10px] text-[#EA803A] mt-1.5 font-medium inline-block">
-                            Copy this rotated key now. It will not be shown again.
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-2 min-w-[250px]">
-                        <div className="flex items-center gap-2 rounded-lg border border-[#202020] bg-zinc-900/50 p-2 shadow-inner">
-                          <AgentBrandIcon
-                            agentId={selectedAgent.id}
-                            name={selectedAgent.name}
-                            containerClassName="w-9 h-9 shrink-0"
-                            size="h-5 w-5"
-                          />
-                          <select
-                            value={agentId}
-                            onChange={(e) => setSelectedAgents((prev) => ({ ...prev, [key.id]: e.target.value }))}
-                            className="bg-transparent text-sm text-white flex-1 outline-none"
-                          >
-                            {supportedAgents.map((agent) => (
-                              <option key={agent.id} value={agent.id} className="bg-[#111]">
-                                {agent.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <button
-                          onClick={() => createPairingMutation.mutate({ keyId: key.id, agentId })}
-                          className="px-3 py-2 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-md shadow-[#EA803A]/10 hover:opacity-90 transition-opacity text-black text-xs font-semibold"
-                        >
-                          Connect Your Agent
-                        </button>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => rotateKeyMutation.mutate(key.id)}
-                            className="px-3 py-2 rounded-lg border border-[#2a2a2a] hover:bg-[#1a1a1a] text-xs text-white font-medium transition-colors flex items-center justify-center gap-2"
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                            Rotate
-                          </button>
-                          <button
-                            onClick={() => revokeKeyMutation.mutate(key.id)}
-                            className="px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-xs text-red-300 font-medium transition-colors flex items-center justify-center gap-2"
-                          >
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            Revoke
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                      {[
-                        { label: 'Requests', value: key.usage?.total || 0 },
-                        { label: 'Tokens', value: Number(key.usage?.totalTokens || 0).toLocaleString() },
-                        { label: 'Cost', value: formatCurrency(key.usage?.totalCostUsd) },
-                        { label: 'Linked Agents', value: key.intelligence?.linkedAgentCount || 0 },
-                        { label: 'Linked Repos', value: key.intelligence?.linkedRepoCount || 0 }
-                      ].map((stat) => (
-                        <div key={stat.label} className="rounded-lg border border-zinc-800/50 bg-zinc-900/40 p-3 shadow-inner">
-                          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">{stat.label}</p>
-                          <p className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-br from-white via-zinc-200 to-zinc-500">{stat.value}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      <div className="rounded-xl border border-zinc-800/50 bg-[#101010] p-4 shadow-inner">
-                        <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-3">Connection Scope</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(key.scopeDefaults?.agents || []).map((item) => (
-                            <span key={`agent-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-zinc-900 text-[10px] text-zinc-300">
-                              agent:{item}
+                  <div key={key.id} className="bg-transparent flex flex-col transition-colors">
+                    {/* Compact Header (Always Visible) */}
+                    <div 
+                      className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-[#161616]/50 transition-colors"
+                      onClick={() => toggleExpand(key.id)}
+                    >
+                      <div className="flex-1 min-w-0 flex items-center gap-4">
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-base font-semibold text-white truncate" style={{ fontFamily: 'Syne, sans-serif' }}>
+                              {key.name}
+                            </h3>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium tracking-wide uppercase shrink-0 ${badgeClassName(key.status)}`}>
+                              {key.status}
                             </span>
-                          ))}
-                          {(key.scopeDefaults?.repos || []).map((item) => (
-                            <span key={`repo-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-zinc-900 text-[10px] text-zinc-300">
-                              repo:{item}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-zinc-800/50 bg-[#101010] p-4 shadow-inner">
-                        <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-3">Recent Activity</p>
-                        {key.intelligence?.recentActivity?.length > 0 ? (
-                          <div className="space-y-2">
-                            {key.intelligence.recentActivity.map((activity) => (
-                              <div key={activity.id} className="flex items-center justify-between gap-3 text-xs">
-                                <div className="min-w-0">
-                                  <p className="text-white truncate">{activity.description}</p>
-                                  <p className="text-zinc-500 truncate">{activity.repoId} • {activity.modelName}</p>
-                                </div>
-                                <span className="text-zinc-500 shrink-0">{formatDateTime(activity.timestamp)}</span>
-                              </div>
-                            ))}
                           </div>
-                        ) : (
-                          <p className="text-xs text-zinc-500">No recent activity yet for this key.</p>
-                        )}
+                          <p className="text-xs text-zinc-500">
+                            Created {formatDateTime(key.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col items-end">
+                          <div className="flex items-center gap-2 bg-[#161616] border border-[#2a2a2a] rounded-md px-3 py-1.5 shadow-inner max-w-xs sm:max-w-md w-full">
+                            <code className="text-sm text-zinc-300 tracking-wider truncate flex-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                              {displayKey}
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(displayKey, key.id)}
+                              className="p-1 rounded hover:bg-[#2a2a2a] text-zinc-400 hover:text-white transition-colors shrink-0"
+                              title="Copy key"
+                            >
+                              {copiedKey === key.id ? <Eye className="h-4 w-4 text-[#5fd1b3]" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                          {isNewlyCreated && (
+                            <span className="text-[10px] text-[#EA803A] mt-1.5 font-medium inline-block">
+                              Copy this key now. It will not be shown again.
+                            </span>
+                          )}
+                        </div>
+                        
+                        <button className="p-1 text-zinc-500 hover:text-white transition-colors hidden md:block">
+                          <ChevronDown className={`h-5 w-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
                       </div>
                     </div>
+
+                    {/* Expandable Body */}
+                    {isExpanded && (
+                      <div className="px-5 pb-6 pt-2 border-t border-[#1c1c1c]/50 bg-black/20 flex flex-col gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                        
+                        {/* Action Bar */}
+                        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-5 mt-4">
+                          <div className="flex-1 w-full max-w-md">
+                            <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2 block">Pair an Agent</label>
+                            <div className="flex items-center gap-2 rounded-lg border border-[#202020] bg-zinc-900/50 p-2 shadow-inner">
+                              <AgentBrandIcon
+                                agentId={selectedAgent.id}
+                                name={selectedAgent.name}
+                                containerClassName="w-9 h-9 shrink-0"
+                                size="h-5 w-5"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <MinimalSelect
+                                  value={agentId}
+                                  onChange={(newAgentId) => setSelectedAgents((prev) => ({ ...prev, [key.id]: newAgentId }))}
+                                  options={supportedAgents.map((agent) => ({ value: agent.id, label: agent.name }))}
+                                  className="[&_button]:rounded-lg [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-0 [&_button]:py-0"
+                                  buttonClassName="w-full text-left"
+                                  menuClassName="max-h-56"
+                                />
+                              </div>
+                              <button
+                                onClick={() => createPairingMutation.mutate({ keyId: key.id, agentId })}
+                                className="ml-2 px-4 py-2 rounded-md bg-[#EA803A] hover:bg-[#d66a25] text-black text-xs font-semibold transition-colors shrink-0"
+                              >
+                                Connect
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full md:w-auto">
+                            <button
+                              onClick={() => rotateKeyMutation.mutate(key.id)}
+                              className="flex-1 md:flex-none px-4 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161616] hover:bg-[#1f1f1f] text-xs text-white font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                              Rotate Key
+                            </button>
+                            <button
+                              onClick={() => revokeKeyMutation.mutate(key.id)}
+                              className="flex-1 md:flex-none px-4 py-2.5 rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-xs text-red-300 font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              Revoke
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                          {[
+                            { label: 'Requests', value: key.usage?.total || 0 },
+                            { label: 'Tokens', value: Number(key.usage?.totalTokens || 0).toLocaleString() },
+                            { label: 'Cost', value: formatCurrency(key.usage?.totalCostUsd) },
+                            { label: 'Linked Agents', value: key.intelligence?.linkedAgentCount || 0 },
+                            { label: 'Linked Repos', value: key.intelligence?.linkedRepoCount || 0 }
+                          ].map((stat) => (
+                            <div key={stat.label} className="rounded-lg border border-zinc-800/50 bg-[#121212] p-3 shadow-inner">
+                              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">{stat.label}</p>
+                              <p className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-br from-white via-zinc-200 to-zinc-500">{stat.value}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Info Panels */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                          <div className="rounded-xl border border-zinc-800/50 bg-[#101010] p-4 shadow-inner">
+                            <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-3">Connection Scope</p>
+                            <div className="flex flex-wrap gap-2">
+                              {key.scopeDefaults?.agents?.length > 0 || key.scopeDefaults?.repos?.length > 0 ? (
+                                <>
+                                  {(key.scopeDefaults?.agents || []).map((item) => (
+                                    <span key={`agent-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-zinc-900 text-[10px] text-zinc-300">
+                                      agent:{item}
+                                    </span>
+                                  ))}
+                                  {(key.scopeDefaults?.repos || []).map((item) => (
+                                    <span key={`repo-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-zinc-900 text-[10px] text-zinc-300">
+                                      repo:{item}
+                                    </span>
+                                  ))}
+                                </>
+                              ) : (
+                                <p className="text-xs text-zinc-500">No specific scopes defined. Full access permitted.</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="rounded-xl border border-zinc-800/50 bg-[#101010] p-4 shadow-inner">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">Recent Activity</p>
+                              <span className="text-[10px] text-zinc-600">Last seen: {formatDateTime(key.intelligence?.lastSeen)}</span>
+                            </div>
+                            {key.intelligence?.recentActivity?.length > 0 ? (
+                              <div className="space-y-2">
+                                {key.intelligence.recentActivity.map((activity) => (
+                                  <div key={activity.id} className="flex items-center justify-between gap-3 text-xs border-b border-zinc-800/50 pb-2 last:border-0 last:pb-0">
+                                    <div className="min-w-0">
+                                      <p className="text-zinc-300 truncate">{activity.description}</p>
+                                      <p className="text-zinc-600 truncate mt-0.5">{activity.repoId} • {activity.modelName}</p>
+                                    </div>
+                                    <span className="text-zinc-500 shrink-0">{formatDateTime(activity.timestamp)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-zinc-500">No recent activity logged for this key yet.</p>
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="p-12 text-center flex flex-col items-center justify-center">
-              <div className="w-12 h-12 rounded-xl border border-current/20 bg-zinc-800/40 flex items-center justify-center mb-5 shadow-inner">
-                <Key className="h-6 w-6 text-zinc-400" />
+            <div className="p-16 text-center flex flex-col items-center justify-center bg-[#0d0d0d]">
+              <div className="w-14 h-14 rounded-xl border border-zinc-700/50 bg-zinc-800/30 flex items-center justify-center mb-6 shadow-inner">
+                <Key className="h-7 w-7 text-zinc-400" />
               </div>
-              <h3 className="text-lg font-medium bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>
+              <h3 className="text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
                 No API keys yet
               </h3>
-              <p className="text-sm text-zinc-500 mb-6 max-w-sm">
-                Create a key, then pair Codex or Claude Code through a short-lived secure connection flow.
+              <p className="text-sm text-zinc-500 mb-8 max-w-md leading-relaxed">
+                Create a key to generate secure, short-lived tokens. Pair your preferred agents like Codex or Claude Code directly from the dashboard.
               </p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-5 py-2.5 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity text-sm font-semibold text-black"
+                className="px-6 py-3 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity text-sm font-semibold text-black"
               >
                 Generate your first key
               </button>
@@ -410,14 +449,15 @@ const ApiKeys = () => {
         </div>
       </div>
 
+      {/* Modals remain mostly the same but properly layered */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-md bg-[#0d0d0d] border border-[#2a2a2a] rounded-2xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-[#1c1c1c] flex items-center justify-between">
+          <div className="w-full max-w-md bg-[#0d0d0d] border border-[#2a2a2a] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-[#1c1c1c] flex items-center justify-between bg-[#121212]">
               <h2 className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Create new API key</h2>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-1.5 rounded-md hover:bg-[#1c1c1c] text-zinc-400 hover:text-white transition-colors"
+                className="p-1.5 rounded-md hover:bg-[#2a2a2a] text-zinc-400 hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -433,7 +473,7 @@ const ApiKeys = () => {
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
                   className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:border-[#EA803A] focus:ring-1 focus:ring-[#EA803A] focus:outline-none transition-all text-sm shadow-inner"
-                  placeholder="e.g., Prod agent fabric"
+                  placeholder="e.g., Prod Agent Fabric"
                   autoFocus
                   required
                 />
@@ -466,39 +506,39 @@ const ApiKeys = () => {
 
       {pairingModal.open && pairingModal.pairing && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-lg bg-[#0d0d0d] border border-[#2a2a2a] rounded-2xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-[#1c1c1c] flex items-center justify-between">
+          <div className="w-full max-w-lg bg-[#0d0d0d] border border-[#2a2a2a] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-[#1c1c1c] flex items-center justify-between bg-[#121212]">
               <h2 className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Connect Your Agent</h2>
               <button
                 onClick={() => setPairingModal({ open: false, key: null, pairing: null })}
-                className="p-1.5 rounded-md hover:bg-[#1c1c1c] text-zinc-400 hover:text-white transition-colors"
+                className="p-1.5 rounded-md hover:bg-[#2a2a2a] text-zinc-400 hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
               <div className="rounded-lg border border-[#EA803A33] bg-[#EA803A14] p-4 shadow-inner">
                 <p className="text-sm text-white font-medium">
                   Pairing code expires at {formatDateTime(pairingModal.pairing.expiresAt)}
                 </p>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-[#EA803A]/80 mt-1.5 leading-relaxed">
                   This is a short-lived pairing code for one secure token exchange. Your raw API key never leaves the dashboard.
                 </p>
               </div>
               <div className="rounded-lg border border-[#2a2a2a] bg-zinc-900/50 p-4 shadow-inner">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-2">Pairing Code</p>
-                <code className="text-sm text-white break-all">{pairingModal.pairing.pairCode}</code>
+                <code className="text-sm text-white font-medium break-all">{pairingModal.pairing.pairCode}</code>
               </div>
               <div className="rounded-lg border border-[#2a2a2a] bg-zinc-900/50 p-4 shadow-inner">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-2">Local Command</p>
                 <code className="text-xs text-zinc-300 break-all">{pairingModal.pairing.command}</code>
               </div>
-              <div className="flex justify-end mt-2">
+              <div className="flex justify-end pt-2">
                 <button
                   onClick={() => copyToClipboard(pairingModal.pairing.command, 'pairing-command')}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity text-black text-sm font-semibold"
+                  className="px-5 py-2.5 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity text-black text-sm font-semibold flex items-center gap-2"
                 >
-                  {copiedKey === 'pairing-command' ? 'Copied' : 'Copy Command'}
+                  {copiedKey === 'pairing-command' ? <><Eye className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Command</>}
                 </button>
               </div>
             </div>

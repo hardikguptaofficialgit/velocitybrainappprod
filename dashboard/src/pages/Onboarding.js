@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AvatarPicker from '../components/AvatarPicker';
 import BlobLoader from '../components/BlobLoader';
 import MinimalSelect from '../components/MinimalSelect';
+import DropdownField from '../components/ui/DropdownField';
 import RoleField from '../components/RoleField';
 import AgentBrandIcon from '../components/AgentBrandIcon';
 import { Activity, AlertTriangle, ArrowLeft, ArrowRight, CheckCircle, Cpu, Database, Github, Google } from '../components/Icons';
@@ -571,15 +572,14 @@ export default function Onboarding() {
                   placeholder="Software, Design, etc."
                 />
               </label>
-              <label className="block space-y-1">
-                <span className="text-xs uppercase text-zinc-400">Company Size</span>
-                <MinimalSelect
-                  value={form.companySize}
-                  onChange={(value) => handleChange('companySize', value)}
-                  placeholder="Select size"
-                  options={companySizes.map((size) => ({ value: size, label: size }))}
-                />
-              </label>
+              <DropdownField
+                label="Company Size"
+                value={form.companySize}
+                onChange={(value) => handleChange('companySize', value)}
+                placeholder="Select size"
+                options={companySizes.map((size) => ({ value: size, label: size }))}
+                className="block"
+              />
             </div>
             <label className="block space-y-1">
               <span className="text-xs uppercase text-zinc-400">Primary Use Case</span>
@@ -672,14 +672,20 @@ export default function Onboarding() {
               })}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block space-y-1">
-                <span className="text-xs uppercase text-zinc-400">Primary Workflow</span>
-                <MinimalSelect value={form.agents.primaryWorkflow} onChange={(value) => handleAgentSetting('primaryWorkflow', value)} options={workflowOptions} />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs uppercase text-zinc-400">Observability Focus</span>
-                <MinimalSelect value={form.agents.observabilityFocus} onChange={(value) => handleAgentSetting('observabilityFocus', value)} options={observabilityOptions} />
-              </label>
+              <DropdownField
+                label="Primary Workflow"
+                value={form.agents.primaryWorkflow}
+                onChange={(value) => handleAgentSetting('primaryWorkflow', value)}
+                options={workflowOptions}
+                className="block"
+              />
+              <DropdownField
+                label="Observability Focus"
+                value={form.agents.observabilityFocus}
+                onChange={(value) => handleAgentSetting('observabilityFocus', value)}
+                options={observabilityOptions}
+                className="block"
+              />
             </div>
             <ToggleRow
               checked={form.agents.autoOpenAgentManager}
@@ -765,8 +771,8 @@ export default function Onboarding() {
             )}
 
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-widest text-zinc-400">Preferences</p>
-              <MinimalSelect
+              <DropdownField
+                label="Response style"
                 value={form.api.responseStyle}
                 onChange={(value) => setForm((current) => ({ ...current, api: { ...current.api, responseStyle: value } }))}
                 options={[
@@ -774,6 +780,7 @@ export default function Onboarding() {
                   { value: 'lite', label: 'Lite Response Style' },
                   { value: 'full', label: 'Full Response Style' }
                 ]}
+                className="w-full"
               />
               <ToggleRow
                 checked={form.notifications.emailAlerts}
