@@ -289,8 +289,11 @@ describe('Backend API', () => {
             .set('Authorization', 'Bearer test-token');
 
         expect(listResponse.statusCode).toBe(200);
-        expect(listResponse.body).toHaveLength(1);
-        expect(listResponse.body[0].name).toBe('Primary Key');
+        expect(Array.isArray(listResponse.body.keys)).toBe(true);
+        expect(listResponse.body.keys).toHaveLength(1);
+        expect(listResponse.body.keys[0].name).toBe('Primary Key');
+        expect(Array.isArray(listResponse.body.insights)).toBe(true);
+        expect(Array.isArray(listResponse.body.anomalies)).toBe(true);
     });
 
     test('usage route summarizes request activity', async () => {
@@ -392,9 +395,11 @@ describe('Backend API', () => {
         expect(response.statusCode).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.stats.activeApiKeys).toBe(1);
-        expect(response.body.stats.totalApiCalls).toBe(420);
+        expect(response.body.stats.totalApiCalls).toBe(1);
+        expect(response.body.stats.totalSavedTokens).toBe(420);
         expect(response.body.stats.documentsProcessed).toBe(0.00126);
         expect(response.body.stats.successRate).toBe(100);
+        expect(response.body.stats.reuseHitRate).toBe(100);
         expect(response.body.recentActivity).toHaveLength(1);
     });
 

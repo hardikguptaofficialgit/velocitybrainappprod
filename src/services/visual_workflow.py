@@ -292,6 +292,43 @@ class VisualWorkflowService:
         except Exception as exc:
             self.logger.error(f"Failed to execute workflow {workflow_id}: {exc}")
             raise
+
+    def list_executions(self, workflow_id: str, limit: int = 50) -> list[WorkflowExecution]:
+        """List recent workflow executions from database."""
+        try:
+            with get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT * FROM workflow_executions
+                        WHERE workflow_id = %s
+                        ORDER BY started_at DESC
+                        LIMIT %s
+                        """,
+                        (workflow_id, limit),
+                    )
+                    rows = cur.fetchall()
+                    conn.commit()
+            executions: list[WorkflowExecution] = []
+            for result in rows:
+                executions.append(
+                    WorkflowExecution(
+                        execution_id=result['execution_id'],
+                        workflow_id=result['workflow_id'],
+                        status=result['status'],
+                        current_nodes=json.loads(result['current_nodes']) if result['current_nodes'] else [],
+                        completed_nodes=json.loads(result['completed_nodes']) if result['completed_nodes'] else [],
+                        variables=json.loads(result['variables']) if result['variables'] else {},
+                        logs=json.loads(result['logs']) if result['logs'] else [],
+                        started_at=result['started_at'],
+                        completed_at=result['completed_at'],
+                        error_message=result['error_message'],
+                    )
+                )
+            return executions
+        except Exception as exc:
+            self.logger.error(f"Failed to load workflow executions for {workflow_id}: {exc}")
+            return []
     
     def _continue_workflow_execution(self, workflow: Workflow, execution: WorkflowExecution):
         """Continue workflow execution for current nodes."""

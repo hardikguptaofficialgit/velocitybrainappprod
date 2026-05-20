@@ -1,0 +1,23 @@
+{
+  "registered_agents": [
+    "codex"
+  ],
+  "preferred_agent": "codex",
+  "pending_integrations": [
+    {
+      "agent_id": "codex",
+      "status": "connected",
+      "repo_id": "velocitybrain",
+      "repo_name": "velocitybrain",
+      "repo_path": "C:\\Disk E\\Projects\\VelocityX\\velocitybrain",
+      "metadata": {
+        "source": "quickstart",
+        "agents_md_managed": true,
+        "identity_spec_managed": true
+      }
+    }
+  ],
+  "api_key": "vb-45f3174b56964f9aa4b73f76dc5a5ed02437e8f2565523354918f24037241322",
+  "base_url": "https://velocity.linkitapp.in",
+  "runtime_mode": "cloud"
+}

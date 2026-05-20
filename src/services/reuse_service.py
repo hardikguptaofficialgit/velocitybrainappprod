@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import gzip
 import hashlib
-import json
 import math
 import os
 import threading
@@ -15,8 +14,11 @@ from pathlib import Path
 from typing import Any
 
 import tiktoken
+from psycopg.types.json import Json
 
-from src.core.paths import get_velocitybrain_home
+from src.core.db import get_conn
+from src.core.config import settings
+from src.core.logging_config import get_logger
 from src.services.embedding_service import EmbeddingService
 
 
@@ -77,41 +79,153 @@ class ReuseService:
     _latency_events: list[dict[str, float]] = []
     _exact_cache: OrderedDict[str, str] = OrderedDict()
     _state_loaded = False
-    _state_path: Path | None = None
+    _state_backend: str | None = None
     _lock = threading.RLock()
 
     def __init__(self) -> None:
+        self.logger = get_logger('reuse_service')
         self.embedding = EmbeddingService()
-        self.encoding = tiktoken.get_encoding('cl100k_base')
-        self.state_path = Path(os.getenv('VELOCITYBRAIN_STATE_PATH') or (get_velocitybrain_home() / 'core_state.json'))
-        self.persistence_required = os.getenv('VELOCITYBRAIN_REQUIRE_PERSISTENCE', '1') != '0'
+        self.encoding = self._load_encoding()
+        self.state_key = os.getenv('VELOCITYBRAIN_REUSE_STATE_KEY', 'global')
+        self.persistence_backend = os.getenv('VELOCITYBRAIN_REUSE_BACKEND', 'database').strip().lower() or 'database'
+        self.persistence_required = os.getenv(
+            'VELOCITYBRAIN_REQUIRE_PERSISTENCE',
+            '1' if settings.env in {'prod', 'production'} else '0',
+        ) != '0'
+        self._inside_persisted_mutation = False
         self._ensure_state_loaded()
+
+    def _load_encoding(self):
+        try:
+            return tiktoken.get_encoding('cl100k_base')
+        except Exception as exc:
+            self.logger.warning(
+                'Falling back to approximate token counting because tiktoken encoding could not be loaded: %s',
+                exc,
+            )
+            return None
 
     def _ensure_state_loaded(self) -> None:
         with self._lock:
-            if ReuseService._state_loaded and ReuseService._state_path == self.state_path:
+            if ReuseService._state_loaded and ReuseService._state_backend == self.persistence_backend:
                 return
-            ReuseService._state_path = self.state_path
+            ReuseService._state_backend = self.persistence_backend
             try:
-                self.state_path.parent.mkdir(parents=True, exist_ok=True)
-                if self.state_path.exists() and self.state_path.stat().st_size > 0:
-                    snapshot = json.loads(self.state_path.read_text(encoding='utf-8'))
-                    self.restore_state(snapshot)
+                if self.persistence_backend == 'database':
+                    snapshot = self._load_snapshot_from_database()
+                    if snapshot:
+                        self.restore_state(snapshot, persist=False)
+                    else:
+                        self.reset_state(persist=False)
+                        self._persist_state_locked()
                 else:
-                    self.reset_state()
-                    self._persist_state_locked()
+                    self.reset_state(persist=False)
                 ReuseService._state_loaded = True
             except Exception as exc:
                 if self.persistence_required:
                     raise RuntimeError(f'VelocityBrain persistence initialization failed: {exc}') from exc
+                self.logger.warning('Reuse persistence unavailable, continuing with in-memory state: %s', exc)
+                self.persistence_backend = 'memory'
+                ReuseService._state_backend = self.persistence_backend
+                self.reset_state(persist=False)
+                ReuseService._state_loaded = True
 
     def _persist_state_locked(self) -> None:
+        if self.persistence_backend != 'database':
+            return
         try:
             snapshot = self.snapshot_state()
-            self.state_path.write_text(json.dumps(snapshot, indent=2), encoding='utf-8')
+            self._save_snapshot_to_database(snapshot)
         except Exception as exc:
             if self.persistence_required:
                 raise RuntimeError(f'VelocityBrain persistence write failed: {exc}') from exc
+            self.logger.warning('Reuse persistence write skipped after error: %s', exc)
+
+    def _load_snapshot_from_database(self) -> dict[str, Any] | None:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS runtime_state (
+                      state_key TEXT PRIMARY KEY,
+                      state_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+                      version BIGINT NOT NULL DEFAULT 1,
+                      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                    """
+                )
+                cur.execute(
+                    "SELECT state_payload FROM runtime_state WHERE state_key = %s",
+                    (self.state_key,),
+                )
+                row = cur.fetchone()
+                conn.commit()
+        if not row:
+            return None
+        return row.get('state_payload') or None
+
+    def _save_snapshot_to_database(self, snapshot: dict[str, Any]) -> None:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS runtime_state (
+                      state_key TEXT PRIMARY KEY,
+                      state_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+                      version BIGINT NOT NULL DEFAULT 1,
+                      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                    """
+                )
+                cur.execute(
+                    "SELECT version FROM runtime_state WHERE state_key = %s",
+                    (self.state_key,),
+                )
+                row = cur.fetchone()
+                if row:
+                    cur.execute(
+                        """
+                        UPDATE runtime_state
+                        SET state_payload = %s,
+                            version = %s,
+                            updated_at = NOW()
+                        WHERE state_key = %s
+                        """,
+                        (Json(snapshot), int(row['version']) + 1, self.state_key),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        INSERT INTO runtime_state (state_key, state_payload, version)
+                        VALUES (%s, %s, 1)
+                        """,
+                        (self.state_key, Json(snapshot)),
+                    )
+                conn.commit()
+
+    def _refresh_state_locked(self) -> None:
+        if self.persistence_backend != 'database' or self._inside_persisted_mutation:
+            return
+        snapshot = self._load_snapshot_from_database()
+        if snapshot:
+            self.restore_state(snapshot, persist=False)
+
+    def _run_state_mutation(self, mutator):
+        with self._lock:
+            if self.persistence_backend != 'database':
+                return mutator()
+            try:
+                self._inside_persisted_mutation = True
+                snapshot = self._load_snapshot_from_database()
+                if snapshot:
+                    self.restore_state(snapshot, persist=False)
+                else:
+                    self.reset_state(persist=False)
+                result = mutator()
+                self._persist_state_locked()
+                return result
+            finally:
+                self._inside_persisted_mutation = False
 
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
@@ -192,7 +306,13 @@ class ReuseService:
         return f'TASK\n{self._normalize_prompt_structure(task_text)}\n\n{label}\n{context_text}'
 
     def _estimate_tokens(self, text: str) -> int:
-        return max(1, len(self.encoding.encode((text or '').strip())))
+        normalized = (text or '').strip()
+        if not normalized:
+            return 1
+        if self.encoding is not None:
+            return max(1, len(self.encoding.encode(normalized)))
+        # Approximate fallback for offline/sandboxed environments.
+        return max(1, math.ceil(len(normalized) / 4))
 
     def _estimate_cost(self, tokens: int) -> float:
         return round(tokens * 0.000003, 6)
@@ -327,7 +447,7 @@ class ReuseService:
                 for artifact in repo_artifacts
             )
 
-    def reset_state(self) -> None:
+    def reset_state(self, *, persist: bool = True) -> None:
         with self._lock:
             self._artifacts.clear()
             self._artifacts_by_repo.clear()
@@ -342,7 +462,7 @@ class ReuseService:
             self._failure_events.clear()
             self._latency_events.clear()
             self._exact_cache.clear()
-            if ReuseService._state_loaded and ReuseService._state_path == self.state_path:
+            if persist and ReuseService._state_loaded:
                 self._persist_state_locked()
 
     def snapshot_state(self) -> dict[str, Any]:
@@ -362,9 +482,11 @@ class ReuseService:
                 'exact_cache': list(self._exact_cache.items()),
             }
 
-    def restore_state(self, snapshot: dict[str, Any] | None) -> None:
-        self.reset_state()
+    def restore_state(self, snapshot: dict[str, Any] | None, *, persist: bool = True) -> None:
+        self.reset_state(persist=False)
         if not snapshot:
+            if persist:
+                self._persist_state_locked()
             return
         with self._lock:
             for payload in snapshot.get('artifacts', []):
@@ -416,8 +538,10 @@ class ReuseService:
             self._latency_events.extend(snapshot.get('latency_events', []))
             for key, value in snapshot.get('exact_cache', []):
                 self._exact_cache[key] = value
+            if persist:
+                self._persist_state_locked()
 
-    def store_artifact(
+    def _store_artifact_locked(
         self,
         *,
         task_text: str,
@@ -463,12 +587,10 @@ class ReuseService:
             created_at=self._now(),
             blacklisted_fingerprints=[],
         )
-        with self._lock:
-            self._artifacts.append(artifact)
-            self._artifacts_by_repo.setdefault(repo_id, []).append(artifact)
-            self._remember_cache_entry(fingerprint, artifact.artifact_id)
-            self._evict_repo_artifacts(repo_id)
-            self._persist_state_locked()
+        self._artifacts.append(artifact)
+        self._artifacts_by_repo.setdefault(repo_id, []).append(artifact)
+        self._remember_cache_entry(fingerprint, artifact.artifact_id)
+        self._evict_repo_artifacts(repo_id)
         return {
             'artifact_id': artifact.artifact_id,
             'workspace_id': workspace_id,
@@ -477,6 +599,27 @@ class ReuseService:
             'task_type': task_type,
             'token_cost_to_create': artifact.token_cost_to_create,
         }
+
+    def store_artifact(
+        self,
+        *,
+        task_text: str,
+        artifact_text: str,
+        artifact_kind: str = 'answer',
+        source_run_id: str,
+        metadata: dict[str, Any] | None = None,
+        quality_confidence: float = 0.74,
+    ) -> dict[str, Any]:
+        return self._run_state_mutation(
+            lambda: self._store_artifact_locked(
+                task_text=task_text,
+                artifact_text=artifact_text,
+                artifact_kind=artifact_kind,
+                source_run_id=source_run_id,
+                metadata=metadata,
+                quality_confidence=quality_confidence,
+            )
+        )
 
     def _validate_reuse_candidate(self, artifact: Artifact, requested_paths: list[str]) -> bool:
         if not requested_paths:
@@ -505,6 +648,8 @@ class ReuseService:
         include_debug: bool = False,
     ) -> dict[str, Any]:
         started = time.perf_counter()
+        with self._lock:
+            self._refresh_state_locked()
         _, repo_id, _, _ = self._default_workspace(metadata)
         requested_paths = self._normalize_context_paths(metadata)
         requested_hashes = self._normalize_file_hashes(metadata)
@@ -839,7 +984,13 @@ class ReuseService:
             failures.append('low_or_zero_token_savings')
         event['failures'] = failures
 
-        with self._lock:
+        self._assert_invariants(
+            tokens_saved=tokens_saved,
+            percent_saved=saved_percent,
+            reuse_confidence=float(reuse_lookup.get('reuse_confidence', 0.0)),
+        )
+
+        def _mutate_state() -> dict[str, Any]:
             self._reuse_decisions.append(event)
             self._savings_events.append({
                 'run_id': run_id,
@@ -887,23 +1038,18 @@ class ReuseService:
                     ),
                     artifact_ids=event['reuse']['artifacts_used'],
                 )
-            self._persist_state_locked()
+            if reused and event['reuse']['artifacts_used']:
+                self._mark_success(event['reuse']['artifacts_used'][0])
+            self._store_artifact_locked(
+                task_text=task_text,
+                artifact_text=artifact_text,
+                artifact_kind=artifact_kind,
+                source_run_id=run_id,
+                metadata=metadata,
+            )
+            return event
 
-        if reused and event['reuse']['artifacts_used']:
-            self._mark_success(event['reuse']['artifacts_used'][0])
-        self._assert_invariants(
-            tokens_saved=tokens_saved,
-            percent_saved=saved_percent,
-            reuse_confidence=float(reuse_lookup.get('reuse_confidence', 0.0)),
-        )
-        self.store_artifact(
-            task_text=task_text,
-            artifact_text=artifact_text,
-            artifact_kind=artifact_kind,
-            source_run_id=run_id,
-            metadata=metadata,
-        )
-        return event
+        return self._run_state_mutation(_mutate_state)
 
     def _mark_success(self, artifact_id: str) -> None:
         for artifact in self._artifacts:
@@ -932,6 +1078,8 @@ class ReuseService:
                 self._latency_events = self._latency_events[-5000:]
 
     def get_latency_summary(self) -> dict[str, Any]:
+        with self._lock:
+            self._refresh_state_locked()
         with self._lock:
             samples = list(self._latency_events)
         totals = sorted(sample['total_ms'] for sample in samples)
@@ -1153,6 +1301,8 @@ class ReuseService:
 
     def get_user_usage_summary(self, user_id: str) -> dict[str, Any]:
         with self._lock:
+            self._refresh_state_locked()
+        with self._lock:
             metrics = dict(self._user_metrics.get(user_id, {
                 'user_id': user_id,
                 'total_runs': 0,
@@ -1176,6 +1326,8 @@ class ReuseService:
         }
 
     def get_recent_runs_for_user(self, user_id: str, limit: int = 5) -> list[dict[str, Any]]:
+        with self._lock:
+            self._refresh_state_locked()
         with self._lock:
             runs = [run for run in self._run_logs if run.get('user_id') == user_id]
         recent = list(reversed(runs[-limit:]))
@@ -1216,6 +1368,8 @@ class ReuseService:
 
     def get_repo_metrics_for_user(self, user_id: str) -> list[dict[str, Any]]:
         with self._lock:
+            self._refresh_state_locked()
+        with self._lock:
             rows = [dict(value) for value in self._repo_metrics.values() if value.get('user_id') == user_id]
         return sorted(rows, key=lambda row: (row.get('wedge_score', 0.0), row.get('avg_savings', 0.0)), reverse=True)
 
@@ -1247,6 +1401,8 @@ class ReuseService:
 
     def export_metrics(self) -> dict[str, Any]:
         with self._lock:
+            self._refresh_state_locked()
+        with self._lock:
             return {
                 'user_metrics': list(self._user_metrics.values()),
                 'repo_metrics': list(self._repo_metrics.values()),
@@ -1268,6 +1424,8 @@ class ReuseService:
         ]
 
     def get_savings_overview(self) -> dict[str, Any]:
+        with self._lock:
+            self._refresh_state_locked()
         with self._lock:
             savings_events = list(self._savings_events)
             failure_events = list(self._failure_events)

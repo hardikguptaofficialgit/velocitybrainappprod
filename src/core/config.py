@@ -51,6 +51,8 @@ class Settings(BaseModel):
     embed_dim: int = Field(default_factory=lambda: _env_int('EMBED_DIM', 1536), ge=1, le=10000, description='Embedding dimension')
     embedding_provider: str = Field(default_factory=lambda: _env_str('EMBEDDING_PROVIDER', 'openai-compatible'), description='Embedding provider')
     embedding_model: str = Field(default_factory=lambda: _env_str('EMBEDDING_MODEL', 'text-embedding-3-small'), description='Embedding model')
+    embedding_api_key: Optional[str] = Field(default_factory=lambda: _env_optional_str('OPENAI_API_KEY'), description='Embedding API key for hosted providers')
+    embedding_service_url: str = Field(default_factory=lambda: _env_str('EMBEDDING_SERVICE_URL', 'https://api.openai.com/v1/embeddings'), description='Embedding API URL')
     model_router: str = Field(default_factory=lambda: _env_str('MODEL_ROUTER', 'native'), description='Model router')
     
     # Path settings
@@ -73,9 +75,12 @@ class Settings(BaseModel):
     secret_key: Optional[str] = Field(default_factory=lambda: _env_optional_str('SECRET_KEY'), description='Secret key for authentication')
     jwt_algorithm: str = Field(default_factory=lambda: _env_str('JWT_ALGORITHM', 'HS256'), description='JWT algorithm')
     access_token_ttl_minutes: int = Field(default_factory=lambda: _env_int('ACCESS_TOKEN_TTL_MINUTES', 60), ge=1, le=1440, description='Access token TTL in minutes')
-    backend_api_url: str = Field(default_factory=lambda: _env_str('BACKEND_API_URL', 'http://localhost:3001'), description='Backend API URL for API key validation')
+    backend_api_url: str = Field(default_factory=lambda: _env_str('BACKEND_API_URL', 'http://localhost:5001'), description='Backend API URL for API key validation')
     cors_origins: Optional[str] = Field(default_factory=lambda: _env_optional_str('CORS_ORIGINS'), description='Comma-separated CORS origins')
     cors_allow_credentials: bool = Field(default_factory=lambda: _env_bool('CORS_ALLOW_CREDENTIALS', False), description='Allow CORS credentials')
+    job_queue_backend: str = Field(default_factory=lambda: _env_str('JOB_QUEUE_BACKEND', 'database'), description='Execution job queue backend')
+    job_queue_require_persistence: bool = Field(default_factory=lambda: _env_bool('JOB_QUEUE_REQUIRE_PERSISTENCE', False), description='Require persistent job queue backend')
+    job_timeout_seconds: int = Field(default_factory=lambda: _env_int('JOB_TIMEOUT_SECONDS', 300), ge=5, le=86400, description='Default job timeout in seconds')
     
     # Rate limiting
     rate_limit_enabled: bool = Field(default_factory=lambda: _env_bool('RATE_LIMIT_ENABLED', True), description='Enable rate limiting')
@@ -141,6 +146,14 @@ class Settings(BaseModel):
         allowed = {'openai-compatible', 'huggingface', 'local'}
         if v not in allowed:
             raise ValueError(f'Embedding provider must be one of: {allowed}')
+        return v
+
+    @field_validator('job_queue_backend')
+    @classmethod
+    def validate_job_queue_backend(cls, v):
+        allowed = {'database', 'memory'}
+        if v not in allowed:
+            raise ValueError(f'Job queue backend must be one of: {allowed}')
         return v
     
     @field_validator('jwt_algorithm')

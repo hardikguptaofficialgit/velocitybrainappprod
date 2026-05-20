@@ -479,7 +479,7 @@ def _interactive_onboarding() -> int:
 def _handle_no_command(parser: argparse.ArgumentParser) -> int:
     config = _load_cli_config()
     if _is_interactive_terminal():
-        if not config.get('runtime_mode') and not _has_cloud_credentials():
+        if not config.get('runtime_mode'):
             return _interactive_onboarding()
         print('Velocity Brain is already configured.')
         print(f"  runtime_mode: {config.get('runtime_mode', _resolve_runtime_mode())}")
@@ -1766,7 +1766,7 @@ def cmd_share_run(args: argparse.Namespace) -> int:
 
 
 def cmd_export_metrics(args: argparse.Namespace) -> int:
-    payload = ReuseService().export_metrics()
+    payload = AdoptionService().export_metrics()
     payload['_color'] = _use_color(args)
     _emit(args, payload, lambda data: print(json.dumps({k: v for k, v in data.items() if k != '_color'}, indent=2)))
     return 0

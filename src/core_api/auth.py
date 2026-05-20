@@ -5,21 +5,17 @@ Handles API key authentication and token management for the core engine.
 Integrates with Node.js backend for API key validation.
 """
 
-import time
+import os
 import jwt
-import hashlib
 import httpx
 from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from core.config import settings
-from core.logging_config import get_logger
+from src.core.config import settings
+from src.core.logging_config import get_logger
 
 logger = get_logger("core_api.auth")
 
@@ -39,11 +35,37 @@ class AuthResponse(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
-# In-memory token storage (in production, use Redis or database)
-token_store = {}
-
 # Backend API URL for validation
-BACKEND_API_URL = settings.backend_api_url if hasattr(settings, 'backend_api_url') else os.getenv('BACKEND_API_URL', 'http://localhost:3001')
+BACKEND_API_URL = settings.backend_api_url
+
+
+def _candidate_jwt_secrets() -> list[str]:
+    secrets: list[str] = []
+    for value in (
+        os.getenv("JWT_SECRET"),
+        settings.secret_key,
+        "default-secret",
+    ):
+        if value and value not in secrets:
+            secrets.append(value)
+    return secrets
+
+
+def _jwt_signing_secret() -> str:
+    return _candidate_jwt_secrets()[0]
+
+
+def _decode_with_known_secrets(token: str) -> Dict[str, Any]:
+    last_error: Exception | None = None
+    for secret in _candidate_jwt_secrets():
+        try:
+            return jwt.decode(token, secret, algorithms=["HS256"])
+        except jwt.InvalidTokenError as exc:
+            last_error = exc
+            continue
+    if last_error is None:
+        raise jwt.InvalidTokenError("No JWT secret configured")
+    raise last_error
 
 async def validate_api_key_with_backend(api_key: str) -> Dict[str, Any]:
     """Validate API key against Node.js backend."""
@@ -116,24 +138,15 @@ def create_auth_router() -> APIRouter:
         
         access_token = jwt.encode(
             access_payload,
-            settings.secret_key or "default-secret",
+            _jwt_signing_secret(),
             algorithm="HS256"
         )
         
         refresh_token = jwt.encode(
             refresh_payload,
-            settings.secret_key or "default-secret",
+            _jwt_signing_secret(),
             algorithm="HS256"
         )
-        
-        # Store tokens
-        token_store[access_token] = {
-            "api_key": api_key,
-            "expires_at": expires_at.timestamp(),
-            "tier": key_info["tier"],
-            "rate_limit": key_info["rate_limit"],
-            "user_id": key_info.get("user_id"),
-        }
         
         logger.info(f"Authorized API key for tier: {key_info['tier']}")
         
@@ -149,11 +162,7 @@ def create_auth_router() -> APIRouter:
         refresh_token = request.refresh_token
         
         try:
-            payload = jwt.decode(
-                refresh_token,
-                settings.secret_key or "default-secret",
-                algorithms=["HS256"]
-            )
+            payload = _decode_with_known_secrets(refresh_token)
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -198,18 +207,9 @@ def create_auth_router() -> APIRouter:
         
         access_token = jwt.encode(
             access_payload,
-            settings.secret_key or "default-secret",
+            _jwt_signing_secret(),
             algorithm="HS256"
         )
-        
-        # Store new token
-        token_store[access_token] = {
-            "api_key": api_key,
-            "expires_at": expires_at.timestamp(),
-            "tier": key_info["tier"],
-            "rate_limit": key_info["rate_limit"],
-            "user_id": key_info.get("user_id"),
-        }
         
         return AuthResponse(
             access_token=access_token,
@@ -218,30 +218,50 @@ def create_auth_router() -> APIRouter:
     
     return router
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    """Get current user from JWT token."""
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+    """Get current user from a signed JWT and revalidate API key with backend."""
     token = credentials.credentials
-    
-    # Check if token exists in store
-    if token not in token_store:
+    try:
+        payload = _decode_with_known_secrets(token)
+    except jwt.ExpiredSignatureError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
-    
-    token_data = token_store[token]
-    
-    # Check if token expired
-    if time.time() > token_data["expires_at"]:
-        del token_store[token]
+            detail="Token expired",
+        ) from exc
+    except jwt.InvalidTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expired"
-        )
-    
-    return token_data
+            detail="Invalid token",
+        ) from exc
 
-def get_rate_limit_info(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+
+    api_key = payload.get("api_key")
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing API key context",
+        )
+
+    key_info = await validate_api_key_with_backend(api_key)
+    if not key_info:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key no longer valid",
+        )
+
+    return {
+        "api_key": api_key,
+        "tier": key_info["tier"],
+        "rate_limit": key_info["rate_limit"],
+        "user_id": key_info.get("user_id"),
+    }
+
+async def get_rate_limit_info(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     """Get rate limit information for current user."""
     return {
         "tier": user["tier"],

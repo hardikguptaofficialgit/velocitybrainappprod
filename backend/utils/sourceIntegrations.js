@@ -444,6 +444,7 @@ async function upsertSourceConnection({
 function summarizeConnection(connection, latestJob = null) {
     const metadata = connection.metadata || {};
     const tokenBundle = metadata.token_bundle;
+    const simulated = Boolean(metadata.simulated);
     return {
         id: connection.id,
         provider: connection.provider,
@@ -458,6 +459,8 @@ function summarizeConnection(connection, latestJob = null) {
         externalTeamOrOrgId: connection.external_team_or_org_id || '',
         revokedAt: connection.revoked_at || null,
         hasStoredCredentials: Boolean(tokenBundle),
+        isSimulated: simulated,
+        connectionMode: simulated ? 'demo' : 'live',
         metadata: {
             ...metadata,
             token_bundle: undefined

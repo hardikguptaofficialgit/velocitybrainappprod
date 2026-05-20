@@ -171,3 +171,30 @@ CREATE TABLE IF NOT EXISTS plugins (
   enabled BOOLEAN NOT NULL DEFAULT TRUE,
   installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS runtime_state (
+  state_key TEXT PRIMARY KEY,
+  state_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  version BIGINT NOT NULL DEFAULT 1,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS execution_jobs (
+  job_id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  max_retries INTEGER NOT NULL DEFAULT 3,
+  timeout_seconds INTEGER NOT NULL DEFAULT 300,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  lease_expires_at TIMESTAMPTZ,
+  last_error TEXT,
+  result JSONB,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS idx_execution_jobs_status_created ON execution_jobs(status, created_at DESC);

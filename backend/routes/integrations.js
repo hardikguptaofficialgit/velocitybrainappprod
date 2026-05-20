@@ -128,7 +128,9 @@ router.post('/:provider/start', authenticate, async (req, res) => {
             success: true,
             provider,
             authUrl: auth.authUrl,
-            callbackUrl: auth.callbackUrl
+            callbackUrl: auth.callbackUrl,
+            simulated: Boolean(auth.simulated),
+            connectionMode: auth.simulated ? 'demo' : 'live'
         });
     } catch (error) {
         console.error('Integration start error:', error);

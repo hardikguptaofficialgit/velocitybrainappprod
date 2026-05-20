@@ -88,10 +88,10 @@ export default function Login() {
         <div className="w-full max-w-md relative z-10">
           <div className="mb-8">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>
-              Welcome back
+              Welcome back bro...
             </h2>
             <p className="text-zinc-500 text-sm">
-              Sign in to access your workspace. New accounts will go through a quick onboarding flow before entering the dashboard.
+              Sign in to access your workspace.
             </p>
           </div>
 

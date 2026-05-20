@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { ArrowRight as Key, Plus, Eye, Copy, RefreshCw, AlertTriangle, X } from '../components/Icons';
+import { Key, Plus, Eye, Copy, RefreshCw, AlertTriangle, X } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
@@ -27,34 +27,38 @@ const formatCurrency = (value) => `$${Number(value || 0).toFixed(4)}`;
 
 const badgeClassName = (status) => (
   status === 'active'
-    ? 'bg-[#5fd1b3]/10 text-[#5fd1b3]'
-    : 'bg-red-500/10 text-red-400'
+    ? 'bg-[#5fd1b3]/10 text-[#5fd1b3] border border-[#5fd1b3]/20'
+    : 'bg-red-500/10 text-red-400 border border-red-500/20'
 );
 
 const TopInsightCard = ({ title, items, danger = false, emptyMessage }) => (
-  <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl p-5">
-    <h3 className="text-white font-semibold mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>{title}</h3>
-    {items.length > 0 ? (
-      <div className="space-y-3">
-        {items.map((item, index) => (
-          <div
-            key={`${title}-${index}`}
-            className={`rounded-lg border p-3 ${danger ? 'border-red-500/20 bg-red-500/5' : 'border-[#202020] bg-[#111]'}`}
-          >
-            <p className={`text-sm font-medium ${danger ? 'text-red-300' : 'text-white'}`}>
-              {item.title || item.message}
-            </p>
-            <p className="text-xs text-zinc-500 mt-1 leading-5">
-              {item.body || `${item.agentId || 'agent'} • ${item.repoId || 'workspace'} • ${item.severity || 'info'}`}
-            </p>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div className="rounded-lg border border-dashed border-[#2a2a2a] bg-[#111] p-4 text-sm text-zinc-500">
-        {emptyMessage}
-      </div>
-    )}
+  <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+    <div className="bg-[#0d0d0d] rounded-xl p-5 h-full">
+      <h3 className="font-semibold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>
+        {title}
+      </h3>
+      {items.length > 0 ? (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div
+              key={`${title}-${index}`}
+              className={`rounded-lg border p-3 shadow-inner ${danger ? 'border-red-500/30 bg-red-500/5' : 'border-[#202020] bg-zinc-900/50'}`}
+            >
+              <p className={`text-sm font-medium ${danger ? 'text-red-300' : 'text-white'}`}>
+                {item.title || item.message}
+              </p>
+              <p className="text-xs text-zinc-500 mt-1 leading-5">
+                {item.body || `${item.agentId || 'agent'} • ${item.repoId || 'workspace'} • ${item.severity || 'info'}`}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-[#2a2a2a] bg-zinc-900/40 p-4 text-sm text-zinc-500 shadow-inner">
+          {emptyMessage}
+        </div>
+      )}
+    </div>
   </div>
 );
 
@@ -187,7 +191,7 @@ const ApiKeys = () => {
     <div className="max-w-6xl mx-auto w-full space-y-8 pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2a2a2a] pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
             Agent Access Control
           </h1>
           <p className="text-sm text-zinc-400 mt-1">
@@ -196,7 +200,7 @@ const ApiKeys = () => {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-5 py-2.5 rounded-lg font-semibold text-black text-sm flex items-center justify-center gap-2 bg-[#EA803A] hover:bg-[#f0965a] transition-colors"
+          className="px-5 py-2.5 rounded-lg font-semibold text-black text-sm flex items-center justify-center gap-2 bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity"
           style={{ fontFamily: 'Syne, sans-serif' }}
         >
           <Plus className="h-4 w-4" />
@@ -219,7 +223,7 @@ const ApiKeys = () => {
       </div>
 
       {companyNeedsSources && (
-        <div className="rounded-2xl border border-[#EA803A33] bg-[#EA803A14] p-5">
+        <div className="rounded-2xl border border-[#EA803A33] bg-[#EA803A14] p-5 shadow-inner">
           <p className="text-sm font-semibold text-white">Pairing works best after you connect company systems.</p>
           <p className="mt-1 text-sm text-zinc-400">
             Your keys and agent pairing flow are ready, but this workspace still has no Slack, Google Workspace, or GitHub sources connected.
@@ -233,188 +237,184 @@ const ApiKeys = () => {
         </div>
       )}
 
-      <div className="bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl shadow-sm overflow-hidden">
-        {apiKeys.length > 0 ? (
-          <div className="divide-y divide-[#1c1c1c]">
-            {apiKeys.map((key) => {
-              const agentId = selectedAgents[key.id] || 'codex';
-              const selectedAgent = supportedAgents.find((item) => item.id === agentId) || supportedAgents[0];
-              const isNewlyCreated = newlyCreatedKeys[key.id];
-              const maskedKey = `${key.keyPrefix}${'•'.repeat(20)}`;
-              const displayKey = isNewlyCreated || maskedKey;
+      <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
+        <div className="bg-[#0d0d0d] rounded-xl overflow-hidden h-full">
+          {apiKeys.length > 0 ? (
+            <div className="divide-y divide-[#1c1c1c]">
+              {apiKeys.map((key) => {
+                const agentId = selectedAgents[key.id] || 'codex';
+                const selectedAgent = supportedAgents.find((item) => item.id === agentId) || supportedAgents[0];
+                const isNewlyCreated = newlyCreatedKeys[key.id];
+                const maskedKey = `${key.keyPrefix}${'•'.repeat(20)}`;
+                const displayKey = isNewlyCreated || maskedKey;
 
-              return (
-                <div key={key.id} className="p-5 hover:bg-[#111111] transition-colors flex flex-col gap-5">
-                  <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-5">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-base font-semibold text-white truncate" style={{ fontFamily: 'Syne, sans-serif' }}>
-                          {key.name}
-                        </h3>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium tracking-wide uppercase ${badgeClassName(key.status)}`}>
-                          {key.status}
-                        </span>
+                return (
+                  <div key={key.id} className="p-5 bg-transparent flex flex-col gap-5">
+                    <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-5">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-base font-semibold text-white truncate" style={{ fontFamily: 'Syne, sans-serif' }}>
+                            {key.name}
+                          </h3>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium tracking-wide uppercase ${badgeClassName(key.status)}`}>
+                            {key.status}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+                          <span>Created {formatDateTime(key.createdAt)}</span>
+                          <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                          <span>Last rotated {formatDateTime(key.lastRotatedAt)}</span>
+                          <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                          <span>Last activity {formatDateTime(key.intelligence?.lastSeen)}</span>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-                        <span>Created {formatDateTime(key.createdAt)}</span>
-                        <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                        <span>Last rotated {formatDateTime(key.lastRotatedAt)}</span>
-                        <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                        <span>Last activity {formatDateTime(key.intelligence?.lastSeen)}</span>
-                      </div>
-                    </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 bg-[#161616] border border-[#2a2a2a] rounded-md px-3 py-2 w-full">
-                        <code className="text-sm text-zinc-300 tracking-wider truncate flex-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                          {displayKey}
-                        </code>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 bg-[#161616] border border-[#2a2a2a] rounded-md px-3 py-2 w-full shadow-inner">
+                          <code className="text-sm text-zinc-300 tracking-wider truncate flex-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                            {displayKey}
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(displayKey, key.id)}
+                            className="p-1.5 rounded hover:bg-[#2a2a2a] text-zinc-400 hover:text-white transition-colors shrink-0"
+                            title="Copy key"
+                          >
+                            {copiedKey === key.id ? <Eye className="h-3.5 w-3.5 text-[#5fd1b3]" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                        {isNewlyCreated && (
+                          <span className="text-[10px] text-[#EA803A] mt-1.5 font-medium inline-block">
+                            Copy this rotated key now. It will not be shown again.
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2 min-w-[250px]">
+                        <div className="flex items-center gap-2 rounded-lg border border-[#202020] bg-zinc-900/50 p-2 shadow-inner">
+                          <AgentBrandIcon
+                            agentId={selectedAgent.id}
+                            name={selectedAgent.name}
+                            containerClassName="w-9 h-9 shrink-0"
+                            size="h-5 w-5"
+                          />
+                          <select
+                            value={agentId}
+                            onChange={(e) => setSelectedAgents((prev) => ({ ...prev, [key.id]: e.target.value }))}
+                            className="bg-transparent text-sm text-white flex-1 outline-none"
+                          >
+                            {supportedAgents.map((agent) => (
+                              <option key={agent.id} value={agent.id} className="bg-[#111]">
+                                {agent.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <button
-                          onClick={() => copyToClipboard(displayKey, key.id)}
-                          className="p-1.5 rounded hover:bg-[#2a2a2a] text-zinc-400 hover:text-white transition-colors shrink-0"
-                          title="Copy key"
+                          onClick={() => createPairingMutation.mutate({ keyId: key.id, agentId })}
+                          className="px-3 py-2 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-md shadow-[#EA803A]/10 hover:opacity-90 transition-opacity text-black text-xs font-semibold"
                         >
-                          {copiedKey === key.id ? <Eye className="h-3.5 w-3.5 text-[#5fd1b3]" /> : <Copy className="h-3.5 w-3.5" />}
+                          Connect Your Agent
                         </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => rotateKeyMutation.mutate(key.id)}
+                            className="px-3 py-2 rounded-lg border border-[#2a2a2a] hover:bg-[#1a1a1a] text-xs text-white font-medium transition-colors flex items-center justify-center gap-2"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Rotate
+                          </button>
+                          <button
+                            onClick={() => revokeKeyMutation.mutate(key.id)}
+                            className="px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-xs text-red-300 font-medium transition-colors flex items-center justify-center gap-2"
+                          >
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            Revoke
+                          </button>
+                        </div>
                       </div>
-                      {isNewlyCreated && (
-                        <span className="text-[10px] text-[#EA803A] mt-1.5 font-medium inline-block">
-                          Copy this rotated key now. It will not be shown again.
-                        </span>
-                      )}
                     </div>
 
-                    <div className="flex flex-col gap-2 min-w-[250px]">
-                      <div className="flex items-center gap-2 rounded-lg border border-[#202020] bg-[#111] p-2">
-                        <AgentBrandIcon
-                          agentId={selectedAgent.id}
-                          name={selectedAgent.name}
-                          containerClassName="w-9 h-9 shrink-0"
-                          size="h-5 w-5"
-                        />
-                        <select
-                          value={agentId}
-                          onChange={(e) => setSelectedAgents((prev) => ({ ...prev, [key.id]: e.target.value }))}
-                          className="bg-transparent text-sm text-white flex-1 outline-none"
-                        >
-                          {supportedAgents.map((agent) => (
-                            <option key={agent.id} value={agent.id} className="bg-[#111]">
-                              {agent.name}
-                            </option>
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                      {[
+                        { label: 'Requests', value: key.usage?.total || 0 },
+                        { label: 'Tokens', value: Number(key.usage?.totalTokens || 0).toLocaleString() },
+                        { label: 'Cost', value: formatCurrency(key.usage?.totalCostUsd) },
+                        { label: 'Linked Agents', value: key.intelligence?.linkedAgentCount || 0 },
+                        { label: 'Linked Repos', value: key.intelligence?.linkedRepoCount || 0 }
+                      ].map((stat) => (
+                        <div key={stat.label} className="rounded-lg border border-zinc-800/50 bg-zinc-900/40 p-3 shadow-inner">
+                          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">{stat.label}</p>
+                          <p className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-br from-white via-zinc-200 to-zinc-500">{stat.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                      <div className="rounded-xl border border-zinc-800/50 bg-[#101010] p-4 shadow-inner">
+                        <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-3">Connection Scope</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(key.scopeDefaults?.agents || []).map((item) => (
+                            <span key={`agent-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-zinc-900 text-[10px] text-zinc-300">
+                              agent:{item}
+                            </span>
                           ))}
-                        </select>
-                      </div>
-                      <button
-                        onClick={() => createPairingMutation.mutate({ keyId: key.id, agentId })}
-                        className="px-3 py-2 rounded-lg bg-[#EA803A] hover:bg-[#f0965a] transition-colors text-black text-xs font-semibold"
-                      >
-                        Connect Your Agent
-                      </button>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => rotateKeyMutation.mutate(key.id)}
-                          className="px-3 py-2 rounded-lg border border-[#2a2a2a] hover:bg-[#1a1a1a] text-xs text-white font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" />
-                          Rotate
-                        </button>
-                        <button
-                          onClick={() => revokeKeyMutation.mutate(key.id)}
-                          className="px-3 py-2 rounded-lg border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-xs text-red-300 font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          Revoke
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                    <div className="rounded-lg border border-[#202020] bg-[#111] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Requests</p>
-                      <p className="text-sm font-medium text-white">{key.usage?.total || 0}</p>
-                    </div>
-                    <div className="rounded-lg border border-[#202020] bg-[#111] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Tokens</p>
-                      <p className="text-sm font-medium text-white">{Number(key.usage?.totalTokens || 0).toLocaleString()}</p>
-                    </div>
-                    <div className="rounded-lg border border-[#202020] bg-[#111] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Cost</p>
-                      <p className="text-sm font-medium text-white">{formatCurrency(key.usage?.totalCostUsd)}</p>
-                    </div>
-                    <div className="rounded-lg border border-[#202020] bg-[#111] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Linked Agents</p>
-                      <p className="text-sm font-medium text-white">{key.intelligence?.linkedAgentCount || 0}</p>
-                    </div>
-                    <div className="rounded-lg border border-[#202020] bg-[#111] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Linked Repos</p>
-                      <p className="text-sm font-medium text-white">{key.intelligence?.linkedRepoCount || 0}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-[#1c1c1c] bg-[#101010] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-3">Connection Scope</p>
-                      <div className="flex flex-wrap gap-2">
-                        {(key.scopeDefaults?.agents || []).map((item) => (
-                          <span key={`agent-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-[#111] text-[10px] text-zinc-300">
-                            agent:{item}
-                          </span>
-                        ))}
-                        {(key.scopeDefaults?.repos || []).map((item) => (
-                          <span key={`repo-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-[#111] text-[10px] text-zinc-300">
-                            repo:{item}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-[#1c1c1c] bg-[#101010] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-3">Recent Activity</p>
-                      {key.intelligence?.recentActivity?.length > 0 ? (
-                        <div className="space-y-2">
-                          {key.intelligence.recentActivity.map((activity) => (
-                            <div key={activity.id} className="flex items-center justify-between gap-3 text-xs">
-                              <div className="min-w-0">
-                                <p className="text-white truncate">{activity.description}</p>
-                                <p className="text-zinc-500 truncate">{activity.repoId} • {activity.modelName}</p>
-                              </div>
-                              <span className="text-zinc-500 shrink-0">{formatDateTime(activity.timestamp)}</span>
-                            </div>
+                          {(key.scopeDefaults?.repos || []).map((item) => (
+                            <span key={`repo-scope-${item}`} className="px-2 py-1 rounded-md border border-[#202020] bg-zinc-900 text-[10px] text-zinc-300">
+                              repo:{item}
+                            </span>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-xs text-zinc-500">No recent activity yet for this key.</p>
-                      )}
+                      </div>
+                      <div className="rounded-xl border border-zinc-800/50 bg-[#101010] p-4 shadow-inner">
+                        <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-3">Recent Activity</p>
+                        {key.intelligence?.recentActivity?.length > 0 ? (
+                          <div className="space-y-2">
+                            {key.intelligence.recentActivity.map((activity) => (
+                              <div key={activity.id} className="flex items-center justify-between gap-3 text-xs">
+                                <div className="min-w-0">
+                                  <p className="text-white truncate">{activity.description}</p>
+                                  <p className="text-zinc-500 truncate">{activity.repoId} • {activity.modelName}</p>
+                                </div>
+                                <span className="text-zinc-500 shrink-0">{formatDateTime(activity.timestamp)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-zinc-500">No recent activity yet for this key.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-12 text-center flex flex-col items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-[#161616] border border-[#2a2a2a] flex items-center justify-center mb-4">
-              <Key className="h-5 w-5 text-zinc-400" />
+                );
+              })}
             </div>
-            <h3 className="text-lg font-medium text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>No API keys yet</h3>
-            <p className="text-sm text-zinc-500 mb-6 max-w-sm">
-              Create a key, then pair Codex or Claude Code through a short-lived secure connection flow.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-5 py-2.5 rounded-lg bg-[#EA803A] hover:bg-[#f0965a] transition-colors text-sm font-semibold text-black"
-            >
-              Generate your first key
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="p-12 text-center flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-xl border border-current/20 bg-zinc-800/40 flex items-center justify-center mb-5 shadow-inner">
+                <Key className="h-6 w-6 text-zinc-400" />
+              </div>
+              <h3 className="text-lg font-medium bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>
+                No API keys yet
+              </h3>
+              <p className="text-sm text-zinc-500 mb-6 max-w-sm">
+                Create a key, then pair Codex or Claude Code through a short-lived secure connection flow.
+              </p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-5 py-2.5 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity text-sm font-semibold text-black"
+              >
+                Generate your first key
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="w-full max-w-md bg-[#0d0d0d] border border-[#2a2a2a] rounded-2xl shadow-2xl overflow-hidden">
             <div className="px-6 py-5 border-b border-[#1c1c1c] flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Create new API key</h2>
+              <h2 className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Create new API key</h2>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-1.5 rounded-md hover:bg-[#1c1c1c] text-zinc-400 hover:text-white transition-colors"
@@ -432,7 +432,7 @@ const ApiKeys = () => {
                   type="text"
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
-                  className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:border-[#EA803A] focus:ring-1 focus:ring-[#EA803A] focus:outline-none transition-all text-sm"
+                  className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:border-[#EA803A] focus:ring-1 focus:ring-[#EA803A] focus:outline-none transition-all text-sm shadow-inner"
                   placeholder="e.g., Prod agent fabric"
                   autoFocus
                   required
@@ -450,7 +450,7 @@ const ApiKeys = () => {
                 <button
                   type="submit"
                   disabled={createKeyMutation.isLoading || !newKeyName.trim()}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-[#EA803A] hover:bg-[#f0965a] text-sm font-semibold text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity text-sm font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
                 >
                   {createKeyMutation.isLoading ? (
                     <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
@@ -468,7 +468,7 @@ const ApiKeys = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="w-full max-w-lg bg-[#0d0d0d] border border-[#2a2a2a] rounded-2xl shadow-2xl overflow-hidden">
             <div className="px-6 py-5 border-b border-[#1c1c1c] flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Connect Your Agent</h2>
+              <h2 className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400" style={{ fontFamily: 'Syne, sans-serif' }}>Connect Your Agent</h2>
               <button
                 onClick={() => setPairingModal({ open: false, key: null, pairing: null })}
                 className="p-1.5 rounded-md hover:bg-[#1c1c1c] text-zinc-400 hover:text-white transition-colors"
@@ -477,7 +477,7 @@ const ApiKeys = () => {
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="rounded-lg border border-[#EA803A33] bg-[#EA803A14] p-4">
+              <div className="rounded-lg border border-[#EA803A33] bg-[#EA803A14] p-4 shadow-inner">
                 <p className="text-sm text-white font-medium">
                   Pairing code expires at {formatDateTime(pairingModal.pairing.expiresAt)}
                 </p>
@@ -485,18 +485,18 @@ const ApiKeys = () => {
                   This is a short-lived pairing code for one secure token exchange. Your raw API key never leaves the dashboard.
                 </p>
               </div>
-              <div className="rounded-lg border border-[#2a2a2a] bg-[#111] p-4">
+              <div className="rounded-lg border border-[#2a2a2a] bg-zinc-900/50 p-4 shadow-inner">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-2">Pairing Code</p>
                 <code className="text-sm text-white break-all">{pairingModal.pairing.pairCode}</code>
               </div>
-              <div className="rounded-lg border border-[#2a2a2a] bg-[#111] p-4">
+              <div className="rounded-lg border border-[#2a2a2a] bg-zinc-900/50 p-4 shadow-inner">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500 mb-2">Local Command</p>
                 <code className="text-xs text-zinc-300 break-all">{pairingModal.pairing.command}</code>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end mt-2">
                 <button
                   onClick={() => copyToClipboard(pairingModal.pairing.command, 'pairing-command')}
-                  className="px-4 py-2 rounded-lg bg-[#EA803A] hover:bg-[#f0965a] transition-colors text-black text-sm font-semibold"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] shadow-lg shadow-[#EA803A]/20 hover:opacity-90 transition-opacity text-black text-sm font-semibold"
                 >
                   {copiedKey === 'pairing-command' ? 'Copied' : 'Copy Command'}
                 </button>

@@ -136,6 +136,10 @@ class AdoptionService:
             'wedge_insights': self.reuse_service.get_wedge_insights(),
         }
 
+    def export_metrics(self) -> dict[str, Any]:
+        self._load_state()
+        return self.reuse_service.export_metrics()
+
     def _load_state(self) -> None:
         if not self.state_path.exists():
             self.reuse_service.reset_state()

@@ -139,13 +139,19 @@ def get_client() -> VelocityBrainClient:
                 "VELOCITYBRAIN_API_KEY environment variable is required, or save a key with "
                 "`velocitybrain login --api-key <key>` or pair an agent with `velocitybrain connect <client> --pair-code <code>`."
             )
-        client = VelocityBrainClient(
-            api_key=api_key,
-            base_url=base_url,
-            access_token=agent_credentials.get("access_token"),
-            refresh_token=agent_credentials.get("refresh_token"),
-            token_expires_at=agent_credentials.get("token_expires_at"),
-        )
+        client_kwargs = {
+            "api_key": api_key,
+            "base_url": base_url,
+        }
+        if agent_credentials.get("access_token") or agent_credentials.get("refresh_token"):
+            client_kwargs["access_token"] = agent_credentials.get("access_token")
+            client_kwargs["refresh_token"] = agent_credentials.get("refresh_token")
+            client_kwargs["token_expires_at"] = agent_credentials.get("token_expires_at")
+        try:
+            client = VelocityBrainClient(**client_kwargs)
+        except TypeError:
+            # Keep tests and simple client doubles compatible with the legacy constructor.
+            client = VelocityBrainClient(api_key, base_url)
         logger.info("VelocityBrain client initialized")
     return client
 

@@ -1,0 +1,418 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "de9cb85e-0338-46d4-bf98-4b3769ef0afe",
+      "workspace_id": "user::velocitybrain",
+      "repo_id": "velocitybrain",
+      "branch": null,
+      "commit": null,
+      "task_type": "repo_analysis",
+      "fingerprint": "b66f671b8b674702e824ce70a232abafe82d93b0973934193d6b89124be4bcf1",
+      "artifact_kind": "summary",
+      "text_is_compressed": true,
+      "source_run_id": "run-3833547446",
+      "context_paths": [
+        "backend/routes/hosted.js",
+        "dashboard/public/docs-content/codebase_analysis.md",
+        "docs/codebase_analysis.md",
+        "src/cli.py"
+      ],
+      "file_hashes": {
+        "backend/routes/hosted.js": "eb9d915efbc798592f776a947c1975e1c95abb9f6a178a34bdcf270854292bb7",
+        "docs/codebase_analysis.md": "38099db49ba562a98aab119cd8a1ad4d4132769ac898e92c73895e4aba577bf2",
+        "dashboard/public/docs-content/codebase_analysis.md": "38099db49ba562a98aab119cd8a1ad4d4132769ac898e92c73895e4aba577bf2",
+        "src/cli.py": "9555545cbfd5032c659863a51422abf59aad9ed263d549d27a38acb07ba45617"
+      },
+      "base_confidence": 0.74,
+      "quality_confidence": 0.74,
+      "reuse_successes": 2,
+      "reuse_failures": 0,
+      "token_cost_to_create": 563,
+      "created_at": "2026-05-19T19:37:41.259315+00:00",
+      "last_used_at": "2026-05-19T19:37:41.407401+00:00",
+      "blacklisted_fingerprints": [],
+      "embedding": null,
+      "compressed_text_hex": "1f8b080005bc0c6a02ffed56db6e1b3710fd958113445621ad64d956620169a1b4292a20680db86e5118864c91b35a465c72c38b1d21e9bf7786bb72e4cb53fbda1769351c9e73e6cc90abab95901bb46ae45d8a1846950b1155f1315cc3f1e4cd0cc41a6d5cd8108595b850f0167abd012d9d754b17c9974222c76bd9f0d2f17806b55368cebdbbd50a3daf25bbb1eecef2fa7487bad41dec52aba7445fbfb64cd31dd332b4548f8839af637ebd635e361df563259cbc27e5ecec592917d16bbb3e6cc4d638a18a27190c73f3f24bab58fd3d7cf9c563e3e8e9a65fd0d6fab03f8093f1f889ee6771c3a33af6218e6640a43185277bdb70de249db528a9693dde73fafabea47b5315c7dffc4b39bc976ce20a9741ba8636cebd17db4287fc7dbfff5b461f5ebd82a7e1c2a05dc70abe8731fcf0cc3acce0aaf75def7a0057cac930faf1b79fdebf9b5fbc5fce7f9d7ff8eb627151d4ea1a8e2633f8bdd2212b0a3a3abf05fa655d040151db2d04aacae030a0bfd55489689a02169193a4711485e82895464425196940ac6328b8d3a4ad74c9432db485ce08b2fe84daf0e205fca2d7d5f003dea2210364a523999e3cc264921511d17e54568ec92ba46766763692bd43e5f52d5a90a2112b6d74dc82c2525b1db5b3e045ac585e252c54c22be9149502444935de39bf298dbb03d276be8d95b3054c8ea759dafc7cf150d39512a15a39c218356965b41cb1a3c34ec5ffcefe07678397236974d16cc9b1e9f8780643e8e0188839a874b185155a1210a1f4ae264fb4f3d9d856f0e738e00752ccfac2006855a1d4817f31ee09e35e2e062052ac060f1cc8c91ec9436a1144113601eeb21d28bcd1b88fc44284f128d416f0b30e918bacb1e6de1e4d8f48fd3bacc46d16970cf784a299fb670a51ff6a615ad95cdc80af231fdb860af8038d93ecf43bcf7d35ce6d52437597d476eaf28a2fcca8338008ceb245048a4ac75030cfe98e47d78dc19abc106db7f053c2100318bd4138488d1211c958eab6716b6292ae6e9ca5fc03063ca0ed74c17719978b8301a4808fd595da53f534a0b242b9a171f4cf3685edfee6df801e835e5b5827adf8f6efbc372448b5d673253ca743f8b3a2f9a33963760f81e60c03a8e4c5ca201f8a8fd43ee0ae65d87b861a31666b52a4ba90223b450fa6a3748666744806675a6a85a09205e71114f231c5b631378446f62db9a09b2c2f0fe9bc8c248bad332da1206ac15d2993c9a0f798a172d4e590ea5ad09cb832574544e4614d75774a79e82ce87cfeb95366cbf656681a28533e2c01432e328bc853754e73cbe6d0c891828e27fa94075b75949a7cdb3fb1a4cf50dbe85c452f6c905e373c4193f1943073c94bba7f92a24f4d961df641f08dc4cf33ce3ae5d7574826d23f91365ce439a6777ac4b5cf437728fc3a14bbff0d837c6a772fc3b7bdbdc4d0eb33265d0f3c2acbe40da1b6f0c51ae3618fc397de505a1e95870b9cdfebff039f57981075090000"
+    },
+    {
+      "artifact_id": "b663774e-65a7-417f-91ee-9999e0e75409",
+      "workspace_id": "user::velocitybrain",
+      "repo_id": "velocitybrain",
+      "branch": null,
+      "commit": null,
+      "task_type": "repo_analysis",
+      "fingerprint": "0d3c9e5512bd2957cead6151bcad39f2ba5d42e86fa214581a87e7b56e8980cf",
+      "artifact_kind": "repo_map",
+      "text_is_compressed": true,
+      "source_run_id": "run-3833547446-bootstrap",
+      "context_paths": [
+        "backend/routes/hosted.js",
+        "dashboard/public/docs-content/codebase_analysis.md",
+        "docs/codebase_analysis.md",
+        "src/cli.py"
+      ],
+      "file_hashes": {
+        "backend/routes/hosted.js": "eb9d915efbc798592f776a947c1975e1c95abb9f6a178a34bdcf270854292bb7",
+        "docs/codebase_analysis.md": "38099db49ba562a98aab119cd8a1ad4d4132769ac898e92c73895e4aba577bf2",
+        "dashboard/public/docs-content/codebase_analysis.md": "38099db49ba562a98aab119cd8a1ad4d4132769ac898e92c73895e4aba577bf2",
+        "src/cli.py": "9555545cbfd5032c659863a51422abf59aad9ed263d549d27a38acb07ba45617"
+      },
+      "base_confidence": 0.82,
+      "quality_confidence": 0.82,
+      "reuse_successes": 1,
+      "reuse_failures": 0,
+      "token_cost_to_create": 57,
+      "created_at": "2026-05-19T19:37:41.259531+00:00",
+      "last_used_at": null,
+      "blacklisted_fingerprints": [],
+      "embedding": null,
+      "compressed_text_hex": "1f8b080005bc0c6a02ffa5cc3d0a02311086e1abe40226bd5dd42d04d122952c22c96460576326cc4c406fefcf0916ec3e78f99e3145b863cd8ea92b8a9b4814b3bdc9c530155c1bc62e3115fc8c462611a928c76680aae253cd9809c46d4fbb61e3c370f5477f38877db08fbc5c8832258a9c5deba9cce0bee4ea97abfe470b838332dbf65a7879039efb217f10010000"
+    },
+    {
+      "artifact_id": "548bccaa-2af6-49ef-87b7-5b83e7bb7e35",
+      "workspace_id": "user::velocitybrain",
+      "repo_id": "velocitybrain",
+      "branch": null,
+      "commit": null,
+      "task_type": "repo_analysis",
+      "fingerprint": "b66f671b8b674702e824ce70a232abafe82d93b0973934193d6b89124be4bcf1",
+      "artifact_kind": "summary",
+      "text_is_compressed": true,
+      "source_run_id": "run-f452847629",
+      "context_paths": [
+        "backend/routes/hosted.js",
+        "dashboard/public/docs-content/codebase_analysis.md",
+        "docs/codebase_analysis.md",
+        "src/cli.py"
+      ],
+      "file_hashes": {
+        "backend/routes/hosted.js": "eb9d915efbc798592f776a947c1975e1c95abb9f6a178a34bdcf270854292bb7",
+        "docs/codebase_analysis.md": "38099db49ba562a98aab119cd8a1ad4d4132769ac898e92c73895e4aba577bf2",
+        "dashboard/public/docs-content/codebase_analysis.md": "38099db49ba562a98aab119cd8a1ad4d4132769ac898e92c73895e4aba577bf2",
+        "src/cli.py": "9555545cbfd5032c659863a51422abf59aad9ed263d549d27a38acb07ba45617"
+      },
+      "base_confidence": 0.74,
+      "quality_confidence": 0.74,
+      "reuse_successes": 1,
+      "reuse_failures": 0,
+      "token_cost_to_create": 563,
+      "created_at": "2026-05-19T19:37:41.415919+00:00",
+      "last_used_at": null,
+      "blacklisted_fingerprints": [],
+      "embedding": null,
+      "compressed_text_hex": "1f8b080005bc0c6a02ffed56db6e1b3710fd958113445621ad64d956620169a1b4292a20680db86e5118864c91b35a465c72c38b1d21e9bf7786bb72e4cb53fbda1769351c9e73e6cc90abab95901bb46ae45d8a1846950b1155f1315cc3f1e4cd0cc41a6d5cd8108595b850f0167abd012d9d754b17c9974222c76bd9f0d2f17806b55368cebdbbd50a3daf25bbb1eecef2fa7487bad41dec52aba7445fbfb64cd31dd332b4548f8839af637ebd635e361df563259cbc27e5ecec592917d16bbb3e6cc4d638a18a27190c73f3f24bab58fd3d7cf9c563e3e8e9a65fd0d6fab03f8093f1f889ee6771c3a33af6218e6640a43185277bdb70de249db528a9693dde73fafabea47b5315c7dffc4b39bc976ce20a9741ba8636cebd17db4287fc7dbfff5b461f5ebd82a7e1c2a05dc70abe8731fcf0cc3acce0aaf75def7a0057cac930faf1b79fdebf9b5fbc5fce7f9d7ff8eb627151d4ea1a8e2633f8bdd2212b0a3a3abf05fa655d040151db2d04aacae030a0bfd55489689a02169193a4711485e82895464425196940ac6328b8d3a4ad74c9432db485ce08b2fe84daf0e205fca2d7d5f003dea2210364a523999e3cc264921511d17e54568ec92ba46766763692bd43e5f52d5a90a2112b6d74dc82c2525b1db5b3e045ac585e252c54c22be9149502444935de39bf298dbb03d276be8d95b3054c8ea759dafc7cf150d39512a15a39c218356965b41cb1a3c34ec5ffcefe07678397236974d16cc9b1e9f8780643e8e0188839a874b185155a1210a1f4ae264fb4f3d9d856f0e738e00752ccfac2006855a1d4817f31ee09e35e2e062052ac060f1cc8c91ec9436a1144113601eeb21d28bcd1b88fc44284f128d416f0b30e918bacb1e6de1e4d8f48fd3bacc46d16970cf784a299fb670a51ff6a615ad95cdc80af231fdb860af8038d93ecf43bcf7d35ce6d52437597d476eaf28a2fcca8338008ceb245048a4ac75030cfe98e47d78dc19abc106db7f053c2100318bd4138488d1211c958eab6716b6292ae6e9ca5fc03063ca0ed74c17719978b8301a4808fd595da53f534a0b242b9a171f4cf3685edfee6df801e835e5b5827adf8f6efbc372448b5d673253ca743f8b3a2f9a33963760f81e60c03a8e4c5ca201f8a8fd43ee0ae65d87b861a31666b52a4ba90223b450fa6a3748666744806675a6a85a09205e71114f231c5b631378446f62db9a09b2c2f0fe9bc8c248bad332da1206ac15d2993c9a0f798a172d4e590ea5ad09cb832574544e4614d75774a79e82ce87cfeb95366cbf656681a28533e2c01432e328bc853754e73cbe6d0c891828e27fa94075b75949a7cdb3fb1a4cf50dbe85c452f6c905e373c4193f1943073c94bba7f92a24f4d961df641f08dc4cf33ce3ae5d7574826d23f91365ce439a6777ac4b5cf437728fc3a14bbff0d837c6a772fc3b7bdbdc4d0eb33265d0f3c2acbe40da1b6f0c51ae3618fc397de505a1e95870b9cdfebff039f57981075090000"
+    }
+  ],
+  "task_runs": [
+    {
+      "run_id": "run-3833547446",
+      "task": "Map the main architecture and likely edit surface for this repo.",
+      "result": "[backend/routes/hosted.js]\n328: agentInstanceId = '',\n329: agentSurface = 'mcp',\n330: modelProvider = 'unknown',\n368: agent_instance_id: agentInstanceId || '',\n369: agent_surface: agentSurface || 'mcp',\n370: model_provider: modelProvider || 'unknown',\n399: agent_instance_id: String(payload.agent_instance_id || `${agentId}-${repoId}`).trim(),\n400: agent_surface: String(payload.agent_surface || 'mcp').trim(),\n401: status: String(payload.status || 'connected'),\n457: agent_id: agentId,\n458: agent_surface: String(payload.agent_surface || 'mcp'),\n459: repo_scope: Array.isArray(payload.repo_scope) && payload.repo_scope.length > 0 ? payload.repo_scope : ['*'],\n\n[docs/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[dashboard/public/docs-content/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[src/cli.py]\n1603: - coding work that may benefit from prior repo context, conventions, or decisions\n1604: - UI, auth, architecture, or refactor tasks where earlier decisions may already exist in memory\n1613: Behavior rules:\n1614: - For normal repo work, start with a Velocity Brain lookup before substantial reasoning or edits.\n1615: - For implementation requests like \"update this login component\" or \"improve this UI\", use Velocity Brain first to check for prior repo context, auth decisions, design guidance, or related tasks.\n1622: - When the user shares durable project facts, decisions, meeting outcomes, repo conventions, or follow-up tasks, save a concise note with `ingest_text`.\n1623: - After completing a meaningful task, save a short summary of the confirmed outcome when it is likely to help future sessions.\n1624: - Prefer saving short structured summaries rather than full chat transcripts.\n2064: with _cloud_client() as client:\n2065: result = client.start_integration(args.provider, from_surface='integrations')\n2066: auth_url = result.get('authUrl') or result.get('auth_url')",
+      "reused": false,
+      "reuse_confidence": 0.0,
+      "reuse_hit_type": "none",
+      "artifacts_used": [],
+      "savings": {
+        "avoided_input_tokens": 0,
+        "estimated_cost_without_reuse": 0.032652,
+        "estimated_cost_actual": 0.032652,
+        "estimated_cost_saved": 0.0,
+        "saved_percent": 0.0,
+        "estimated_latency_saved_ms": 0,
+        "input_tokens_actual": 10884,
+        "input_tokens_without_reuse": 10884
+      },
+      "truth_report": {
+        "reused": false,
+        "tokens_saved": 0,
+        "percent_saved": 0.0,
+        "correct_reuse": true
+      },
+      "failures": [],
+      "created_at": "2026-05-19T19:37:41.258305+00:00"
+    },
+    {
+      "run_id": "run-f452847629",
+      "task": "Map the main architecture and likely edit surface for this repo.",
+      "result": "[backend/routes/hosted.js]\n328: agentInstanceId = '',\n329: agentSurface = 'mcp',\n330: modelProvider = 'unknown',\n368: agent_instance_id: agentInstanceId || '',\n369: agent_surface: agentSurface || 'mcp',\n370: model_provider: modelProvider || 'unknown',\n399: agent_instance_id: String(payload.agent_instance_id || `${agentId}-${repoId}`).trim(),\n400: agent_surface: String(payload.agent_surface || 'mcp').trim(),\n401: status: String(payload.status || 'connected'),\n457: agent_id: agentId,\n458: agent_surface: String(payload.agent_surface || 'mcp'),\n459: repo_scope: Array.isArray(payload.repo_scope) && payload.repo_scope.length > 0 ? payload.repo_scope : ['*'],\n\n[docs/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[dashboard/public/docs-content/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[src/cli.py]\n1603: - coding work that may benefit from prior repo context, conventions, or decisions\n1604: - UI, auth, architecture, or refactor tasks where earlier decisions may already exist in memory\n1613: Behavior rules:\n1614: - For normal repo work, start with a Velocity Brain lookup before substantial reasoning or edits.\n1615: - For implementation requests like \"update this login component\" or \"improve this UI\", use Velocity Brain first to check for prior repo context, auth decisions, design guidance, or related tasks.\n1622: - When the user shares durable project facts, decisions, meeting outcomes, repo conventions, or follow-up tasks, save a concise note with `ingest_text`.\n1623: - After completing a meaningful task, save a short summary of the confirmed outcome when it is likely to help future sessions.\n1624: - Prefer saving short structured summaries rather than full chat transcripts.\n2064: with _cloud_client() as client:\n2065: result = client.start_integration(args.provider, from_surface='integrations')\n2066: auth_url = result.get('authUrl') or result.get('auth_url')",
+      "reused": true,
+      "reuse_confidence": 1.0,
+      "reuse_hit_type": "exact",
+      "artifacts_used": [
+        "de9cb85e-0338-46d4-bf98-4b3769ef0afe"
+      ],
+      "savings": {
+        "avoided_input_tokens": 10303,
+        "estimated_cost_without_reuse": 0.032652,
+        "estimated_cost_actual": 0.001743,
+        "estimated_cost_saved": 0.030909,
+        "saved_percent": 94.7,
+        "estimated_latency_saved_ms": 12373,
+        "input_tokens_actual": 581,
+        "input_tokens_without_reuse": 10884
+      },
+      "truth_report": {
+        "reused": true,
+        "tokens_saved": 10303,
+        "percent_saved": 94.7,
+        "correct_reuse": true
+      },
+      "failures": [],
+      "created_at": "2026-05-19T19:37:41.415332+00:00"
+    }
+  ],
+  "run_logs": [
+    {
+      "run_id": "run-3833547446",
+      "user_id": "user::velocitybrain",
+      "repo_id": "velocitybrain",
+      "task_hash": "a0c1e6ebd1441da34fb7004cad8abba5ec77b6bf3b926e81c9ad7a22cbebb5d1",
+      "repeat_key": "4b8f8cf142e8488ebc189a5936673f193b0d22fa287185d643cd11ab69d24017",
+      "first_seen_at": "2026-05-19T19:37:41.258305+00:00",
+      "repeat_count": 1,
+      "is_repeat_run": false,
+      "reused": false,
+      "reuse_confidence": 0.0,
+      "tokens_saved": 0,
+      "percent_saved": 0.0,
+      "latency_ms": 0.296,
+      "timestamp": "2026-05-19T19:37:41.258305+00:00"
+    },
+    {
+      "run_id": "run-f452847629",
+      "user_id": "user::velocitybrain",
+      "repo_id": "velocitybrain",
+      "task_hash": "a0c1e6ebd1441da34fb7004cad8abba5ec77b6bf3b926e81c9ad7a22cbebb5d1",
+      "repeat_key": "4b8f8cf142e8488ebc189a5936673f193b0d22fa287185d643cd11ab69d24017",
+      "first_seen_at": "2026-05-19T19:37:41.258305+00:00",
+      "repeat_count": 2,
+      "is_repeat_run": true,
+      "reused": true,
+      "reuse_confidence": 1.0,
+      "tokens_saved": 10303,
+      "percent_saved": 94.7,
+      "latency_ms": 0.23,
+      "timestamp": "2026-05-19T19:37:41.415332+00:00"
+    }
+  ],
+  "user_metrics": {
+    "user::velocitybrain": {
+      "user_id": "user::velocitybrain",
+      "total_runs": 2,
+      "repeat_runs": 1,
+      "repeat_rate": 0.5,
+      "avg_tokens_saved": 5151.5,
+      "reuse_hit_rate": 0.5,
+      "low_value_user": false,
+      "classification": "emerging_user",
+      "aha_count": 1,
+      "best_repo": "velocitybrain",
+      "best_reuse_rate": 50.0,
+      "best_savings": 5151.5,
+      "top_repo_per_user": "velocitybrain"
+    }
+  },
+  "repo_metrics": {
+    "user::velocitybrain::velocitybrain": {
+      "user_id": "user::velocitybrain",
+      "repo_id": "velocitybrain",
+      "total_runs": 2,
+      "repeat_rate": 0.5,
+      "reuse_rate": 0.5,
+      "avg_savings": 5151.5,
+      "wedge_score": 5151.5
+    }
+  },
+  "repeat_index": {
+    "4b8f8cf142e8488ebc189a5936673f193b0d22fa287185d643cd11ab69d24017": {
+      "repo_id": "velocitybrain",
+      "normalized_task": "map the main architecture and likely edit surface for this repo.",
+      "first_seen_at": "2026-05-19T19:37:41.258305+00:00",
+      "repeat_count": 2
+    }
+  },
+  "low_value_users": [],
+  "reuse_decisions": [
+    {
+      "run_id": "run-3833547446",
+      "result": "[backend/routes/hosted.js]\n328: agentInstanceId = '',\n329: agentSurface = 'mcp',\n330: modelProvider = 'unknown',\n368: agent_instance_id: agentInstanceId || '',\n369: agent_surface: agentSurface || 'mcp',\n370: model_provider: modelProvider || 'unknown',\n399: agent_instance_id: String(payload.agent_instance_id || `${agentId}-${repoId}`).trim(),\n400: agent_surface: String(payload.agent_surface || 'mcp').trim(),\n401: status: String(payload.status || 'connected'),\n457: agent_id: agentId,\n458: agent_surface: String(payload.agent_surface || 'mcp'),\n459: repo_scope: Array.isArray(payload.repo_scope) && payload.repo_scope.length > 0 ? payload.repo_scope : ['*'],\n\n[docs/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[dashboard/public/docs-content/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[src/cli.py]\n1603: - coding work that may benefit from prior repo context, conventions, or decisions\n1604: - UI, auth, architecture, or refactor tasks where earlier decisions may already exist in memory\n1613: Behavior rules:\n1614: - For normal repo work, start with a Velocity Brain lookup before substantial reasoning or edits.\n1615: - For implementation requests like \"update this login component\" or \"improve this UI\", use Velocity Brain first to check for prior repo context, auth decisions, design guidance, or related tasks.\n1622: - When the user shares durable project facts, decisions, meeting outcomes, repo conventions, or follow-up tasks, save a concise note with `ingest_text`.\n1623: - After completing a meaningful task, save a short summary of the confirmed outcome when it is likely to help future sessions.\n1624: - Prefer saving short structured summaries rather than full chat transcripts.\n2064: with _cloud_client() as client:\n2065: result = client.start_integration(args.provider, from_surface='integrations')\n2066: auth_url = result.get('authUrl') or result.get('auth_url')",
+      "reuse": {
+        "hit_type": "none",
+        "artifacts_used": [],
+        "confidence": 0.0,
+        "reuse_confidence": 0.0,
+        "reused": false
+      },
+      "savings": {
+        "avoided_input_tokens": 0,
+        "estimated_cost_without_reuse": 0.032652,
+        "estimated_cost_actual": 0.032652,
+        "estimated_cost_saved": 0.0,
+        "saved_percent": 0.0,
+        "estimated_latency_saved_ms": 0,
+        "input_tokens_actual": 10884,
+        "input_tokens_without_reuse": 10884
+      },
+      "truth_report": {
+        "reused": false,
+        "tokens_saved": 0,
+        "percent_saved": 0.0,
+        "correct_reuse": true
+      },
+      "debug": {
+        "why": "no reusable artifact cleared the matching thresholds",
+        "task_type": "repo_analysis",
+        "fingerprint_prefix": "b66f671b8b67",
+        "requested_context_paths": [
+          "backend/routes/hosted.js",
+          "dashboard/public/docs-content/codebase_analysis.md",
+          "docs/codebase_analysis.md",
+          "src/cli.py"
+        ],
+        "candidate_counts": {
+          "exact": 0,
+          "repo_context_same_repo": 0,
+          "semantic": 0
+        },
+        "matched_artifact_id": null,
+        "matched_artifact_kind": null,
+        "matched_source_run_id": null,
+        "confidence": 0.0,
+        "path_overlap": 0.0,
+        "skipped": [
+          "exact fingerprint miss",
+          "no same-repo artifact matched overlapping files strongly enough",
+          "semantic confidence below threshold"
+        ],
+        "latency_ms": {
+          "fingerprint": 0.015,
+          "cache_lookup": 0.003,
+          "artifact_scan": 0.191,
+          "ranking": 0.011,
+          "total": 0.296
+        }
+      },
+      "created_at": "2026-05-19T19:37:41.258305+00:00",
+      "failures": []
+    },
+    {
+      "run_id": "run-f452847629",
+      "result": "[backend/routes/hosted.js]\n328: agentInstanceId = '',\n329: agentSurface = 'mcp',\n330: modelProvider = 'unknown',\n368: agent_instance_id: agentInstanceId || '',\n369: agent_surface: agentSurface || 'mcp',\n370: model_provider: modelProvider || 'unknown',\n399: agent_instance_id: String(payload.agent_instance_id || `${agentId}-${repoId}`).trim(),\n400: agent_surface: String(payload.agent_surface || 'mcp').trim(),\n401: status: String(payload.status || 'connected'),\n457: agent_id: agentId,\n458: agent_surface: String(payload.agent_surface || 'mcp'),\n459: repo_scope: Array.isArray(payload.repo_scope) && payload.repo_scope.length > 0 ? payload.repo_scope : ['*'],\n\n[docs/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[dashboard/public/docs-content/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[src/cli.py]\n1603: - coding work that may benefit from prior repo context, conventions, or decisions\n1604: - UI, auth, architecture, or refactor tasks where earlier decisions may already exist in memory\n1613: Behavior rules:\n1614: - For normal repo work, start with a Velocity Brain lookup before substantial reasoning or edits.\n1615: - For implementation requests like \"update this login component\" or \"improve this UI\", use Velocity Brain first to check for prior repo context, auth decisions, design guidance, or related tasks.\n1622: - When the user shares durable project facts, decisions, meeting outcomes, repo conventions, or follow-up tasks, save a concise note with `ingest_text`.\n1623: - After completing a meaningful task, save a short summary of the confirmed outcome when it is likely to help future sessions.\n1624: - Prefer saving short structured summaries rather than full chat transcripts.\n2064: with _cloud_client() as client:\n2065: result = client.start_integration(args.provider, from_surface='integrations')\n2066: auth_url = result.get('authUrl') or result.get('auth_url')",
+      "reuse": {
+        "hit_type": "exact",
+        "artifacts_used": [
+          "de9cb85e-0338-46d4-bf98-4b3769ef0afe"
+        ],
+        "confidence": 1.0,
+        "reuse_confidence": 1.0,
+        "reused": true
+      },
+      "savings": {
+        "avoided_input_tokens": 10303,
+        "estimated_cost_without_reuse": 0.032652,
+        "estimated_cost_actual": 0.001743,
+        "estimated_cost_saved": 0.030909,
+        "saved_percent": 94.7,
+        "estimated_latency_saved_ms": 12373,
+        "input_tokens_actual": 581,
+        "input_tokens_without_reuse": 10884
+      },
+      "truth_report": {
+        "reused": true,
+        "tokens_saved": 10303,
+        "percent_saved": 94.7,
+        "correct_reuse": true
+      },
+      "debug": {
+        "why": "exact",
+        "task_type": "repo_analysis",
+        "fingerprint_prefix": "b66f671b8b67",
+        "requested_context_paths": [
+          "backend/routes/hosted.js",
+          "dashboard/public/docs-content/codebase_analysis.md",
+          "docs/codebase_analysis.md",
+          "src/cli.py"
+        ],
+        "candidate_counts": {
+          "exact": 1,
+          "repo_context_same_repo": 0,
+          "semantic": 0
+        },
+        "matched_artifact_id": "de9cb85e-0338-46d4-bf98-4b3769ef0afe",
+        "matched_artifact_kind": "summary",
+        "matched_source_run_id": "run-3833547446",
+        "confidence": 0.74,
+        "path_overlap": 1.0,
+        "skipped": [
+          "retrieval pipeline skipped because exact cache hit"
+        ],
+        "latency_ms": {
+          "fingerprint": 0.013,
+          "cache_lookup": 0.014,
+          "artifact_scan": 0.0,
+          "ranking": 0.0,
+          "total": 0.23
+        }
+      },
+      "created_at": "2026-05-19T19:37:41.415332+00:00",
+      "failures": []
+    }
+  ],
+  "savings_events": [
+    {
+      "run_id": "run-3833547446",
+      "avoided_input_tokens": 0,
+      "estimated_cost_without_reuse": 0.032652,
+      "estimated_cost_actual": 0.032652,
+      "estimated_cost_saved": 0.0,
+      "saved_percent": 0.0,
+      "estimated_latency_saved_ms": 0,
+      "input_tokens_actual": 10884,
+      "input_tokens_without_reuse": 10884,
+      "hit_type": "none",
+      "repo_id": "velocitybrain",
+      "user_id": "user::velocitybrain"
+    },
+    {
+      "run_id": "run-f452847629",
+      "avoided_input_tokens": 10303,
+      "estimated_cost_without_reuse": 0.032652,
+      "estimated_cost_actual": 0.001743,
+      "estimated_cost_saved": 0.030909,
+      "saved_percent": 94.7,
+      "estimated_latency_saved_ms": 12373,
+      "input_tokens_actual": 581,
+      "input_tokens_without_reuse": 10884,
+      "hit_type": "exact",
+      "repo_id": "velocitybrain",
+      "user_id": "user::velocitybrain"
+    }
+  ],
+  "failure_events": [],
+  "latency_events": [
+    {
+      "fingerprint_ms": 0.015099998563528061,
+      "cache_lookup_ms": 0.0034000004234258085,
+      "artifact_scan_ms": 0.19120000069960952,
+      "ranking_ms": 0.010699997801566496,
+      "total_ms": 0.2956000025733374
+    },
+    {
+      "fingerprint_ms": 0.013100001524435356,
+      "cache_lookup_ms": 0.014000001101521775,
+      "artifact_scan_ms": 0.0,
+      "ranking_ms": 0.0,
+      "total_ms": 0.22990000070421956
+    }
+  ],
+  "exact_cache": [
+    [
+      "0d3c9e5512bd2957cead6151bcad39f2ba5d42e86fa214581a87e7b56e8980cf",
+      "b663774e-65a7-417f-91ee-9999e0e75409"
+    ],
+    [
+      "b66f671b8b674702e824ce70a232abafe82d93b0973934193d6b89124be4bcf1",
+      "548bccaa-2af6-49ef-87b7-5b83e7bb7e35"
+    ]
+  ]
+}

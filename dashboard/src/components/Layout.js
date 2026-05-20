@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Activity, ArrowRight, BarChart3, Cpu, Database, LogOut, Menu, Settings, X } from './Icons';
+import { Activity, BarChart3, Cpu, Database, Key, LogOut, Menu, Settings, X } from './Icons';
 import Logo from './Logo';
 import BlobLoader from './BlobLoader';
 
@@ -9,7 +9,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Agents', href: '/dashboard/agents', icon: Cpu },
   { name: 'Integrations', href: '/dashboard/integrations', icon: Database },
-  { name: 'API Keys', href: '/dashboard/api-keys', icon: ArrowRight },
+  { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
   { name: 'Usage', href: '/dashboard/usage', icon: Activity },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings }
 ];
@@ -19,6 +19,14 @@ const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('vb_dashboard_sidebar_collapsed') === 'true';
+  });
+
+  React.useEffect(() => {
+    window.localStorage.setItem('vb_dashboard_sidebar_collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   const handleLogout = async () => {
     await logout();
@@ -45,23 +53,44 @@ const Layout = () => {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-56 border-r border-[#1c1c1c] bg-[#090909] transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-0 left-0 z-50 h-full border-r border-[#1c1c1c] bg-[#090909] transform transition-[width,transform] duration-300 ease-out lg:translate-x-0 ${
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-56'
+        } ${sidebarOpen ? 'translate-x-0 w-56' : '-translate-x-full w-56'}`}
       >
         <div className="h-full flex flex-col px-3 py-4">
           <div className="flex items-center justify-between mb-6 px-2">
             <Link to="/" className="flex items-center gap-2" onClick={() => setSidebarOpen(false)}>
               <Logo size={32} className="" />
-              <span className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>VelocityBrain</span>
-            </Link>
-            <button
-              type="button"
-              className="group lg:hidden w-8 h-8 rounded-lg bg-[#111] flex items-center justify-center text-zinc-400 transition-all duration-200 hover:text-white"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className="transition-transform duration-300 ease-out group-hover:rotate-180">
-                <X className="w-4 h-4" />
+              <span
+                className={`text-white font-bold text-sm whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                  sidebarCollapsed ? 'hidden lg:block lg:w-0 lg:opacity-0' : 'opacity-100'
+                }`}
+                style={{ fontFamily: 'Syne, sans-serif' }}
+              >
+                VelocityBrain
               </span>
-            </button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="hidden lg:flex w-8 h-8 rounded-lg bg-[#111] items-center justify-center text-zinc-400 transition-all duration-200 hover:bg-[#181818] hover:text-white"
+                onClick={() => setSidebarCollapsed((prev) => !prev)}
+                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <Menu className={`w-4 h-4 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+              </button>
+              <button
+                type="button"
+                className="group lg:hidden w-8 h-8 rounded-lg bg-[#111] flex items-center justify-center text-zinc-400 transition-all duration-200 hover:text-white"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close sidebar"
+              >
+                <span className="transition-transform duration-300 ease-out group-hover:rotate-180">
+                  <X className="w-4 h-4" />
+                </span>
+              </button>
+            </div>
           </div>
 
           <nav className="space-y-1 flex-1">
@@ -72,38 +101,68 @@ const Layout = () => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
                     isActive
                       ? 'bg-[#EA803A] text-black'
                       : 'text-zinc-400 hover:text-white hover:bg-[#111]'
-                  }`}
+                  } ${sidebarCollapsed ? 'justify-center lg:px-0' : 'gap-3'}`}
                   onClick={() => setSidebarOpen(false)}
+                  title={sidebarCollapsed ? item.name : undefined}
                 >
                   <Icon className="w-4 h-4" />
-                  <span>{item.name}</span>
+                  <span
+                    className={`whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                      sidebarCollapsed ? 'lg:w-0 lg:opacity-0' : 'opacity-100'
+                    }`}
+                  >
+                    {item.name}
+                  </span>
                 </Link>
               );
             })}
           </nav>
 
           <div className="pt-4 border-t border-[#1c1c1c]">
-            <div className="px-3 py-2 mb-2">
-              <p className="text-xs font-medium text-white truncate" style={{ fontFamily: 'Syne, sans-serif' }}>{user.name || user.email}</p>
-              <p className="text-[10px] text-zinc-500 truncate" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{user.email}</p>
+            <div className={`px-3 py-2 mb-2 transition-all duration-200 ${sidebarCollapsed ? 'lg:px-0' : ''}`}>
+              <p
+                className={`text-xs font-medium text-white truncate transition-all duration-200 ${
+                  sidebarCollapsed ? 'lg:text-center' : ''
+                }`}
+                style={{ fontFamily: 'Syne, sans-serif' }}
+              >
+                {sidebarCollapsed ? (user.name || user.email || 'U').slice(0, 1).toUpperCase() : (user.name || user.email)}
+              </p>
+              <p
+                className={`text-[10px] text-zinc-500 truncate transition-all duration-200 ${
+                  sidebarCollapsed ? 'lg:w-0 lg:opacity-0' : 'opacity-100'
+                }`}
+                style={{ fontFamily: 'JetBrains Mono, monospace' }}
+              >
+                {user.email}
+              </p>
             </div>
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-[#111] transition-colors"
+              className={`w-full flex items-center rounded-lg px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-[#111] transition-all duration-200 ${
+                sidebarCollapsed ? 'justify-center lg:px-0' : 'gap-3'
+              }`}
+              title={sidebarCollapsed ? 'Sign Out' : undefined}
             >
               <LogOut className="w-4 h-4" />
-              Sign Out
+              <span
+                className={`whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                  sidebarCollapsed ? 'lg:w-0 lg:opacity-0' : 'opacity-100'
+                }`}
+              >
+                Sign Out
+              </span>
             </button>
           </div>
         </div>
       </aside>
 
-      <div className="relative lg:pl-56">
+      <div className={`relative transition-[padding] duration-300 ease-out ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-56'}`}>
         <header className="sticky top-0 z-30 border-b border-[#1c1c1c] bg-[#090909]">
           <div className="flex items-center justify-between px-6 py-3">
             <div className="flex items-center gap-4">
@@ -111,6 +170,7 @@ const Layout = () => {
                 type="button"
                 className="lg:hidden w-8 h-8 rounded-lg bg-[#111] flex items-center justify-center text-zinc-400 hover:text-white"
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Open sidebar"
               >
                 <Menu className="w-4 h-4" />
               </button>

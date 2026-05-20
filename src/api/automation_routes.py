@@ -107,16 +107,27 @@ async def get_workflow_executions(
     """Get workflow execution history."""
     try:
         workflow_id = validator.validate_slug(workflow_id)
-        limit = validator.validate_numeric_range(limit, 1, 200)
-        
-        # This would query the database for execution history
-        # For now, return a mock response
-        executions = []
+        limit = max(1, min(limit, 200))
+        executions = visual_workflow.list_executions(workflow_id, limit=limit)
         
         return JSONResponse({
             "status": "success",
             "workflow_id": workflow_id,
-            "executions": executions,
+            "executions": [
+                {
+                    "execution_id": execution.execution_id,
+                    "workflow_id": execution.workflow_id,
+                    "status": execution.status,
+                    "current_nodes": execution.current_nodes,
+                    "completed_nodes": execution.completed_nodes,
+                    "variables": execution.variables,
+                    "logs": execution.logs,
+                    "started_at": execution.started_at.isoformat(),
+                    "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
+                    "error_message": execution.error_message,
+                }
+                for execution in executions
+            ],
             "total": len(executions),
             "limit": limit
         })

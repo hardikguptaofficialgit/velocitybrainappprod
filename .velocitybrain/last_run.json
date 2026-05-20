@@ -1,0 +1,73 @@
+{
+  "result": "[backend/routes/hosted.js]\n328: agentInstanceId = '',\n329: agentSurface = 'mcp',\n330: modelProvider = 'unknown',\n368: agent_instance_id: agentInstanceId || '',\n369: agent_surface: agentSurface || 'mcp',\n370: model_provider: modelProvider || 'unknown',\n399: agent_instance_id: String(payload.agent_instance_id || `${agentId}-${repoId}`).trim(),\n400: agent_surface: String(payload.agent_surface || 'mcp').trim(),\n401: status: String(payload.status || 'connected'),\n457: agent_id: agentId,\n458: agent_surface: String(payload.agent_surface || 'mcp'),\n459: repo_scope: Array.isArray(payload.repo_scope) && payload.repo_scope.length > 0 ? payload.repo_scope : ['*'],\n\n[docs/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[dashboard/public/docs-content/CODEBASE_ANALYSIS.md]\n12: This repository is not a tiny single-service app. It is closer to a product monorepo with four main surfaces:\n41: ## High-Level Architecture\n222: The architecture choice here is content-driven capability definition rather than hardcoding every workflow in Python.\n236: ## API Architecture\n\n[src/cli.py]\n1603: - coding work that may benefit from prior repo context, conventions, or decisions\n1604: - UI, auth, architecture, or refactor tasks where earlier decisions may already exist in memory\n1613: Behavior rules:\n1614: - For normal repo work, start with a Velocity Brain lookup before substantial reasoning or edits.\n1615: - For implementation requests like \"update this login component\" or \"improve this UI\", use Velocity Brain first to check for prior repo context, auth decisions, design guidance, or related tasks.\n1622: - When the user shares durable project facts, decisions, meeting outcomes, repo conventions, or follow-up tasks, save a concise note with `ingest_text`.\n1623: - After completing a meaningful task, save a short summary of the confirmed outcome when it is likely to help future sessions.\n1624: - Prefer saving short structured summaries rather than full chat transcripts.\n2064: with _cloud_client() as client:\n2065: result = client.start_integration(args.provider, from_surface='integrations')\n2066: auth_url = result.get('authUrl') or result.get('auth_url')",
+  "task": "Map the main architecture and likely edit surface for this repo.",
+  "repo_path": "C:\\Disk E\\Projects\\VelocityX\\velocitybrain",
+  "reused": true,
+  "reuse_confidence": 1.0,
+  "tokens_saved": 10303,
+  "percent_saved": 94.7,
+  "reuse": {
+    "hit_type": "exact",
+    "artifacts_used": [
+      "de9cb85e-0338-46d4-bf98-4b3769ef0afe"
+    ],
+    "confidence": 1.0,
+    "reuse_confidence": 1.0,
+    "reused": true
+  },
+  "savings": {
+    "avoided_input_tokens": 10303,
+    "estimated_cost_without_reuse": 0.032652,
+    "estimated_cost_actual": 0.001743,
+    "estimated_cost_saved": 0.030909,
+    "saved_percent": 94.7,
+    "estimated_latency_saved_ms": 12373,
+    "input_tokens_actual": 581,
+    "input_tokens_without_reuse": 10884
+  },
+  "truth_report": {
+    "reused": true,
+    "tokens_saved": 10303,
+    "percent_saved": 94.7,
+    "correct_reuse": true
+  },
+  "debug": {
+    "why": "exact",
+    "task_type": "repo_analysis",
+    "fingerprint_prefix": "b66f671b8b67",
+    "requested_context_paths": [
+      "backend/routes/hosted.js",
+      "dashboard/public/docs-content/codebase_analysis.md",
+      "docs/codebase_analysis.md",
+      "src/cli.py"
+    ],
+    "candidate_counts": {
+      "exact": 1,
+      "repo_context_same_repo": 0,
+      "semantic": 0
+    },
+    "matched_artifact_id": "de9cb85e-0338-46d4-bf98-4b3769ef0afe",
+    "matched_artifact_kind": "summary",
+    "matched_source_run_id": "run-3833547446",
+    "confidence": 0.74,
+    "path_overlap": 1.0,
+    "skipped": [
+      "retrieval pipeline skipped because exact cache hit"
+    ],
+    "latency_ms": {
+      "fingerprint": 0.013,
+      "cache_lookup": 0.014,
+      "artifact_scan": 0.0,
+      "ranking": 0.0,
+      "total": 0.23
+    }
+  },
+  "failures": [],
+  "selected_files": [
+    "backend/routes/hosted.js",
+    "docs/CODEBASE_ANALYSIS.md",
+    "dashboard/public/docs-content/CODEBASE_ANALYSIS.md",
+    "src/cli.py"
+  ],
+  "run_id": "run-f452847629"
+}

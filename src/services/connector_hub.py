@@ -22,11 +22,12 @@ class ConnectorHubService:
                 'supported': sorted(self.SUPPORTED),
             }
         return {
-            'status': 'simulated_success',
+            'status': 'not_configured',
             'connector': c,
             'action': action,
             'payload': payload,
             'at': datetime.now(timezone.utc).isoformat(),
+            'message': f'{c} connector is not configured for real execution.',
         }
 
     def unified_sync(self, objective: str, connectors: list[str]) -> dict[str, Any]:

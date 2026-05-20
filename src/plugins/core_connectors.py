@@ -1,12 +1,26 @@
+from datetime import datetime, timezone
+
+
 class CoreConnectors:
+    def _not_configured(self, channel: str, payload: dict, *, provider: str | None = None, action: str | None = None) -> dict:
+        return {
+            'status': 'not_configured',
+            'channel': channel,
+            'provider': provider,
+            'action': action,
+            'payload': payload,
+            'at': datetime.now(timezone.utc).isoformat(),
+            'message': f'{channel} connector is not configured for real delivery.',
+        }
+
     def send_email(self, payload: dict) -> dict:
-        return {'status': 'simulated_success', 'channel': 'email', 'payload': payload}
+        return self._not_configured('email', payload)
 
     def schedule_calendar(self, payload: dict) -> dict:
-        return {'status': 'simulated_success', 'channel': 'calendar', 'payload': payload}
+        return self._not_configured('calendar', payload)
 
     def send_message(self, payload: dict) -> dict:
-        return {'status': 'simulated_success', 'channel': 'messaging', 'payload': payload}
+        return self._not_configured('messaging', payload)
 
     def google_workspace(self, action: str, payload: dict) -> dict:
         supported = {'gmail.send', 'calendar.schedule', 'drive.create_note'}
@@ -18,9 +32,4 @@ class CoreConnectors:
                 'requested_action': action,
                 'payload': payload,
             }
-        return {
-            'status': 'simulated_success',
-            'provider': 'google_workspace',
-            'action': action,
-            'payload': payload,
-        }
+        return self._not_configured('google_workspace', payload, provider='google_workspace', action=action)

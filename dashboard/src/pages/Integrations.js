@@ -188,6 +188,7 @@ export default function Integrations() {
           const toneKey = integration?.connected
             ? (integration?.lastSyncStatus === 'queued' ? 'syncing' : 'connected')
             : (integration?.status || 'not_connected');
+          const connectionMode = integration?.connectionMode || (integration?.isSimulated ? 'demo' : 'live');
 
           return (
             <div key={provider.id} className="rounded-2xl border border-[#1c1c1c] bg-[#0d0d0d] p-5">
@@ -210,7 +211,17 @@ export default function Integrations() {
 
               <p className="mt-4 text-sm leading-6 text-zinc-400">{provider.description}</p>
 
+              {connectionMode === 'demo' && (
+                <div className="mt-4 rounded-xl border border-[#EA803A33] bg-[#EA803A14] p-3 text-xs text-[#f7c7a5]">
+                  Demo mode: this connection was created without real provider credentials. It is useful for UI validation, but it is not syncing live source data yet.
+                </div>
+              )}
+
               <div className="mt-5 space-y-3 rounded-xl border border-[#1c1c1c] bg-[#101010] p-4">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-500">Mode</span>
+                  <span className="text-zinc-300">{connectionMode === 'demo' ? 'Demo' : 'Live'}</span>
+                </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-500">Display name</span>
                   <span className="text-zinc-300">{integration?.displayName || 'Not connected yet'}</span>
