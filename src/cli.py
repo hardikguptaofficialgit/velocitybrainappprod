@@ -1299,7 +1299,7 @@ def _doctor_payload() -> dict[str, Any]:
         checks['database'] = False
 
     checks['skills_path'] = SkillRegistry(settings.skills_path).skills_root.exists()
-    checks['identity_spec'] = Path(settings.identity_spec_path).exists() or True
+    checks['identity_spec'] = Path(settings.identity_spec_path).exists()
     return {'ok': all(checks.values()), 'checks': checks, 'trace_id': 'doctor-check'}
 
 

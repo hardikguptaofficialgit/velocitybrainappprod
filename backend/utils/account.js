@@ -77,9 +77,33 @@ const buildDicebearAvatarUrl = ({ style, seed, background }) => (
 
 const CURATED_AVATAR_URLS = new Set(CURATED_AVATAR_DEFINITIONS.map(buildDicebearAvatarUrl));
 
+const isHostedAvatarUrl = (value) => {
+    const normalized = sanitizeText(value, 400);
+    if (!normalized) return false;
+    try {
+        const parsed = new URL(normalized);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+            return false;
+        }
+        if (parsed.hostname === 'res.cloudinary.com' && parsed.pathname.includes('/velocitybrain/')) {
+            return true;
+        }
+        if (parsed.hostname === 'api.dicebear.com' && parsed.pathname.startsWith('/9.x/')) {
+            return true;
+        }
+        return false;
+    } catch {
+        return false;
+    }
+};
+
 const sanitizeAvatarUrl = (value) => {
     const normalized = sanitizeText(value, 400);
-    return CURATED_AVATAR_URLS.has(normalized) ? normalized : '';
+    if (!normalized) return '';
+    if (CURATED_AVATAR_URLS.has(normalized) || isHostedAvatarUrl(normalized)) {
+        return normalized;
+    }
+    return '';
 };
 
 const slugify = (value) => sanitizeText(value, 120)
@@ -282,6 +306,7 @@ const toPublicUser = (id, user = {}) => ({
     company: user.company || '',
     accountType: user.account_type || '',
     avatarUrl: user.avatar_url || '',
+    twoFactorEnabled: Boolean(user['2fa_enabled']),
     workspaceId: user.workspace_id || '',
     workspaceIds: Array.isArray(user.workspace_ids) ? user.workspace_ids : [],
     onboardingCompleted: Boolean(user.onboarding_completed),

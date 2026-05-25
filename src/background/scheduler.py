@@ -1,8 +1,13 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timezone
+
 from src.core.db import get_conn
+from src.core.logging_config import get_logger
+from src.services.maintenance_service import MaintenanceService
 
 scheduler = BackgroundScheduler(timezone='UTC')
+logger = get_logger('scheduler')
+_maintenance = MaintenanceService()
 
 
 def _mark_job(job_name: str, status: str):
@@ -20,20 +25,30 @@ def _mark_job(job_name: str, status: str):
             conn.commit()
 
 
+def _run_job(job_name: str, handler):
+    try:
+        stats = handler()
+        _mark_job(job_name, 'ok')
+        logger.info(f'{job_name} finished', extra={'stats': stats})
+    except Exception as exc:
+        _mark_job(job_name, 'error')
+        logger.error(f'{job_name} failed', extra={'error': str(exc)})
+
+
 def consolidate_memory():
-    _mark_job('memory_consolidation', 'ok')
+    _run_job('memory_consolidation', _maintenance.consolidate_memory)
 
 
 def enrich_entities():
-    _mark_job('entity_enrichment', 'ok')
+    _run_job('entity_enrichment', _maintenance.enrich_entities)
 
 
 def dedup_merge():
-    _mark_job('duplicate_merge', 'ok')
+    _run_job('duplicate_merge', _maintenance.dedup_merge)
 
 
 def generate_insights():
-    _mark_job('insight_generation', 'ok')
+    _run_job('insight_generation', _maintenance.generate_insights)
 
 
 def start_scheduler():

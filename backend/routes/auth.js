@@ -1,10 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
 const { auth, db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
 const { generateToken, authenticate } = require('../middleware/auth');
 const { ACCESS_POLICY } = require('../config/access');
-const { authenticator } = require('otpauth');
+const OTPAuth = require('otpauth');
 const QRCode = require('qrcode');
 const {
     buildDefaultUserSettings,
@@ -16,6 +17,37 @@ const {
 } = require('../utils/account');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'velocitybrain-dev-secret';
+const TWO_FACTOR_CHALLENGE_PURPOSE = '2fa-auth';
+
+const buildTotp = ({ secret, label, issuer = 'VelocityBrain' }) => new OTPAuth.TOTP({
+    issuer,
+    label,
+    secret
+});
+
+const generateTotpSecret = () => new OTPAuth.Secret().base32;
+
+const generateTwoFactorChallengeToken = (userId, channel) => jwt.sign({
+    userId,
+    purpose: TWO_FACTOR_CHALLENGE_PURPOSE,
+    channel
+}, JWT_SECRET, { expiresIn: '10m' });
+
+const verifyTotpCode = ({ token, secret, label = 'VelocityBrain User' }) => (
+    buildTotp({ secret, label }).validate({
+        token: String(token || '').trim(),
+        window: 1
+    }) !== null
+);
+
+const buildTwoFactorChallengeResponse = ({ user, channel, message }) => ({
+    success: true,
+    requiresTwoFactor: true,
+    challengeToken: generateTwoFactorChallengeToken(user.id, channel),
+    user: toPublicUser(user.id, user.data()),
+    message
+});
 
 const getWorkspacePayload = async (workspaceId) => {
     if (!workspaceId) return null;
@@ -128,6 +160,14 @@ router.post('/login', [
             return res.status(401).json({ success: false, message: 'Account is inactive' });
         }
 
+        if (user['2fa_enabled']) {
+            return res.status(202).json(buildTwoFactorChallengeResponse({
+                user: userDoc,
+                channel: 'password',
+                message: 'Two-factor authentication is required to complete sign-in.'
+            }));
+        }
+
         // Generate token
         const token = generateToken(userDoc.id);
 
@@ -213,6 +253,13 @@ router.patch('/profile', authenticate, [
 // Setup 2FA
 router.post('/2fa/setup', authenticate, async (req, res) => {
     try {
+        if (!firebaseInitialized) {
+            return res.status(503).json({
+                success: false,
+                message: 'Firebase not configured. Please set up Firebase credentials.'
+            });
+        }
+
         const user = await db.collection(COLLECTIONS.USERS).doc(req.user.id).get();
         if (!user.exists) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -221,12 +268,12 @@ router.post('/2fa/setup', authenticate, async (req, res) => {
         const userData = user.data();
 
         // Generate a unique secret for this user
-        const secret = authenticator.generateSecret();
+        const secret = generateTotpSecret();
         const issuer = 'VelocityBrain';
         const label = userData.email;
 
         // Generate OTPAuth URI for QR code
-        const uri = authenticator.keyuri(label, issuer, secret);
+        const uri = buildTotp({ secret, label, issuer }).toString();
 
         // Generate QR code as data URL
         const qrCodeDataURL = await QRCode.toDataURL(uri);
@@ -242,6 +289,11 @@ router.post('/2fa/setup', authenticate, async (req, res) => {
             success: true,
             secret,
             qrCode: qrCodeDataURL,
+            user: toPublicUser(user.id, {
+                ...userData,
+                '2fa_secret': secret,
+                '2fa_enabled': false
+            }),
             message: 'Scan the QR code with your authenticator app, then verify to enable 2FA'
         });
     } catch (error) {
@@ -278,9 +330,10 @@ router.post('/2fa/verify', authenticate, async (req, res) => {
         }
 
         // Verify the token
-        const isValid = authenticator.verify({
+        const isValid = verifyTotpCode({
             token,
-            secret: userData['2fa_secret']
+            secret: userData['2fa_secret'],
+            label: userData.email || 'VelocityBrain User'
         });
 
         if (!isValid) {
@@ -292,10 +345,12 @@ router.post('/2fa/verify', authenticate, async (req, res) => {
             '2fa_enabled': true,
             updated_at: new Date().toISOString()
         });
+        const refreshedUser = await db.collection(COLLECTIONS.USERS).doc(req.user.id).get();
 
         res.json({
             success: true,
-            message: '2FA enabled successfully'
+            message: '2FA enabled successfully',
+            user: toPublicUser(refreshedUser.id, refreshedUser.data())
         });
     } catch (error) {
         console.error('2FA verify error:', error);
@@ -331,9 +386,10 @@ router.post('/2fa/disable', authenticate, async (req, res) => {
         }
 
         // Verify the token before disabling
-        const isValid = authenticator.verify({
+        const isValid = verifyTotpCode({
             token,
-            secret: userData['2fa_secret']
+            secret: userData['2fa_secret'],
+            label: userData.email || 'VelocityBrain User'
         });
 
         if (!isValid) {
@@ -346,14 +402,96 @@ router.post('/2fa/disable', authenticate, async (req, res) => {
             '2fa_secret': null,
             updated_at: new Date().toISOString()
         });
+        const refreshedUser = await db.collection(COLLECTIONS.USERS).doc(req.user.id).get();
 
         res.json({
             success: true,
-            message: '2FA disabled successfully'
+            message: '2FA disabled successfully',
+            user: toPublicUser(refreshedUser.id, refreshedUser.data())
         });
     } catch (error) {
         console.error('2FA disable error:', error);
         res.status(500).json({ success: false, message: 'Failed to disable 2FA' });
+    }
+});
+
+router.post('/2fa/complete', [
+    body('challengeToken').notEmpty().trim(),
+    body('token').notEmpty().trim()
+], async (req, res) => {
+    try {
+        if (!firebaseInitialized) {
+            return res.status(503).json({
+                success: false,
+                message: 'Firebase not configured. Please set up Firebase credentials.'
+            });
+        }
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
+
+        let challenge;
+        try {
+            challenge = jwt.verify(req.body.challengeToken, JWT_SECRET);
+        } catch (error) {
+            return res.status(401).json({
+                success: false,
+                message: error?.name === 'TokenExpiredError'
+                    ? 'Two-factor challenge expired. Please sign in again.'
+                    : 'Invalid two-factor challenge.'
+            });
+        }
+
+        if (challenge.purpose !== TWO_FACTOR_CHALLENGE_PURPOSE || !challenge.userId) {
+            return res.status(401).json({ success: false, message: 'Invalid two-factor challenge.' });
+        }
+
+        const userDoc = await db.collection(COLLECTIONS.USERS).doc(challenge.userId).get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const userData = userDoc.data();
+        if (userData.status !== 'active') {
+            return res.status(401).json({ success: false, message: 'Account is inactive' });
+        }
+
+        if (!userData['2fa_enabled'] || !userData['2fa_secret']) {
+            return res.status(400).json({
+                success: false,
+                message: 'Two-factor authentication is not enabled for this account.'
+            });
+        }
+
+        const isValid = verifyTotpCode({
+            token: req.body.token,
+            secret: userData['2fa_secret'],
+            label: userData.email || 'VelocityBrain User'
+        });
+
+        if (!isValid) {
+            return res.status(400).json({ success: false, message: 'Invalid token' });
+        }
+
+        const token = generateToken(userDoc.id);
+        const workspace = await getWorkspacePayload(userData.workspace_id);
+
+        res.json({
+            success: true,
+            message: 'Two-factor sign-in complete.',
+            access: {
+                label: ACCESS_POLICY.limitedAccessLabel,
+                message: ACCESS_POLICY.publicAccessMessage
+            },
+            user: toPublicUser(userDoc.id, userData),
+            workspace,
+            token
+        });
+    } catch (error) {
+        console.error('2FA completion error:', error);
+        res.status(500).json({ success: false, message: 'Failed to complete two-factor sign-in' });
     }
 });
 
@@ -445,6 +583,14 @@ router.post('/firebase-session', [
             await settingsRef.set(buildDefaultUserSettings());
         } else {
             await settingsRef.set(mergeSettings(settingsDoc.data()));
+        }
+
+        if (userData['2fa_enabled']) {
+            return res.status(202).json(buildTwoFactorChallengeResponse({
+                user: userDoc,
+                channel: 'firebase',
+                message: 'Two-factor authentication is required to complete sign-in.'
+            }));
         }
 
         // Generate JWT token

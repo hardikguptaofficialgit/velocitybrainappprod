@@ -16,6 +16,7 @@ const hostedRoutes = require('./routes/hosted');
 const dashboardRoutes = require('./routes/dashboard');
 const settingsRoutes = require('./routes/settings');
 const integrationsRoutes = require('./routes/integrations');
+const onboardingRoutes = require('./routes/onboarding');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -133,6 +134,7 @@ app.get('/api/docs/:docName', (req, res) => {
 app.use('/v1', hostedRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api/usage', usageRoutes);

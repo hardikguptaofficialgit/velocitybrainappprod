@@ -36,7 +36,77 @@
   --clay-radius-lg: 28px;
   --clay-radius-xl: 36px;
 }
+/* Minimal Premium Scrollbar */
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.14) transparent;
+}
+
+html {
+  overflow-y: overlay;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+
+  transition:
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255,255,255,0.28);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Dark Mode Refinement */
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.16);
+}
+
+.dark ::-webkit-scrollbar-thumb:active {
+  background: rgba(255,255,255,0.22);
+}
+
+/* Optional Ultra Minimal Auto Fade */
+
+body::-webkit-scrollbar-thumb {
+  transition:
+    background 0.25s ease,
+    opacity 0.25s ease;
+}
+
+body:not(:hover)::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+}
 .dark {
   /* Dark Mode - Pastel Dark Colors */
   --clay-bg: #1a1a2e;

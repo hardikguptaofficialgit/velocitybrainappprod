@@ -1,5 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './App.css';
 
@@ -33,9 +35,13 @@ const AppShellFallback = () => (
   </div>
 );
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
     <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <div className="min-h-screen">
               <Suspense fallback={<AppShellFallback />}>
@@ -81,6 +87,8 @@ function App() {
               </Suspense>
             </div>
           </Router>
+        </AuthProvider>
+      </QueryClientProvider>
   </ThemeProvider>
   );
 }

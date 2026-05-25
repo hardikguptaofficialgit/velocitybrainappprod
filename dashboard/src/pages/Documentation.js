@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, Cpu, Database, Terminal, Zap, Menu, X } from '../components/Icons';
 import Logo from '../components/Logo';
+import { useAuth } from '../contexts/AuthContext';
 
 // --- Markdown Parser ---
 function renderInline(text) {
@@ -305,6 +306,7 @@ const pageDescriptions = {
 
 // --- Main Component ---
 const Documentation = () => {
+  const { user, loading: authLoading } = useAuth();
   const location = useLocation();
   const [docContent, setDocContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -318,6 +320,9 @@ const Documentation = () => {
     () => stripDuplicateLeadingHeading(docContent, currentNavItem.title),
     [docContent, currentNavItem.title]
   );
+  const accountHref = user ? (user.onboardingCompleted ? '/dashboard' : '/onboarding') : '/login';
+  const accountLabel = authLoading ? 'Checking...' : user ? (user.onboardingCompleted ? 'Dashboard' : 'Continue Setup') : 'Sign in';
+  const primaryCtaLabel = authLoading ? 'Loading...' : user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Start Free';
 
   useEffect(() => {
     let cancelled = false;
@@ -516,14 +521,14 @@ const Documentation = () => {
                 Research
               </Link>
               <div className="w-px h-4 bg-zinc-800" />
-              <Link to="/login" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
-                Sign in
+              <Link to={accountHref} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
+                {accountLabel}
               </Link>
               <Link
-                to="/login"
+                to={accountHref}
                 className="rounded-full bg-white/10 hover:bg-white/20 px-4 py-1.5 text-sm font-semibold text-white transition-all backdrop-blur-md border border-white/10"
               >
-                Start Free
+                {primaryCtaLabel}
               </Link>
             </div>
 
@@ -612,10 +617,10 @@ const Documentation = () => {
                   </p>
                 </div>
                 <Link
-                  to="/login"
+                  to={accountHref}
                   className="group flex items-center gap-2 rounded-full bg-[#EA803A] px-6 py-2.5 text-sm font-semibold text-black hover:bg-[#f39556] transition-colors whitespace-nowrap shadow-[0_0_20px_rgba(234,128,58,0.2)]"
                 >
-                  Start Building <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  {user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Start Building'} <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
             )}

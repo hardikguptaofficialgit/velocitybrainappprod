@@ -1,4 +1,5 @@
 const request = require('supertest');
+const OTPAuth = require('otpauth');
 
 process.env.INTERNAL_USAGE_SECRET = 'test-usage-secret';
 process.env.ALLOW_PUBLIC_SIGNUP = 'false';
@@ -271,6 +272,33 @@ describe('Backend API', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.user.email).toBe('user@example.com');
         expect(response.body.settings.notifications.emailAlerts).toBe(true);
+    });
+
+    test('2FA setup and verify flow works', async () => {
+        const setupResponse = await request(app)
+            .post('/api/auth/2fa/setup')
+            .set('Authorization', 'Bearer test-token');
+
+        expect(setupResponse.statusCode).toBe(200);
+        expect(setupResponse.body.success).toBe(true);
+        expect(setupResponse.body.secret).toBeTruthy();
+        expect(setupResponse.body.qrCode.startsWith('data:image/png;base64,')).toBe(true);
+        expect(setupResponse.body.user.twoFactorEnabled).toBe(false);
+
+        const totp = new OTPAuth.TOTP({
+            issuer: 'VelocityBrain',
+            label: 'user@example.com',
+            secret: setupResponse.body.secret
+        });
+
+        const verifyResponse = await request(app)
+            .post('/api/auth/2fa/verify')
+            .set('Authorization', 'Bearer test-token')
+            .send({ token: totp.generate() });
+
+        expect(verifyResponse.statusCode).toBe(200);
+        expect(verifyResponse.body.success).toBe(true);
+        expect(verifyResponse.body.user.twoFactorEnabled).toBe(true);
     });
 
     test('api key routes can create and list keys', async () => {

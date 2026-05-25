@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { useLocation } from 'react-router-dom';
 import BlobLoader from '../components/BlobLoader';
-import { AlertTriangle, ArrowRight, CheckCircle, Database, Github, Google, RefreshCw, X } from '../components/Icons';
+import { AlertTriangle, ArrowRight, CheckCircle, Github, Google, RefreshCw, X } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
 

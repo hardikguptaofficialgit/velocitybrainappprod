@@ -7,6 +7,7 @@ import { isBackendUnavailable } from '../lib/network';
 import BlobLoader from '../components/BlobLoader';
 import MinimalSelect from '../components/MinimalSelect';
 import { supportedAgents } from '../lib/agentRuntime';
+import { INTEGRATIONS_COMING_SOON } from '../lib/productFlags';
 import AgentBrandIcon from '../components/AgentBrandIcon';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -101,7 +102,9 @@ const ApiKeys = () => {
     }
   );
 
-  const companyNeedsSources = user?.accountType === 'company' && (integrationsStatus?.connectedSourceCount || 0) === 0;
+  const companyNeedsSources = !INTEGRATIONS_COMING_SOON
+    && user?.accountType === 'company'
+    && (integrationsStatus?.connectedSourceCount || 0) === 0;
 
   const createKeyMutation = useMutation(
     async (keyData) => {

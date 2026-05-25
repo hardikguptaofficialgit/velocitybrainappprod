@@ -38,11 +38,11 @@ export const agentLogoCatalog = {
   },
   cline: {
     sources: [
+      'https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-avatar/avatars/cline.webp',
       'https://svgl.app/library/cline.svg',
-      'https://svgl.app/cline.svg',
-      'https://svgl.app/library/visual-studio-code.svg'
+      'https://svgl.app/cline.svg'
     ],
-    frameClassName: 'border-[#262626] bg-[#161616]'
+    frameClassName: 'border-[#2d333b] bg-[#313B43]'
   }
 };
 

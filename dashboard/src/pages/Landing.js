@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Dialog from '../components/ui/Dialog';
 import AgentBrandIcon from '../components/AgentBrandIcon';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowRight,
   Database,
@@ -260,6 +262,7 @@ const researchFeature = {
 const simplifiedAgents = supportedAgents.slice(0, 4);
 
 export default function Landing() {
+  const { user, loading } = useAuth();
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [launchModalOpen, setLaunchModalOpen] = useState(false);
@@ -267,6 +270,10 @@ export default function Landing() {
   const [HillsComponent, setHillsComponent] = useState(null);
   const [copiedSetup, setCopiedSetup] = useState('');
   const [activeAnnouncement, setActiveAnnouncement] = useState(0);
+  const accountHref = user ? (user.onboardingCompleted ? '/dashboard' : '/onboarding') : '/login';
+  const accountLabel = loading ? 'Checking...' : user ? (user.onboardingCompleted ? 'Dashboard' : 'Continue Setup') : 'Sign In';
+  const primaryCtaLabel = loading ? 'Loading...' : user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Start Now';
+  const footerCtaLabel = loading ? 'Loading...' : user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Start Free';
 
   useEffect(() => {
     const onScroll = () => setNavScrolled(window.scrollY > 30);
@@ -376,15 +383,15 @@ export default function Landing() {
             </div>
 
             <div className="hidden md:flex items-center gap-4">
-              <a href="/docs" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+              <Link to="/docs" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
                 Docs
-              </a>
-              <a href="/research" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+              </Link>
+              <Link to="/research" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
                 Research
-              </a>
-              <a href="/company-brain" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+              </Link>
+              <Link to="/company-brain" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
                 Company Brain
-              </a>
+              </Link>
               <button
                 type="button"
                 onClick={() => setTimelineModalOpen(true)}
@@ -405,18 +412,18 @@ export default function Landing() {
             </div>
 
             <div className="hidden md:flex items-center gap-3">
-              <a href="/login" className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
-                Sign In
-              </a>
-              <a
-                href="/login"
+              <Link to={accountHref} className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+                {accountLabel}
+              </Link>
+              <Link
+                to={accountHref}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-black"
                 style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f0965a')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#EA803A')}
               >
-                Start Now
-              </a>
+                {primaryCtaLabel}
+              </Link>
             </div>
 
             <button
@@ -440,27 +447,27 @@ export default function Landing() {
             style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}
           >
             <div className="flex flex-col gap-2.5">
-              <a
-                href="/docs"
+              <Link
+                to="/docs"
                 className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Docs
-              </a>
-              <a
-                href="/research"
+              </Link>
+              <Link
+                to="/research"
                 className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Research
-              </a>
-              <a
-                href="/company-brain"
+              </Link>
+              <Link
+                to="/company-brain"
                 className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Company Brain
-              </a>
+              </Link>
               <button
                 type="button"
                 onClick={() => {
@@ -482,21 +489,21 @@ export default function Landing() {
                 <span>GitHub</span>
               </a>
               <div className="h-px bg-[#222] my-1" />
-              <a
-                href="/login"
+              <Link
+                to={accountHref}
                 className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Sign In
-              </a>
-              <a
-                href="/login"
+                {accountLabel}
+              </Link>
+              <Link
+                to={accountHref}
                 className="w-full px-4 py-2 rounded-lg text-[13px] font-bold text-black text-center mt-1"
                 style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Start Now
-              </a>
+                {primaryCtaLabel}
+              </Link>
             </div>
           </div>
         )}
@@ -516,13 +523,13 @@ export default function Landing() {
         maxWidth="max-w-xl"
         footer={
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-            <a
-              href="/docs"
+            <Link
+              to="/docs"
               className="w-full sm:w-auto px-4 py-2 rounded-lg text-[13px] font-bold text-black text-center syne"
               style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
             >
               Explore Docs
-            </a>
+            </Link>
             <button
               type="button"
               onClick={() => setLaunchModalOpen(false)}
@@ -1100,22 +1107,22 @@ export default function Landing() {
               Velocity Brain helps your AI start with better context, reuse prior work, and waste less money rediscovering the same information over and over again.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <a
-                href="/login"
+              <Link
+                to={accountHref}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-black text-[13px] syne"
                 style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f0965a')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#EA803A')}
               >
-                Start Free
-              </a>
-              <a
-                href="/docs"
+                {footerCtaLabel}
+              </Link>
+              <Link
+                to="/docs"
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-zinc-300 text-[13px] border border-[#333] bg-[#111] syne"
                 style={{ boxShadow: '2px 2px 0 #000' }}
               >
                 Read the Docs
-              </a>
+              </Link>
             </div>
           </Clay>
         </Fade>
@@ -1138,13 +1145,13 @@ export default function Landing() {
                 ['Privacy', '/privacy'],
                 ['Terms', '/terms'],
               ].map(([label, path]) => (
-                <a
+                <Link
                   key={label}
-                  href={path}
+                  to={path}
                   className="text-[12px] font-medium text-zinc-500 hover:text-[#EA803A] transition-colors"
                 >
                   {label}
-                </a>
+                </Link>
               ))}
             </div>
           </div>

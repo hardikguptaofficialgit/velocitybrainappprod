@@ -24,19 +24,12 @@ class AgentLoop:
         self.knowledge_graph = KnowledgeGraphService()
         self.business_intel = BusinessIntelligenceService()
 
-    def _detect_intent(self, signal: str) -> str:
+    def _detect_intent(self, signal: str, semantic_analysis: Optional[Any] = None) -> str:
         """Enhanced intent detection using semantic understanding."""
-        # Use semantic understanding for more accurate intent detection
-        semantic_analysis = self.semantic.analyze_intent(signal)
-        
-        # Combine semantic analysis with rule-based detection
+        analysis = semantic_analysis or self.semantic.analyze_intent(signal)
         rule_intent = self._rule_based_intent_detection(signal)
-        
-        # Trust semantic analysis more if confidence is high
-        if semantic_analysis.confidence > 0.7:
-            return semantic_analysis.intent
-        
-        # Fall back to rule-based detection
+        if analysis.confidence > 0.7:
+            return analysis.intent
         return rule_intent
     
     def _rule_based_intent_detection(self, signal: str) -> str:
@@ -50,7 +43,7 @@ class AgentLoop:
             return 'query'
         return 'ingestion'
 
-    def _plan(self, intent: str, signal: str, context: list[dict]) -> list[dict]:
+    def _plan(self, intent: str, signal: str, context: list[dict], semantic_analysis: Optional[Any] = None) -> list[dict]:
         """Enhanced planning with predictive analytics and knowledge graph insights."""
         plan: list[dict] = []
         context_entities = [{'slug': item['slug'], 'type': 'entity'} for item in context if 'slug' in item]
@@ -84,29 +77,22 @@ class AgentLoop:
             ])
         
         elif intent == 'query':
-            # Enhanced query with semantic understanding and knowledge graph
-            semantic_analysis = self.semantic.analyze_intent(signal)
-            
-            # Use semantic context for better retrieval
-            enhanced_context = []
-            for item in context:
-                # Boost items with high semantic similarity
-                item['semantic_relevance'] = semantic_analysis.confidence
-                enhanced_context.append(item)
-            
-            # Find related entities using knowledge graph
+            semantic_analysis = semantic_analysis or self.semantic.analyze_intent(signal)
+            enhanced_context = [
+                {**item, 'semantic_relevance': semantic_analysis.confidence}
+                for item in context
+            ]
             if context and context_entities:
-                primary_entity = context[0]['slug'] if context else None
-                if primary_entity:
-                    related_entities = self.knowledge_graph.get_neighbors(primary_entity, depth=2)
+                primary_entity = context[0]['slug']
+                try:
+                    related_entities = self.knowledge_graph.get_neighbors(primary_entity, depth=1)
                     enhanced_context.extend([
                         {'slug': rel['slug'], 'type': 'related_entity', 'relationship': rel['relationship_type']}
-                        for rel in related_entities
+                        for rel in related_entities[:5]
                     ])
-            
+                except Exception as exc:
+                    self.logger.warning('knowledge_graph neighbors skipped', extra={'error': str(exc)})
             plan.extend([
-                {'step': 'semantic_enhancement', 'action_type': 'nlp.enhance', 'payload': {'semantic_analysis': semantic_analysis}},
-                {'step': 'knowledge_graph_traversal', 'action_type': 'graph.traverse', 'payload': {'central_entities': self.knowledge_graph.get_central_entities()}},
                 {'step': 'collect_enhanced_context', 'action_type': 'query.aggregate', 'payload': {'enhanced_context': enhanced_context}},
                 {'step': 'generate_response', 'action_type': 'response.generate', 'payload': {'semantic_analysis': semantic_analysis}},
             ])
@@ -179,9 +165,8 @@ class AgentLoop:
         run_id = str(uuid.uuid4())
         trace_id = str(uuid.uuid4())
         
-        # Enhanced intent detection using semantic understanding
-        intent = self._detect_intent(signal)
         semantic_analysis = self.semantic.analyze_intent(signal)
+        intent = self._detect_intent(signal, semantic_analysis=semantic_analysis)
         
         # Get context with enhanced retrieval
         try:
@@ -216,7 +201,7 @@ class AgentLoop:
             insights = self.business_intel.generate_insights(kpis)
         
         # Enhanced planning with predictive analytics and knowledge graph
-        plan = self._plan(intent, signal, context)
+        plan = self._plan(intent, signal, context, semantic_analysis=semantic_analysis)
         
         # Execute with enhanced context
         actions = self.execution.execute(plan)
