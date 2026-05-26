@@ -13,7 +13,7 @@ npm install
 npm start
 ```
 
-The local dev server uses `REACT_APP_API_URL` when it is set. If that value points to `http://localhost:5001`, local requests go directly to the backend.
+The local dev server uses `REACT_APP_API_URL` when it is set (default local stack: `http://localhost:5004`, matching `backend/.env` `PORT`). The `package.json` `proxy` should use the same port for relative `/api` calls.
 
 ## Vercel deployment
 

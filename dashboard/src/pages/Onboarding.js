@@ -27,7 +27,7 @@ const accountCards = [
     eyebrow: 'For teams',
     title: 'Company workspace',
     description: 'Best if you want a shared control plane for engineering teams, repositories, Slack, email, and coding agents.',
-    prompt: 'Slack, Google Workspace, and GitHub connections are coming soon. You can finish setup and connect sources later.'
+    prompt: 'Connect Slack, Google Workspace, and GitHub during setup, or skip and connect later from the dashboard.'
   },
   {
     id: 'individual',
@@ -348,13 +348,20 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [skipIntegrationsConfirmed, setSkipIntegrationsConfirmed] = useState(false);
+  const [connectingProvider, setConnectingProvider] = useState(null);
   const [statusBanner, setStatusBanner] = useState(null);
   const [error, setError] = useState('');
+  const [velaiServerComplete, setVelaiServerComplete] = useState(
+    () => Boolean(form.onboardingSelections?.velaiProfileComplete)
+  );
   const hydratedDraftRef = useRef(false);
 
   const infoCollectionMode = form.onboardingSelections?.infoCollectionMode || INFO_MODES.UNSET;
   const effectiveInfoMode = infoCollectionMode === INFO_MODES.UNSET ? INFO_MODES.VELAI : infoCollectionMode;
-  const velaiInfoComplete = useMemo(() => isVelAiInfoComplete(form), [form]);
+  const velaiInfoComplete = useMemo(
+    () => isVelAiInfoComplete(form, velaiServerComplete),
+    [form, velaiServerComplete]
+  );
   const usingVelAi = effectiveInfoMode === INFO_MODES.VELAI;
 
   const setInfoCollectionMode = (mode) => {
@@ -414,6 +421,7 @@ export default function Onboarding() {
       setForm(sanitized);
       setCurrentStep(Number.isInteger(parsed.currentStep) ? Math.max(0, Math.min(parsed.currentStep, derivedSteps.length - 1)) : 0);
       setSkipIntegrationsConfirmed(Boolean(sanitized.onboardingSelections?.integrationsSkipped));
+      setVelaiServerComplete(Boolean(sanitized.onboardingSelections?.velaiProfileComplete));
     } catch {
       window.localStorage.removeItem(draftKey);
       setForm(fallback);
@@ -508,6 +516,36 @@ export default function Onboarding() {
     setForm((current) => ({
       ...current,
       agents: { ...current.agents, [key]: value }
+    }));
+  };
+
+  const handleStartIntegration = async (providerId) => {
+    setConnectingProvider(providerId);
+    setError('');
+    try {
+      const response = await axios.post(resolveApiUrl(`/api/integrations/${providerId}/start`), {
+        from: 'onboarding'
+      });
+      if (response.data?.authUrl) {
+        window.location.assign(response.data.authUrl);
+        return;
+      }
+      setError('Could not start the connection flow.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to start integration'));
+    } finally {
+      setConnectingProvider(null);
+    }
+  };
+
+  const handleSkipIntegrationsStep = () => {
+    setSkipIntegrationsConfirmed(true);
+    setForm((current) => ({
+      ...current,
+      onboardingSelections: {
+        ...current.onboardingSelections,
+        integrationsSkipped: true
+      }
     }));
   };
 
@@ -628,6 +666,41 @@ export default function Onboarding() {
     </div>
   );
 
+  const renderActiveIntegrationCard = (provider) => {
+    const source = form.companySources?.[provider.id] || {};
+    const connected = Boolean(source.connected);
+    const busy = connectingProvider === provider.id;
+
+    return (
+      <div key={provider.id} className="flex flex-col rounded-2xl bg-[#121212] p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#18181b]">
+            {provider.icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-zinc-100">{provider.label}</p>
+            <p className={`text-[11px] ${connected ? 'text-[#5fd1b3]' : 'text-zinc-500'}`}>
+              {connected ? `Connected${source.displayName ? ` · ${source.displayName}` : ''}` : 'Not connected'}
+            </p>
+          </div>
+          {connected && <CheckCircle className="h-4 w-4 shrink-0 text-[#5fd1b3]" />}
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-zinc-500">{provider.description}</p>
+        {!connected && (
+          <button
+            type="button"
+            disabled={Boolean(connectingProvider)}
+            onClick={() => handleStartIntegration(provider.id)}
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#EA803A] to-[#d66a25] px-4 py-2.5 text-xs font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? 'Connecting…' : `Connect ${provider.label}`}
+            {!busy && <ArrowRight className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const renderStep = () => {
     switch (currentStepId) {
       case 'account':
@@ -652,7 +725,9 @@ export default function Onboarding() {
             </div>
             {activeAccountCard && (
               <div className="rounded-2xl bg-[#EA803A]/10 p-4 text-sm text-[#f0965a]">
-                {activeAccountCard.prompt}
+                {activeAccountCard.id === 'company' && INTEGRATIONS_COMING_SOON
+                  ? 'Slack, Google Workspace, and GitHub connections are coming soon. You can finish setup and connect sources later.'
+                  : activeAccountCard.prompt}
                 <p className="mt-2 text-xs font-normal text-zinc-400">
                   Next step: chat with <span className="font-semibold text-[#EA803A]">VelAI</span> or enter your profile manually.
                 </p>
@@ -683,7 +758,19 @@ export default function Onboarding() {
                       infoCollectionMode: INFO_MODES.VELAI
                     }
                   }))}
-                  onComplete={() => setError('')}
+                  onComplete={(isComplete) => {
+                    setVelaiServerComplete(Boolean(isComplete));
+                    if (isComplete) {
+                      setError('');
+                      setForm((current) => ({
+                        ...current,
+                        onboardingSelections: {
+                          ...current.onboardingSelections,
+                          velaiProfileComplete: true
+                        }
+                      }));
+                    }
+                  }}
                 />
               ) : (
                 <div className="h-full overflow-y-auto space-y-3 pr-0.5">
@@ -785,21 +872,54 @@ export default function Onboarding() {
           </div>
         );
       case 'integrations':
+        if (INTEGRATIONS_COMING_SOON) {
+          return (
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-[#121212] p-4">
+                <p className="text-[13px] font-semibold text-zinc-100">Company sources — coming soon</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-zinc-400">
+                  Slack, Google Workspace, and GitHub sync are not available yet. Finish onboarding now; we will enable connections from the dashboard when they launch.
+                </p>
+              </div>
+              <div className="grid gap-3 lg:grid-cols-3">
+                {providerCards.map(renderComingSoonIntegrationCard)}
+              </div>
+              <p className="text-center text-[11px] text-zinc-500">
+                Press <span className="font-semibold text-zinc-400">Continue</span> to set up your coding agent.
+              </p>
+            </div>
+          );
+        }
+
         return (
           <div className="space-y-4">
-            <div className="rounded-2xl bg-[#121212] p-4">
-              <p className="text-[13px] font-semibold text-zinc-100">Company sources — coming soon</p>
+            <div className="rounded-2xl border border-[#EA803A]/20 bg-[#EA803A]/5 p-4">
+              <p className="text-[13px] font-semibold text-zinc-100">Connect company sources</p>
               <p className="mt-1.5 text-xs leading-relaxed text-zinc-400">
-                Slack, Google Workspace, and GitHub sync are not available yet. Finish onboarding now; we will enable connections from the dashboard when they launch.
+                Link Slack, Google Workspace, or GitHub for shared context. Without OAuth credentials in <code className="text-[#f2b07d]">backend/.env</code>, connections run in <span className="text-[#f2b07d]">demo mode</span> for local testing.
               </p>
             </div>
 
             <div className="grid gap-3 lg:grid-cols-3">
-              {providerCards.map(renderComingSoonIntegrationCard)}
+              {providerCards.map(renderActiveIntegrationCard)}
             </div>
 
+            {connectedSourceCount === 0 && !skipIntegrationsConfirmed && (
+              <button
+                type="button"
+                onClick={handleSkipIntegrationsStep}
+                className="w-full rounded-2xl border border-dashed border-zinc-700 bg-[#121212] px-4 py-3 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-300"
+              >
+                Skip for now — connect sources later from Integrations
+              </button>
+            )}
+
             <p className="text-center text-[11px] text-zinc-500">
-              Press <span className="font-semibold text-zinc-400">Continue</span> to set up your coding agent.
+              {connectedSourceCount > 0
+                ? 'At least one source connected. Continue to configure your agent.'
+                : skipIntegrationsConfirmed
+                  ? 'Skipped integrations. Continue when ready.'
+                  : 'Connect a source, skip, or press Continue if you already connected.'}
             </p>
           </div>
         );
@@ -854,7 +974,7 @@ export default function Onboarding() {
         return (
           <div className="space-y-4">
             <p className="text-[13px] text-zinc-400">
-              Pick a look for {form.accountType === 'individual' ? 'your profile' : 'your workspace'}. This step is separate from VelAI chat.
+              Pick a look for {form.accountType === 'individual' ? 'your profile' : 'your workspace'}.
             </p>
             <AvatarPicker
               value={form.workspaceImageUrl}
@@ -1027,7 +1147,7 @@ export default function Onboarding() {
                 disabled={submitting}
                 className="inline-flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#EA803A] px-5 py-2.5 text-[13px] font-bold text-black disabled:pointer-events-none disabled:opacity-50"
               >
-                {submitting ? <BlobLoader size={16} label="" /> : 'Finish Setup'}
+                {submitting ? <BlobLoader size={18} label="" variant="accent" /> : 'Finish Setup'}
               </button>
             )}
           </div>

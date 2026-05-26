@@ -6,6 +6,7 @@ import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContaine
 import { Activity, ArrowRight, Cpu, Database, Shield, TrendingUp } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
+import { INTEGRATIONS_COMING_SOON } from '../lib/productFlags';
 import { promptLifecycle, supportedAgents } from '../lib/agentRuntime';
 import AgentBrandIcon from '../components/AgentBrandIcon';
 import BlobLoader from '../components/BlobLoader';
@@ -183,7 +184,7 @@ const Dashboard = () => {
               to="/dashboard/integrations"
               className="inline-flex items-center gap-2 self-start rounded-lg border border-[#2a2a2a] bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 shadow-inner"
             >
-              Manage Integrations
+              {INTEGRATIONS_COMING_SOON ? 'Integrations (soon)' : 'Manage Integrations'}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -194,7 +195,9 @@ const Dashboard = () => {
               </span>
             )) : (
               <p className="text-sm text-zinc-500 rounded-lg border border-dashed border-zinc-800/50 bg-zinc-900/20 px-4 py-2 w-full">
-                Connect Slack, Google Workspace, or GitHub to warm up the Company Brain.
+                {INTEGRATIONS_COMING_SOON
+                  ? 'Company integrations (Slack, Google Workspace, GitHub) are launching soon. Pair agents and create API keys in the meantime.'
+                  : 'Connect Slack, Google Workspace, or GitHub to warm up the Company Brain.'}
               </p>
             )}
           </div>

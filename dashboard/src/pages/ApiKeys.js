@@ -97,7 +97,7 @@ const ApiKeys = () => {
       return response.data || {};
     },
     {
-      enabled: Boolean(user?.accountType === 'company'),
+      enabled: Boolean(user?.accountType === 'company' && !INTEGRATIONS_COMING_SOON),
       retry: (failureCount, queryError) => !isBackendUnavailable(queryError) && failureCount < 1
     }
   );

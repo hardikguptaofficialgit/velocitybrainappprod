@@ -7,6 +7,34 @@ const WORKFLOWS = ['coding', 'debugging', 'research', 'automation'];
 
 const isConfigured = () => Boolean(process.env.GITHUB_TOKEN?.trim());
 
+const normalizeField = (value) => String(value || '').trim();
+
+const isFormProfileComplete = (form) => {
+    if (!form?.accountType) return false;
+    if (!normalizeField(form.name)) return false;
+    if (!normalizeField(form.title)) return false;
+    if (form.accountType === 'company' && !normalizeField(form.company)) return false;
+    if (!normalizeField(form.workspaceName)) return false;
+    if (!normalizeField(form.industry)) return false;
+    if (form.accountType === 'company' && !form.companySize) return false;
+    if (!normalizeField(form.primaryUseCase)) return false;
+    return true;
+};
+
+const buildCompletionResponse = (form, poweredBy = 'github-models') => {
+    const name = normalizeField(form.name);
+    const greeting = name ? `, ${name}` : '';
+    return {
+        message: `You're all set${greeting}! Press **Continue** below — you'll pick your avatar on the next screen.`,
+        patch: {},
+        complete: true,
+        widget: null,
+        quickReplies: [],
+        model: process.env.GITHUB_MODELS_MODEL?.trim() || DEFAULT_MODEL,
+        poweredBy
+    };
+};
+
 const getClient = () => {
     const token = process.env.GITHUB_TOKEN?.trim();
     if (!token) {
@@ -73,7 +101,8 @@ Respond with ONLY valid JSON (no markdown fences):
 Rules:
 - patch only includes fields you are confident about from the latest user message
 - never invent email or passwords
-- if user says yes/confirm and data is complete, complete=true and congratulate briefly
+- if user says yes/confirm and data is complete, complete=true with ONE short message (do not repeat prior completion text)
+- if all required fields are already filled in the snapshot, set complete=true immediately with a single short message
 - if user wants to change a field, update patch and complete=false
 - keep message under 120 words`;
 };
@@ -202,6 +231,13 @@ const ruleBasedFallback = (form, userMessage, bootstrap) => {
 async function runVelAiOnboardingChat({ form = {}, messages = [], userMessage = '', bootstrap = false }) {
     const safeForm = form && typeof form === 'object' ? form : {};
 
+    if (isFormProfileComplete(safeForm)) {
+        const poweredBy = isConfigured() ? 'github-models' : 'local';
+        if (bootstrap || userMessage) {
+            return buildCompletionResponse(safeForm, poweredBy);
+        }
+    }
+
     if (!isConfigured()) {
         return ruleBasedFallback(safeForm, userMessage, bootstrap);
     }
@@ -251,7 +287,11 @@ async function runVelAiOnboardingChat({ form = {}, messages = [], userMessage = 
             };
         }
 
-        return sanitizeResponse(parsed, safeForm);
+        const sanitized = sanitizeResponse(parsed, safeForm);
+        if (sanitized.complete && isFormProfileComplete({ ...safeForm, ...sanitized.patch })) {
+            return buildCompletionResponse({ ...safeForm, ...sanitized.patch });
+        }
+        return sanitized;
     } catch (error) {
         console.error('[VelAI] GitHub Models error:', error?.message || error);
         const fallback = ruleBasedFallback(safeForm, userMessage, bootstrap);

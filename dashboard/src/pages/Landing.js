@@ -412,9 +412,11 @@ export default function Landing() {
             </div>
 
             <div className="hidden md:flex items-center gap-3">
-              <Link to={accountHref} className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
-                {accountLabel}
-              </Link>
+              {!user && (
+                <Link to={accountHref} className="text-[12px] font-medium text-zinc-400 hover:text-white transition-colors">
+                  {accountLabel}
+                </Link>
+              )}
               <Link
                 to={accountHref}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-black"
@@ -489,13 +491,15 @@ export default function Landing() {
                 <span>GitHub</span>
               </a>
               <div className="h-px bg-[#222] my-1" />
-              <Link
-                to={accountHref}
-                className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {accountLabel}
-              </Link>
+              {!user && (
+                <Link
+                  to={accountHref}
+                  className="text-[13px] font-medium text-zinc-400 hover:text-white transition-colors py-1"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {accountLabel}
+                </Link>
+              )}
               <Link
                 to={accountHref}
                 className="w-full px-4 py-2 rounded-lg text-[13px] font-bold text-black text-center mt-1"

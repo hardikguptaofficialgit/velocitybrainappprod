@@ -23,7 +23,7 @@ This repository contains two product shapes:
 
 - Hosted API and runtime for memory-aware agent execution
 - React dashboard for onboarding, API keys, usage, integrations, and agent management
-- Company workspace integrations for Slack, Google Workspace, and GitHub
+- Company workspace integrations for Slack, Google Workspace, and GitHub (enabled in local dev; set `REACT_APP_INTEGRATIONS_COMING_SOON=true` to hide UI)
 - Public Python client, CLI, and MCP bridge under `velocitybrain-open-source/`
 - Documentation, packaging, examples, and repo-boundary checks
 
@@ -41,7 +41,7 @@ This repository contains two product shapes:
 
 1. Choose `Company workspace`.
 2. Complete onboarding and workspace defaults.
-3. Connect Slack, Google Workspace, and GitHub.
+3. Connect Slack, Google Workspace, and GitHub (demo mode without OAuth secrets; live OAuth when configured in `backend/.env`).
 4. Generate scoped API keys for teammates or agents.
 5. Track sync state, connected sources, and agent activity from the dashboard.
 
@@ -85,9 +85,18 @@ npm --prefix backend install
 
 ```powershell
 python -m pytest -q
-npm --prefix dashboard start
-npm --prefix backend run dev
+npm --prefix backend run dev    # default PORT 5004 in backend/.env
+npm --prefix dashboard start    # proxies to http://localhost:5004
 ```
+
+Copy env templates before first run:
+
+```powershell
+copy backend\.env.example backend\.env
+copy dashboard\.env.example dashboard\.env
+```
+
+Keep `PORT`, `BACKEND_PUBLIC_URL`, `REACT_APP_API_URL`, and `dashboard/package.json` `proxy` on the **same port** (5004 for this repo’s local default).
 
 ## Open-Source Client
 
@@ -114,7 +123,7 @@ python -m build --no-isolation
 - `/dashboard`: overview metrics and workspace health
 - `/dashboard/api-keys`: scoped API key creation and agent pairing
 - `/dashboard/agents`: connected agents, repositories, runs, and telemetry
-- `/dashboard/integrations`: connect, resync, and disconnect company sources
+- `/dashboard/integrations`: connect, resync, and disconnect company sources (demo mode without OAuth env vars)
 - `/dashboard/usage`: model usage, spend, and attribution
 
 ## Documentation

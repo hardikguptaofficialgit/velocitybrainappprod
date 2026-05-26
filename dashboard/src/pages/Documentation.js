@@ -521,9 +521,11 @@ const Documentation = () => {
                 Research
               </Link>
               <div className="w-px h-4 bg-zinc-800" />
-              <Link to={accountHref} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
-                {accountLabel}
-              </Link>
+              {!user && (
+                <Link to={accountHref} className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
+                  {accountLabel}
+                </Link>
+              )}
               <Link
                 to={accountHref}
                 className="rounded-full bg-white/10 hover:bg-white/20 px-4 py-1.5 text-sm font-semibold text-white transition-all backdrop-blur-md border border-white/10"

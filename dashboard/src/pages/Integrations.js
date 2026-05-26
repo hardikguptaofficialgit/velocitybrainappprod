@@ -6,6 +6,7 @@ import BlobLoader from '../components/BlobLoader';
 import { AlertTriangle, ArrowRight, CheckCircle, Github, Google, RefreshCw, X } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
+import { INTEGRATIONS_COMING_SOON } from '../lib/productFlags';
 
 const providerMeta = {
   slack: {
@@ -75,6 +76,7 @@ export default function Integrations() {
       return response.data || {};
     },
     {
+      enabled: !INTEGRATIONS_COMING_SOON,
       retry: (failureCount, queryError) => !isBackendUnavailable(queryError) && failureCount < 1
     }
   );
@@ -121,11 +123,47 @@ export default function Integrations() {
   const integrationByProvider = Object.fromEntries(integrations.map((item) => [item.provider, item]));
   const connectedSourceCount = data?.connectedSourceCount || 0;
   const connectedSources = data?.connectedSources || [];
+  const demoMode = Boolean(data?.capabilities?.demoMode);
 
-  if (isLoading) {
+  if (!INTEGRATIONS_COMING_SOON && isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <BlobLoader size={48} label="" />
+      </div>
+    );
+  }
+
+  if (INTEGRATIONS_COMING_SOON) {
+    return (
+      <div className="max-w-6xl mx-auto w-full space-y-8 pb-12">
+        <div className="flex flex-col gap-4 border-b border-[#2a2a2a] pb-6">
+          <div>
+            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
+              Company Integrations
+            </h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              Slack, Google Workspace, and GitHub sync are launching soon. Agent pairing and API keys work today.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-center pt-8">
+          <div className="w-full max-w-md">
+            <div className="relative rounded-2xl p-[1px] bg-gradient-to-b from-[#EA803A] to-zinc-800 shadow-2xl">
+              <div className="bg-[#0d0d0d] rounded-2xl p-8 flex flex-col items-center text-center shadow-inner">
+                <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
+                  Company Brain Launching Soon
+                </h2>
+                <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+                  We are finalizing the contextual memory layer for Slack, Google Workspace, and GitHub. Finish onboarding and pair agents now; company sources will connect from this page when they launch.
+                </p>
+                <span className="px-6 py-2.5 rounded-lg border border-zinc-700 bg-zinc-800 text-sm font-semibold text-zinc-400 shadow-inner">
+                  Coming Soon
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -143,29 +181,16 @@ export default function Integrations() {
         </div>
       </div>
 
-      <div className="relative">
-        {/* Coming Soon Overlay */}
-        <div className="absolute inset-0 z-20 flex justify-center pt-24 pb-12">
-          <div className="sticky top-24 w-full max-w-md h-fit">
-            <div className="relative rounded-2xl p-[1px] bg-gradient-to-b from-[#EA803A] to-zinc-800 shadow-2xl">
-              <div className="bg-[#0d0d0d] rounded-2xl p-8 flex flex-col items-center text-center shadow-inner">
-               
-                <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  Company Brain Launching Soon
-                </h2>
-                <p className="text-sm text-zinc-400 leading-relaxed mb-6">
-                  We are finalizing the contextual memory layer for Slack, Google Workspace, and GitHub. Get ready to give your agents deep, live operational awareness.
-                </p>
-                <button className="px-6 py-2.5 rounded-lg border border-zinc-700 bg-zinc-800 text-sm font-semibold text-zinc-400 cursor-not-allowed shadow-inner transition-colors">
-                  Coming Soon
-                </button>
-              </div>
-            </div>
-          </div>
+      {demoMode && (
+        <div className="rounded-xl border border-[#EA803A]/30 bg-[#EA803A]/10 p-4 text-sm text-[#f7c7a5] shadow-inner">
+          <p className="font-semibold text-white">Demo mode active</p>
+          <p className="mt-1 text-xs leading-relaxed">
+            OAuth client IDs are not configured in <code className="text-[#f2b07d]">backend/.env</code>. Connections complete locally with simulated tokens. Add Slack, Google, and GitHub credentials for live OAuth.
+          </p>
         </div>
+      )}
 
-        {/* Dimmed & Disabled Content */}
-        <div className="space-y-8 opacity-20 blur-[2px] pointer-events-none select-none grayscale-[0.5] transition-all duration-500">
+      <div className="space-y-8">
           {callbackNotice && (
             <div className={`rounded-xl border p-4 text-sm shadow-inner ${
               callbackNotice.status === 'connected'
@@ -300,7 +325,6 @@ export default function Integrations() {
               </div>
             </div>
           </div>
-        </div>
       </div>
     </div>
   );

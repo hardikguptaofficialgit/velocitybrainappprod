@@ -533,6 +533,27 @@ function summarizeWorkspaceCoverage(connections = []) {
     };
 }
 
+function getIntegrationCapabilities() {
+    const liveProviders = [];
+    const demoProviders = [];
+
+    for (const provider of Object.keys(PROVIDERS)) {
+        const { clientId, clientSecret } = getProviderSecrets(provider);
+        if (clientId && clientSecret) {
+            liveProviders.push(provider);
+        } else {
+            demoProviders.push(provider);
+        }
+    }
+
+    return {
+        liveProviders,
+        demoProviders,
+        demoMode: demoProviders.length > 0,
+        allLive: demoProviders.length === 0
+    };
+}
+
 module.exports = {
     PROVIDERS,
     getProviderConfig,
@@ -549,5 +570,6 @@ module.exports = {
     summarizeConnection,
     buildCompanySourceSettings,
     summarizeWorkspaceCoverage,
+    getIntegrationCapabilities,
     decryptTokenBundle
 };

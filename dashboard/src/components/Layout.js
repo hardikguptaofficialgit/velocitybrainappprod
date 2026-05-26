@@ -99,7 +99,7 @@ const Layout = () => {
           {/* Desktop Toggle Button */}
           <button
             type="button"
-            className={`hidden lg:flex absolute items-center justify-center rounded-md bg-[#1e1e1e] border border-[#2a2a2a] text-[#888] hover:text-white hover:bg-[#252525] hover:border-[#333] transition-all duration-300 z-20 shadow-sm ${
+            className={`hidden lg:flex absolute items-center justify-center rounded-md text-[#888]  ${
               sidebarCollapsed
                 ? 'w-8 h-8 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/header:opacity-100 scale-75 group-hover/header:scale-100'
                 : 'w-7 h-7 right-3 top-1/2 -translate-y-1/2 opacity-100'

@@ -10,6 +10,7 @@ import RoleField from '../components/RoleField';
 import { Bell, Cpu, Globe, Settings as SettingsIcon, Shield, User } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { supportedAgents } from '../lib/agentRuntime';
+import { INTEGRATIONS_COMING_SOON } from '../lib/productFlags';
 import { curatedAvatarOptions, defaultCuratedAvatar } from '../lib/avatars';
 import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage } from '../lib/network';
@@ -595,7 +596,7 @@ export default function Settings() {
             to="/dashboard/integrations"
             className="inline-flex items-center justify-center rounded-lg border border-[#2a2a2a] bg-[#111] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1a1a1a] transition-colors"
           >
-            Open Company Integrations
+            {INTEGRATIONS_COMING_SOON ? 'Company Integrations (soon)' : 'Open Company Integrations'}
           </Link>
         </div>
 

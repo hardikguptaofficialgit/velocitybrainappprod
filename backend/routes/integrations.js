@@ -13,7 +13,8 @@ const {
     appendConnectionEvent,
     createSyncJob,
     buildCompanySourceSettings,
-    summarizeWorkspaceCoverage
+    summarizeWorkspaceCoverage,
+    getIntegrationCapabilities
 } = require('../utils/sourceIntegrations');
 
 const router = express.Router();
@@ -70,12 +71,14 @@ router.get('/', authenticate, async (req, res) => {
         const settingsDoc = await getSettingsDoc(req.user.id);
         const companySources = buildCompanySourceSettings(connections, settingsDoc.data.companySources);
         const coverage = summarizeWorkspaceCoverage(connections);
+        const capabilities = getIntegrationCapabilities();
 
         res.json({
             success: true,
             providers: providerList,
             integrations: connections,
             companySources,
+            capabilities,
             ...coverage
         });
     } catch (error) {
@@ -92,11 +95,13 @@ router.get('/onboarding-status', authenticate, async (req, res) => {
         const settingsDoc = await getSettingsDoc(req.user.id);
         const companySources = buildCompanySourceSettings(connections, settingsDoc.data.companySources);
         const coverage = summarizeWorkspaceCoverage(connections);
+        const capabilities = getIntegrationCapabilities();
 
         res.json({
             success: true,
             companySources,
             integrations: connections,
+            capabilities,
             ...coverage
         });
     } catch (error) {
