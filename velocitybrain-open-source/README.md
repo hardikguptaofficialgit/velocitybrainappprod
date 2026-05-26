@@ -1,7 +1,11 @@
 # VelocityBrain Client
 
 <p align="center">
-  <img src="../docs/assets/velocity-brain-logo.svg" alt="Velocity Brain logo" width="520" />
+  <img
+    src="docs/velocity-brain-logo.svg"
+    alt="Velocity Brain — memory and reuse for coding agents"
+    width="720"
+  />
 </p>
 
 <p align="center">
@@ -9,7 +13,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/public-client-surface.svg" alt="VelocityBrain public client surface" width="900" />
+  <img
+    src="docs/public-client-surface.svg"
+    alt="VelocityBrain public client surface"
+    width="900"
+  />
 </p>
 
 `velocitybrain-open-source` is the public distribution boundary for Velocity Brain. The main repository contains hosted backend and dashboard code as well, but this folder is the safe publishable client package: `velocitybrain-client`.
