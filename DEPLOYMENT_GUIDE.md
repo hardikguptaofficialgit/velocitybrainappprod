@@ -2,13 +2,26 @@
 
 ## Production Compose Command
 
-For the Docker production stack, always use:
+For the Docker production stack, use:
+
+```bash
+./scripts/deploy_prod.sh
+```
+
+Or manually (Compose v2):
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 
-Do not rely on `docker compose -f docker-compose.prod.yml up -d --build` by itself. Docker Compose only auto-loads `.env`, not `.env.prod`, for variable interpolation. Without `--env-file .env.prod`, secrets and build args can resolve to blank values and break:
+On older servers without `docker compose` / `--env-file`:
+
+```bash
+cp .env.prod .env
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+Do not rely on `docker-compose -f docker-compose.prod.yml up -d --build` without loading `.env.prod` first. Compose only auto-loads `.env`, not `.env.prod`, for `${VAR}` interpolation in the compose file. Without that, dashboard build args and passwords can be blank:
 
 - Postgres password wiring
 - Redis password wiring
