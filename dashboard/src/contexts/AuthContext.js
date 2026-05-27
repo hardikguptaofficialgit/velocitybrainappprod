@@ -31,6 +31,23 @@ export const AuthProvider = ({ children }) => {
     return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   }, []);
 
+  const isLocalhostHost = useCallback(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const host = window.location.hostname;
+      return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // In production, prefer redirect flow to avoid COOP/COEP popup issues that can
+  // block popup window polling and cause some browsers to appear "stuck".
+  const shouldUseOAuthPopup = useCallback(() => !isMobileBrowser() && isLocalhostHost(), [
+    isLocalhostHost,
+    isMobileBrowser
+  ]);
+
   const setAuthState = useCallback((userData, token) => {
     console.info('[Auth] Setting auth state', {
       userId: userData?.id,
@@ -238,8 +255,8 @@ export const AuthProvider = ({ children }) => {
 
       await authPersistenceReady;
 
-      if (isMobileBrowser()) {
-        console.info('[Auth] Using GitHub redirect flow for mobile browser');
+      if (!shouldUseOAuthPopup()) {
+        console.info('[Auth] Using GitHub redirect flow');
         await signInWithRedirect(auth, githubProvider);
         return { success: true };
       }
@@ -274,7 +291,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: errorMessage };
     }
-  }, [isMobileBrowser, syncFirebaseUser]);
+  }, [shouldUseOAuthPopup, syncFirebaseUser]);
 
   const loginWithGoogle = useCallback(async () => {
     try {
@@ -284,8 +301,8 @@ export const AuthProvider = ({ children }) => {
 
       await authPersistenceReady;
 
-      if (isMobileBrowser()) {
-        console.info('[Auth] Using Google redirect flow for mobile browser');
+      if (!shouldUseOAuthPopup()) {
+        console.info('[Auth] Using Google redirect flow');
         await signInWithRedirect(auth, googleProvider);
         return { success: true };
       }
@@ -320,7 +337,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: errorMessage };
     }
-  }, [isMobileBrowser, syncFirebaseUser]);
+  }, [shouldUseOAuthPopup, syncFirebaseUser]);
 
   const value = {
     user,
