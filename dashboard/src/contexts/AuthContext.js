@@ -80,6 +80,35 @@ export const AuthProvider = ({ children }) => {
     setFirebaseUser(null);
   }, []);
 
+  const restoreSessionFromStorage = useCallback(async () => {
+    const storedToken = localStorage.getItem('velocitybrain_token');
+    const storedUserRaw = localStorage.getItem('velocitybrain_user');
+
+    if (!storedToken || !storedUserRaw) {
+      return { success: false };
+    }
+
+    try {
+      const storedUser = JSON.parse(storedUserRaw);
+      axios.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+      const response = await axios.get(resolveApiUrl('/api/auth/me'));
+      const restoredUser = response.data?.user || storedUser;
+      setError(null);
+      setAuthState(restoredUser, storedToken);
+      console.info('[Auth] Restored session from stored token', {
+        userId: restoredUser?.id,
+        email: restoredUser?.email
+      });
+      return { success: true, user: restoredUser };
+    } catch (restoreErr) {
+      console.warn('[Auth] Stored session is no longer valid', {
+        status: restoreErr?.response?.status,
+        message: restoreErr?.message
+      });
+      return { success: false };
+    }
+  }, [setAuthState]);
+
   const syncFirebaseUser = useCallback(async (firebaseUser) => {
     if (!firebaseUser?.uid) {
       return {
@@ -88,9 +117,10 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    if (syncedUidRef.current === firebaseUser.uid && user?.id === firebaseUser.uid) {
+    if (syncedUidRef.current === firebaseUser.uid && user) {
       console.info('[Auth] Firebase user already synced in this session', {
-        uid: firebaseUser.uid
+        uid: firebaseUser.uid,
+        userId: user.id
       });
       return { success: true, user };
     }
@@ -115,7 +145,21 @@ export const AuthProvider = ({ children }) => {
           idToken
         });
 
+        if (response.data?.requiresTwoFactor) {
+          const twoFactorMessage =
+            response.data?.message ||
+            'Two-factor authentication is required. Complete 2FA from Settings after signing in with email and password.';
+          setError(twoFactorMessage);
+          return { success: false, error: twoFactorMessage };
+        }
+
         const { user: syncedUser, token } = response.data;
+        if (!syncedUser?.id || !token) {
+          const missingSessionMessage = 'Sign-in succeeded with Google, but the server did not return a session. Please try again.';
+          setError(missingSessionMessage);
+          return { success: false, error: missingSessionMessage };
+        }
+
         console.info('[Auth] Backend session sync succeeded', {
           userId: syncedUser?.id,
           email: syncedUser?.email,
@@ -126,21 +170,40 @@ export const AuthProvider = ({ children }) => {
         setAuthState(syncedUser, token);
         return { success: true, user: syncedUser };
       } catch (backendErr) {
+        const status = backendErr?.response?.status;
         console.error('[Auth] Backend session sync failed', {
           code: backendErr?.code,
-          status: backendErr?.response?.status,
+          status,
           message: backendErr?.message,
           response: backendErr?.response?.data
         });
         if (!isBackendUnavailable(backendErr)) {
           console.error('Backend sync error:', backendErr?.response?.data || backendErr.message);
         }
+
         syncedUidRef.current = null;
-        clearAuthState();
-        return {
-          success: false,
-          error: getErrorMessage(backendErr, 'Unable to complete sign-in right now.')
-        };
+
+        const errorMessage = getErrorMessage(backendErr, 'Unable to complete sign-in right now.');
+
+        // Keep the Firebase session for transient/server errors so the user can retry
+        // without getting stuck in a "picked Gmail then back to login" loop.
+        if (isBackendUnavailable(backendErr) || status === 503 || status >= 500) {
+          setError(errorMessage);
+          return { success: false, error: errorMessage };
+        }
+
+        if (status === 401) {
+          try {
+            await signOut(auth);
+          } catch (signOutErr) {
+            console.warn('[Auth] Firebase sign-out after failed sync', signOutErr);
+          }
+          clearAuthState();
+          return { success: false, error: errorMessage };
+        }
+
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
       } finally {
         syncInFlightRef.current.delete(firebaseUser.uid);
       }
@@ -155,17 +218,33 @@ export const AuthProvider = ({ children }) => {
     return syncFirebaseUser(firebaseUser);
   }, [firebaseUser, syncFirebaseUser]);
 
-  // Configure axios defaults on mount
+  // Configure axios defaults on mount and restore a valid stored session immediately.
   useEffect(() => {
-    const token = localStorage.getItem('velocitybrain_token');
+    let cancelled = false;
+
+    const bootstrapStoredSession = async () => {
+      const token = localStorage.getItem('velocitybrain_token');
       console.info('[Auth] Bootstrapping axios auth header', {
         apiBaseUrl: axios.defaults.baseURL || '(relative /api)',
         hasStoredToken: Boolean(token)
-    });
-    if (token) {
+      });
+      if (!token) {
+        return;
+      }
+
       axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-    }
-  }, []);
+      const restored = await restoreSessionFromStorage();
+      if (!cancelled && restored.success) {
+        setLoading(false);
+      }
+    };
+
+    bootstrapStoredSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [restoreSessionFromStorage]);
 
   useEffect(() => {
     if (axiosAuthInterceptorIdRef.current != null) {
@@ -260,7 +339,10 @@ export const AuthProvider = ({ children }) => {
         }
 
         console.info('[Auth] Firebase auth state changed: signed out');
-        clearAuthState();
+        const restored = await restoreSessionFromStorage();
+        if (!restored.success) {
+          clearAuthState();
+        }
       } catch (err) {
         console.error('[Auth] Auth state listener error', err);
         clearAuthState();
@@ -275,7 +357,7 @@ export const AuthProvider = ({ children }) => {
       isMounted = false;
       unsubscribe();
     };
-  }, [clearAuthState, setAuthState, syncFirebaseUser]);
+  }, [clearAuthState, restoreSessionFromStorage, setAuthState, syncFirebaseUser]);
 
   const logout = useCallback(async () => {
     try {

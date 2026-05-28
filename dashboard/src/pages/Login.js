@@ -9,10 +9,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirect to dashboard if already authenticated
+  // Redirect after authentication (onboarding first for new accounts)
   useEffect(() => {
     if (!loading && user) {
-      navigate('/dashboard', { replace: true });
+      navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
     }
   }, [user, loading, navigate]);
 
