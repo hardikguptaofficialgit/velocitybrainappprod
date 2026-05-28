@@ -53,35 +53,11 @@ export default function Login() {
     }
   };
 
-  // Reusable Claymorphism Style for Dark Mode
-  const clayStyle = {
-    backgroundColor: '#121214',
-    boxShadow: `
-      8px 8px 16px rgba(0, 0, 0, 0.6), 
-      -8px -8px 16px rgba(255, 255, 255, 0.03), 
-      inset 2px 2px 6px rgba(255, 255, 255, 0.04), 
-      inset -2px -2px 6px rgba(0, 0, 0, 0.4)
-    `
-  };
-
-  const clayButtonStyle = {
-    backgroundColor: '#161618',
-    boxShadow: `
-      6px 6px 12px rgba(0, 0, 0, 0.5), 
-      -6px -6px 12px rgba(255, 255, 255, 0.02), 
-      inset 2px 2px 4px rgba(255, 255, 255, 0.05), 
-      inset -2px -2px 4px rgba(0, 0, 0, 0.5)
-    `
-  };
-
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#0A0A0B] text-white font-sans p-4 lg:p-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
       
       {/* LEFT PANEL: BRANDING (Hidden on Mobile) */}
-      <div 
-        className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative p-12 flex-col justify-between overflow-hidden rounded-3xl transition-all"
-        style={clayStyle}
-      >
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative p-12 flex-col justify-between overflow-hidden rounded-3xl transition-all bg-[#121214] border border-white/5 shadow-2xl">
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-4 hover:opacity-80 transition-opacity">
             <Logo size={40} />
@@ -100,8 +76,6 @@ export default function Login() {
             Local-first memory, deterministic workflows, and enterprise-grade execution. Stop guessing context and start building reliable AI systems.
           </p>
         </div>
-
-       
       </div>
 
       {/* RIGHT PANEL: FORM AREA */}
@@ -126,12 +100,7 @@ export default function Login() {
           </div>
 
           {(oauthError || error) && (
-            <div 
-              className="p-4 bg-[#1A1111] rounded-2xl flex items-start gap-3 mb-8"
-              style={{
-                boxShadow: 'inset 2px 2px 6px rgba(255, 0, 0, 0.05), inset -2px -2px 6px rgba(0, 0, 0, 0.2)'
-              }}
-            >
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 mb-8">
               <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
               <p className="text-sm text-red-300" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{oauthError || error}</p>
             </div>
@@ -142,8 +111,7 @@ export default function Login() {
               type="button"
               onClick={handleGithubLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white"
-              style={clayButtonStyle}
+              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d]"
             >
               <Github className="h-6 w-6 text-[#EA803A]" />
               Continue with GitHub
@@ -152,8 +120,7 @@ export default function Login() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white"
-              style={clayButtonStyle}
+              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d]"
             >
               <Google className="h-6 w-6 text-[#EA803A]" />
               Continue with Google
