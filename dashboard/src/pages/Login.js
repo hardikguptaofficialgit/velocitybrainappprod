@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Github, Google } from '../components/Icons';
@@ -6,6 +6,7 @@ import Logo from '../components/Logo';
 
 export default function Login() {
   const { loginWithGithub, loginWithGoogle, error, user, loading } = useAuth();
+  const [oauthAction, setOauthAction] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,18 +41,30 @@ export default function Login() {
   };
 
   const handleGithubLogin = async () => {
-    const result = await loginWithGithub();
-    if (result?.success) {
-      navigateAfterAuth(result.user);
+    setOauthAction('github');
+    try {
+      const result = await loginWithGithub();
+      if (result?.success) {
+        navigateAfterAuth(result.user);
+      }
+    } finally {
+      setOauthAction(null);
     }
   };
 
   const handleGoogleLogin = async () => {
-    const result = await loginWithGoogle();
-    if (result?.success) {
-      navigateAfterAuth(result.user);
+    setOauthAction('google');
+    try {
+      const result = await loginWithGoogle();
+      if (result?.success) {
+        navigateAfterAuth(result.user);
+      }
+    } finally {
+      setOauthAction(null);
     }
   };
+
+  const oauthDisabled = Boolean(oauthAction);
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#0A0A0B] text-white font-sans p-4 lg:p-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
@@ -110,20 +123,20 @@ export default function Login() {
             <button
               type="button"
               onClick={handleGithubLogin}
-              disabled={loading}
+              disabled={oauthDisabled}
               className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d]"
             >
-              <Github className="h-6 w-6 text-[#EA803A]" />
-              Continue with GitHub
+              <Github className="h-6 w-6 text-white" />
+              {oauthAction === 'github' ? 'Continuing with GitHub...' : 'Continue with GitHub'}
             </button>
             <button
               type="button"
               onClick={handleGoogleLogin}
-              disabled={loading}
+              disabled={oauthDisabled}
               className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d]"
             >
               <Google className="h-6 w-6 text-[#EA803A]" />
-              Continue with Google
+              {oauthAction === 'google' ? 'Continuing with Google...' : 'Continue with Google'}
             </button>
           </div>
 

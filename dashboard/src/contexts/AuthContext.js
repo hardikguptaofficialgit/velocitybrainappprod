@@ -82,6 +82,10 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem(OAUTH_REDIRECT_PROVIDER_KEY, provider);
   }, []);
 
+  const hasPendingOAuthRedirect = useCallback(() => (
+    sessionStorage.getItem(OAUTH_REDIRECT_PENDING_KEY) === '1'
+  ), []);
+
   const clearOAuthRedirect = useCallback(() => {
     sessionStorage.removeItem(OAUTH_REDIRECT_PENDING_KEY);
     sessionStorage.removeItem(OAUTH_REDIRECT_PROVIDER_KEY);
@@ -347,7 +351,7 @@ export const AuthProvider = ({ children }) => {
             'Firebase auth state'
           );
 
-          if (!redirectResult?.user && sessionStorage.getItem(OAUTH_REDIRECT_PENDING_KEY) && !auth.currentUser) {
+          if (!redirectResult?.user && hasPendingOAuthRedirect() && !auth.currentUser) {
             const provider = sessionStorage.getItem(OAUTH_REDIRECT_PROVIDER_KEY);
             console.warn('[Auth] OAuth redirect returned without a Firebase user', {
               provider
@@ -360,8 +364,7 @@ export const AuthProvider = ({ children }) => {
         } catch (err) {
           console.error('[Auth] OAuth redirect result error', err);
           if (isMounted) {
-            const hasPendingRedirect = sessionStorage.getItem(OAUTH_REDIRECT_PENDING_KEY);
-            if (hasPendingRedirect && !auth.currentUser) {
+            if (hasPendingOAuthRedirect() && !auth.currentUser) {
               clearOAuthRedirect();
               setError(err.message || 'OAuth sign-in failed');
             }
@@ -389,6 +392,37 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
+        if (hasPendingOAuthRedirect()) {
+          console.info('[Auth] Firebase reported signed out while OAuth redirect is pending');
+          try {
+            await authBootstrapRef.current;
+          } catch (bootstrapErr) {
+            console.warn('[Auth] OAuth bootstrap did not complete before signed-out state', bootstrapErr);
+          }
+
+          if (!isMounted) return;
+
+          if (auth.currentUser) {
+            console.info('[Auth] Firebase user became available after redirect bootstrap', {
+              email: auth.currentUser.email,
+              uid: auth.currentUser.uid
+            });
+            setFirebaseUser(auth.currentUser);
+            const result = await syncFirebaseUser(auth.currentUser);
+            if (result.success) {
+              clearOAuthRedirect();
+            } else if (isMounted) {
+              setError(result.error || 'Unable to complete sign-in right now.');
+            }
+            return;
+          }
+
+          const provider = sessionStorage.getItem(OAUTH_REDIRECT_PROVIDER_KEY);
+          clearOAuthRedirect();
+          setError(buildOAuthReturnError(provider));
+          return;
+        }
+
         console.info('[Auth] Firebase auth state changed: signed out');
         const restored = await restoreSessionFromStorage();
         if (!restored.success) {
@@ -408,7 +442,7 @@ export const AuthProvider = ({ children }) => {
       isMounted = false;
       unsubscribe();
     };
-  }, [buildOAuthReturnError, clearAuthState, clearOAuthRedirect, restoreSessionFromStorage, setAuthState, syncFirebaseUser]);
+  }, [buildOAuthReturnError, clearAuthState, clearOAuthRedirect, hasPendingOAuthRedirect, restoreSessionFromStorage, setAuthState, syncFirebaseUser]);
 
   const logout = useCallback(async () => {
     try {
