@@ -9,6 +9,8 @@ import { apiBaseUrl, resolveApiUrl } from '../lib/api';
 axios.defaults.baseURL = apiBaseUrl || '';
 
 const AuthContext = createContext();
+const OAUTH_REDIRECT_PENDING_KEY = 'velocitybrain_oauth_redirect_pending';
+const OAUTH_REDIRECT_PROVIDER_KEY = 'velocitybrain_oauth_redirect_provider';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -32,22 +34,11 @@ export const AuthProvider = ({ children }) => {
     return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   }, []);
 
-  const isLocalhostHost = useCallback(() => {
-    try {
-      if (typeof window === 'undefined') return false;
-      const host = window.location.hostname;
-      return host === 'localhost' || host === '127.0.0.1' || host === '::1';
-    } catch {
-      return false;
-    }
-  }, []);
-
-  // In production, prefer redirect flow to avoid COOP/COEP popup issues that can
-  // block popup window polling and cause some browsers to appear "stuck".
+  // Use popup for desktop browsers so Firebase can complete the OAuth handshake
+  // without relying on redirect storage state after the full page reload.
   const shouldUseOAuthPopup = useCallback(() => {
-    if (process.env.NODE_ENV === 'production') return false;
-    return !isMobileBrowser() && isLocalhostHost();
-  }, [isLocalhostHost, isMobileBrowser]);
+    return !isMobileBrowser();
+  }, [isMobileBrowser]);
 
   const setAuthState = useCallback((userData, token) => {
     console.info('[Auth] Setting auth state', {
@@ -68,6 +59,21 @@ export const AuthProvider = ({ children }) => {
 
     setUser(userData);
   }, []);
+
+  const rememberOAuthRedirect = useCallback((provider) => {
+    sessionStorage.setItem(OAUTH_REDIRECT_PENDING_KEY, '1');
+    sessionStorage.setItem(OAUTH_REDIRECT_PROVIDER_KEY, provider);
+  }, []);
+
+  const clearOAuthRedirect = useCallback(() => {
+    sessionStorage.removeItem(OAUTH_REDIRECT_PENDING_KEY);
+    sessionStorage.removeItem(OAUTH_REDIRECT_PROVIDER_KEY);
+  }, []);
+
+  const buildOAuthReturnError = useCallback((provider) => (
+    `${provider || 'OAuth'} sign-in returned to VelocityBrain, but no Firebase session was created. ` +
+    'Please make sure this domain is authorized in Firebase Authentication and try again.'
+  ), []);
 
   const clearAuthState = useCallback(() => {
     console.info('[Auth] Clearing auth state');
@@ -306,16 +312,33 @@ export const AuthProvider = ({ children }) => {
               providerId: redirectResult.providerId
             });
             setFirebaseUser(redirectResult.user);
-            await syncFirebaseUser(redirectResult.user);
+            const syncResult = await syncFirebaseUser(redirectResult.user);
+            if (syncResult.success) {
+              clearOAuthRedirect();
+            } else if (isMounted) {
+              setError(syncResult.error || 'Unable to complete sign-in right now.');
+            }
+          }
+
+          await auth.authStateReady();
+
+          if (!redirectResult?.user && sessionStorage.getItem(OAUTH_REDIRECT_PENDING_KEY) && !auth.currentUser) {
+            const provider = sessionStorage.getItem(OAUTH_REDIRECT_PROVIDER_KEY);
+            console.warn('[Auth] OAuth redirect returned without a Firebase user', {
+              provider
+            });
+            clearOAuthRedirect();
+            if (isMounted) {
+              setError(buildOAuthReturnError(provider));
+            }
           }
         } catch (err) {
           console.error('[Auth] OAuth redirect result error', err);
+          clearOAuthRedirect();
           if (isMounted) {
             setError(err.message || 'OAuth sign-in failed');
           }
         }
-
-        await auth.authStateReady();
       })();
     }
 
@@ -332,7 +355,9 @@ export const AuthProvider = ({ children }) => {
           });
           setFirebaseUser(nextFirebaseUser);
           const result = await syncFirebaseUser(nextFirebaseUser);
-          if (!result.success && isMounted) {
+          if (result.success) {
+            clearOAuthRedirect();
+          } else if (isMounted) {
             setError(result.error || 'Unable to complete sign-in right now.');
           }
           return;
@@ -357,7 +382,7 @@ export const AuthProvider = ({ children }) => {
       isMounted = false;
       unsubscribe();
     };
-  }, [clearAuthState, restoreSessionFromStorage, setAuthState, syncFirebaseUser]);
+  }, [buildOAuthReturnError, clearAuthState, clearOAuthRedirect, restoreSessionFromStorage, setAuthState, syncFirebaseUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -390,6 +415,7 @@ export const AuthProvider = ({ children }) => {
 
       if (!shouldUseOAuthPopup()) {
         console.info('[Auth] Using GitHub redirect flow');
+        rememberOAuthRedirect('GitHub');
         await signInWithRedirect(auth, githubProvider);
         return { success: true };
       }
@@ -409,6 +435,7 @@ export const AuthProvider = ({ children }) => {
       if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
         try {
           console.warn('[Auth] GitHub popup blocked, falling back to redirect');
+          rememberOAuthRedirect('GitHub');
           await signInWithRedirect(auth, githubProvider);
           return { success: true };
         } catch (redirectErr) {
@@ -424,7 +451,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: errorMessage };
     }
-  }, [shouldUseOAuthPopup, syncFirebaseUser]);
+  }, [rememberOAuthRedirect, shouldUseOAuthPopup, syncFirebaseUser]);
 
   const loginWithGoogle = useCallback(async () => {
     try {
@@ -436,6 +463,7 @@ export const AuthProvider = ({ children }) => {
 
       if (!shouldUseOAuthPopup()) {
         console.info('[Auth] Using Google redirect flow');
+        rememberOAuthRedirect('Google');
         await signInWithRedirect(auth, googleProvider);
         return { success: true };
       }
@@ -455,6 +483,7 @@ export const AuthProvider = ({ children }) => {
       if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
         try {
           console.warn('[Auth] Google popup blocked, falling back to redirect');
+          rememberOAuthRedirect('Google');
           await signInWithRedirect(auth, googleProvider);
           return { success: true };
         } catch (redirectErr) {
@@ -470,7 +499,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: errorMessage };
     }
-  }, [shouldUseOAuthPopup, syncFirebaseUser]);
+  }, [rememberOAuthRedirect, shouldUseOAuthPopup, syncFirebaseUser]);
 
   const value = {
     user,
