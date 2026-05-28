@@ -33,6 +33,26 @@ export default function Login() {
 
   const oauthError = oauthErrorMessages[new URLSearchParams(location.search).get('error')] || null;
 
+  const navigateAfterAuth = (authenticatedUser) => {
+    const nextUser = authenticatedUser || user;
+    if (!nextUser) return;
+    navigate(nextUser.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
+  };
+
+  const handleGithubLogin = async () => {
+    const result = await loginWithGithub();
+    if (result?.success) {
+      navigateAfterAuth(result.user);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const result = await loginWithGoogle();
+    if (result?.success) {
+      navigateAfterAuth(result.user);
+    }
+  };
+
   // Reusable Claymorphism Style for Dark Mode
   const clayStyle = {
     backgroundColor: '#121214',
@@ -120,7 +140,7 @@ export default function Login() {
           <div className="space-y-5">
             <button
               type="button"
-              onClick={loginWithGithub}
+              onClick={handleGithubLogin}
               disabled={loading}
               className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white"
               style={clayButtonStyle}
@@ -130,7 +150,7 @@ export default function Login() {
             </button>
             <button
               type="button"
-              onClick={loginWithGoogle}
+              onClick={handleGoogleLogin}
               disabled={loading}
               className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white"
               style={clayButtonStyle}

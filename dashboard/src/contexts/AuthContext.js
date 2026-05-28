@@ -11,6 +11,23 @@ axios.defaults.baseURL = apiBaseUrl || '';
 const AuthContext = createContext();
 const OAUTH_REDIRECT_PENDING_KEY = 'velocitybrain_oauth_redirect_pending';
 const OAUTH_REDIRECT_PROVIDER_KEY = 'velocitybrain_oauth_redirect_provider';
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 10000;
+
+const withTimeout = (promise, timeoutMs, label) => new Promise((resolve, reject) => {
+  const timer = setTimeout(() => {
+    reject(new Error(`${label} timed out`));
+  }, timeoutMs);
+
+  promise
+    .then((value) => {
+      clearTimeout(timer);
+      resolve(value);
+    })
+    .catch((error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -304,7 +321,11 @@ export const AuthProvider = ({ children }) => {
       authBootstrapRef.current = (async () => {
         try {
           await authPersistenceReady;
-          const redirectResult = await getRedirectResult(auth);
+          const redirectResult = await withTimeout(
+            getRedirectResult(auth),
+            AUTH_BOOTSTRAP_TIMEOUT_MS,
+            'OAuth redirect result'
+          );
 
           if (redirectResult?.user) {
             console.info('[Auth] OAuth redirect result found', {
@@ -320,7 +341,11 @@ export const AuthProvider = ({ children }) => {
             }
           }
 
-          await auth.authStateReady();
+          await withTimeout(
+            auth.authStateReady(),
+            AUTH_BOOTSTRAP_TIMEOUT_MS,
+            'Firebase auth state'
+          );
 
           if (!redirectResult?.user && sessionStorage.getItem(OAUTH_REDIRECT_PENDING_KEY) && !auth.currentUser) {
             const provider = sessionStorage.getItem(OAUTH_REDIRECT_PROVIDER_KEY);
@@ -334,9 +359,12 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (err) {
           console.error('[Auth] OAuth redirect result error', err);
-          clearOAuthRedirect();
           if (isMounted) {
-            setError(err.message || 'OAuth sign-in failed');
+            const hasPendingRedirect = sessionStorage.getItem(OAUTH_REDIRECT_PENDING_KEY);
+            if (hasPendingRedirect && !auth.currentUser) {
+              clearOAuthRedirect();
+              setError(err.message || 'OAuth sign-in failed');
+            }
           }
         }
       })();
@@ -346,8 +374,6 @@ export const AuthProvider = ({ children }) => {
       if (!isMounted) return;
 
       try {
-        await authBootstrapRef.current;
-
         if (nextFirebaseUser) {
           console.info('[Auth] Firebase auth state changed: signed in', {
             email: nextFirebaseUser.email,
@@ -430,7 +456,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: syncResult.error };
       }
 
-      return { success: true };
+      return { success: true, user: syncResult.user };
     } catch (err) {
       if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
         try {
@@ -478,7 +504,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: syncResult.error };
       }
 
-      return { success: true };
+      return { success: true, user: syncResult.user };
     } catch (err) {
       if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
         try {
