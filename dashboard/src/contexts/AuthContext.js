@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }) => {
   const authBootstrapRef = useRef(null);
   const syncInFlightRef = useRef(new Map());
   const syncedUidRef = useRef(null);
+  const axiosAuthInterceptorIdRef = useRef(null);
   const isMobileBrowser = useCallback(() => {
     if (typeof navigator === 'undefined') return false;
     return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -43,10 +44,10 @@ export const AuthProvider = ({ children }) => {
 
   // In production, prefer redirect flow to avoid COOP/COEP popup issues that can
   // block popup window polling and cause some browsers to appear "stuck".
-  const shouldUseOAuthPopup = useCallback(() => !isMobileBrowser() && isLocalhostHost(), [
-    isLocalhostHost,
-    isMobileBrowser
-  ]);
+  const shouldUseOAuthPopup = useCallback(() => {
+    if (process.env.NODE_ENV === 'production') return false;
+    return !isMobileBrowser() && isLocalhostHost();
+  }, [isLocalhostHost, isMobileBrowser]);
 
   const setAuthState = useCallback((userData, token) => {
     console.info('[Auth] Setting auth state', {
@@ -149,6 +150,11 @@ export const AuthProvider = ({ children }) => {
     return syncPromise;
   }, [clearAuthState, setAuthState, user]);
 
+  const resyncBackendSession = useCallback(async () => {
+    if (!firebaseUser) return { success: false, error: 'Missing Firebase user information.' };
+    return syncFirebaseUser(firebaseUser);
+  }, [firebaseUser, syncFirebaseUser]);
+
   // Configure axios defaults on mount
   useEffect(() => {
     const token = localStorage.getItem('velocitybrain_token');
@@ -160,6 +166,51 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common.Authorization = `Bearer ${token}`;
     }
   }, []);
+
+  useEffect(() => {
+    if (axiosAuthInterceptorIdRef.current != null) {
+      return;
+    }
+
+    axiosAuthInterceptorIdRef.current = axios.interceptors.response.use(
+      (response) => response,
+      async (axiosError) => {
+        const status = axiosError?.response?.status;
+        const originalRequest = axiosError?.config;
+
+        if (!originalRequest || status !== 401) {
+          return Promise.reject(axiosError);
+        }
+
+        if (originalRequest.__velocitybrainRetriedAuth) {
+          return Promise.reject(axiosError);
+        }
+
+        if (isBackendUnavailable(axiosError)) {
+          return Promise.reject(axiosError);
+        }
+
+        originalRequest.__velocitybrainRetriedAuth = true;
+
+        try {
+          const syncResult = await resyncBackendSession();
+          if (!syncResult?.success) {
+            return Promise.reject(axiosError);
+          }
+
+          const refreshedToken = localStorage.getItem('velocitybrain_token');
+          if (refreshedToken) {
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${refreshedToken}`;
+          }
+
+          return axios(originalRequest);
+        } catch (refreshErr) {
+          return Promise.reject(axiosError);
+        }
+      }
+    );
+  }, [resyncBackendSession]);
 
   useEffect(() => {
     let isMounted = true;
