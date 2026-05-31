@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import BlobLoader from '../components/BlobLoader';
-import { AlertTriangle, ArrowRight, CheckCircle, Github, Google, RefreshCw, X } from '../components/Icons';
+import { AlertTriangle, ArrowRight, CheckCircle, RefreshCw, X } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
 import { INTEGRATIONS_COMING_SOON } from '../lib/productFlags';
