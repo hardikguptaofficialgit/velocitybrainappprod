@@ -1,131 +1,111 @@
 # OAuth Configuration Guide for VelocityBrain
 
-This guide explains how to configure OAuth providers (Google and GitHub) for VelocityBrain authentication.
+VelocityBrain uses **Firebase Authentication** for Google and GitHub sign-in. You must configure both **Firebase Console** and **Google Cloud Console** (for Google).
 
-## Prerequisites
+Project: `velocitybrainapp`
 
-- Appwrite Console access (https://cloud.appwrite.io/console)
-- Project ID: `69e7d0a0002573ec6840`
-- Appwrite Endpoint: `https://fra.cloud.appwrite.io/v1`
+## Step 1: Firebase Authentication
 
-## Step 1: Configure Google OAuth
+### 1.1 Enable providers
 
-### 1.1 Create Google OAuth Client
+1. Open [Firebase Console](https://console.firebase.google.com) → project **velocitybrainapp**
+2. Go to **Build** → **Authentication** → **Sign-in method**
+3. Enable **Google** and **GitHub**
+4. For GitHub, enter the OAuth App Client ID and Secret (see Step 3)
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select your project or create a new one
-3. Navigate to **APIs & Services** > **Credentials**
-4. Click **Create Credentials** > **OAuth 2.0 Client ID**
-5. Select **Web application** as the application type
-6. Configure:
-   - **Name**: `VelocityBrain`
-   - **Authorised JavaScript origins**:
-     - `http://localhost:3000` (for local development)
-     - `https://velocitybrain.vercel.app` (for production)
-   - **Authorised redirect URIs**:
-     - `https://fra.cloud.appwrite.io/v1/account/sessions/oauth2/callback/google/69e7d0a0002573ec6840`
-7. Click **Create**
-8. Copy the **Client ID** and **Client Secret**
+### 1.2 Authorized domains
 
-### 1.2 Configure in Appwrite Console
+Go to **Authentication** → **Settings** → **Authorized domains** and ensure every frontend URL is listed:
 
-1. Go to [Appwrite Console](https://cloud.appwrite.io/console)
-2. Select the **VelocityBrain** project
-3. Navigate to **Auth** > **Providers** > **Google**
-4. Toggle **Enabled** to ON
-5. Enter the **App ID** (Client ID from Google Cloud Console)
-6. Enter the **App Secret** (Client Secret from Google Cloud Console)
-7. Click **Update**
+| Domain | Required for |
+|--------|----------------|
+| `localhost` | Local dev |
+| `velocitybrainapp.firebaseapp.com` | Firebase default |
+| `velocitybrainapp.web.app` | Firebase default |
+| `velocitybrain.vercel.app` | Vercel production |
+| `velocity.linkitapp.in` | Custom production domain |
 
-## Step 2: Configure GitHub OAuth
+> Adding a domain here alone is **not enough** for Google sign-in. You also need Step 2.
 
-### 2.1 Create GitHub OAuth App
+## Step 2: Google Cloud Console (required for Google sign-in)
 
-1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
-2. Click **OAuth Apps** > **New OAuth App**
-3. Configure:
-   - **Application name**: `VelocityBrain`
-   - **Homepage URL**: `http://localhost:3000` (local) or `https://velocitybrain.vercel.app` (production)
-   - **Application description**: `VelocityBrain Dashboard`
-   - **Authorization callback URL**: `https://fra.cloud.appwrite.io/v1/account/sessions/oauth2/callback/github/69e7d0a0002573ec6840`
-4. Click **Register application**
-5. Copy the **Client ID** and generate a **Client Secret**
+Firebase creates a **Web client (auto created by Google Service)** OAuth client. You must add your app URLs there.
 
-### 2.2 Configure in Appwrite Console
+1. Open [Google Cloud Console](https://console.cloud.google.com) → project **velocitybrainapp**
+2. Go to **APIs & Services** → **Credentials**
+3. Open **Web client (auto created by Google Service)**
+4. Under **Authorised JavaScript origins**, add:
+   - `http://localhost`
+   - `http://localhost:3000`
+   - `https://velocitybrain.vercel.app`
+   - `https://velocity.linkitapp.in`
+   - `https://velocitybrainapp.firebaseapp.com`
+5. Under **Authorised redirect URIs**, ensure this exists:
+   - `https://velocitybrainapp.firebaseapp.com/__/auth/handler`
+6. Save
 
-1. Go to [Appwrite Console](https://cloud.appwrite.io/console)
-2. Select the **VelocityBrain** project
-3. Navigate to **Auth** > **Providers** > **GitHub**
-4. Toggle **Enabled** to ON
-5. Enter the **Client ID** from GitHub OAuth App
-6. Enter the **Client Secret** from GitHub OAuth App
-7. Click **Update**
+If `https://velocitybrain.vercel.app` is missing from **JavaScript origins**, Google sign-in can return to the login page without creating a Firebase session.
 
-## Step 3: Test OAuth Flow
+## Step 3: GitHub OAuth App
 
-1. Start the dashboard: `cd dashboard && npm start`
-2. Navigate to `http://localhost:3000/login`
-3. Click **"Continue with Google"** or **"Continue with GitHub"**
-4. Complete the OAuth flow in the provider's popup
-5. You should be redirected to `/dashboard` after successful authentication
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
+2. Configure:
+   - **Homepage URL**: `https://velocitybrain.vercel.app`
+   - **Authorization callback URL**: copy from Firebase Console → Authentication → Sign-in method → GitHub → **Authorization callback URL**
+3. Copy Client ID and Secret into Firebase → GitHub provider settings
+
+## Step 4: Vercel environment variables
+
+Firebase config is baked in at **build time**. In the Vercel project for the dashboard, set:
+
+- `REACT_APP_FIREBASE_API_KEY`
+- `REACT_APP_FIREBASE_AUTH_DOMAIN` = `velocitybrainapp.firebaseapp.com`
+- `REACT_APP_FIREBASE_PROJECT_ID` = `velocitybrainapp`
+- `REACT_APP_FIREBASE_STORAGE_BUCKET`
+- `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`
+- `REACT_APP_FIREBASE_APP_ID`
+- `REACT_APP_FIREBASE_MEASUREMENT_ID`
+- `REACT_APP_API_URL` = your backend URL (e.g. `https://velocity.linkitapp.in`)
+
+Redeploy after changing these values.
+
+## Step 5: Backend Firebase Admin
+
+The Node backend verifies Firebase ID tokens at `/api/auth/firebase-session`. Ensure production has a valid service account:
+
+- `FIREBASE_SERVICE_ACCOUNT_PATH` or inline `FIREBASE_*` credentials in backend env
 
 ## Troubleshooting
 
-### OAuth Session Not Created (401 Error)
+### "OAuth sign-in returned … but no Firebase session was created"
 
-**Symptom**: After OAuth redirect, you see "User (role: guests) missing scopes" error.
+**Symptom**: After choosing a Google account, you land back on `/login` with this error.
 
-**Causes**:
-1. Callback URL mismatch between provider and Appwrite
-2. OAuth provider not enabled in Appwrite Console
-3. Incorrect Client ID/Secret
-4. Missing authorized origins/redirect URIs in provider settings
+**Most common cause**: `https://velocitybrain.vercel.app` is in Firebase **Authorized domains** but **not** in Google Cloud **Authorised JavaScript origins** (Step 2).
 
-**Solutions**:
-1. Verify the callback URL in Appwrite Console matches exactly what's configured in the OAuth provider
-2. Ensure the OAuth provider is enabled in Appwrite Console
-3. Double-check Client ID and Secret are correct
-4. Add `http://localhost:3000` to authorized origins in both Google Cloud Console and GitHub OAuth App
+**Also check**:
+1. Google provider is **Enabled** in Firebase Authentication
+2. Vercel has correct `REACT_APP_FIREBASE_*` vars and the app was redeployed
+3. On mobile, try again after the latest deploy (popup flow is preferred over redirect)
 
-### Local Development Issues
+### Backend sync errors after Google sign-in succeeds
 
-**Issue**: OAuth works in production but not locally.
+If Firebase sign-in works but you stay on login with a server error:
 
-**Solution**: Make sure to add `http://localhost:3000` to:
-- Google Cloud Console: Authorised JavaScript origins
-- GitHub OAuth App: Homepage URL
-- Both providers: Authorised redirect URIs (if needed)
+1. Confirm `REACT_APP_API_URL` points to a reachable backend
+2. Confirm backend Firebase Admin credentials are configured
+3. Check backend logs for `/api/auth/firebase-session`
 
-## Current Implementation
-
-The frontend uses Appwrite's native OAuth flow:
+## Current implementation
 
 ```javascript
-// AuthContext.js
-account.createOAuth2Session({
-  provider: OAuthProvider.Google,
-  success: `${window.location.origin}/dashboard`,
-  failure: `${window.location.origin}/login?error=google_failed`
-});
+// AuthContext.js — popup first, redirect fallback
+const result = await signInWithPopup(auth, googleProvider);
+await axios.post('/api/auth/firebase-session', { idToken });
 ```
 
 After successful OAuth:
-1. Appwrite creates the session
-2. Appwrite redirects to `/dashboard`
-3. AuthContext detects the session
-4. AuthContext syncs with backend via `/api/auth/appwrite-session`
-5. Backend generates JWT token for API calls
-
-## Email/Password Authentication
-
-Email/password authentication uses Appwrite's native methods:
-
-```javascript
-// Login
-await account.createEmailPasswordSession(email, password);
-
-// Register
-await account.create(ID.unique(), email, password, name);
-```
-
-This doesn't require any additional OAuth configuration.
+1. Firebase creates the user session
+2. Frontend sends the Firebase ID token to `/api/auth/firebase-session`
+3. Backend creates/updates the user and returns a JWT
+4. User is redirected to onboarding or dashboard

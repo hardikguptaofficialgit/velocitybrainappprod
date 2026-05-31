@@ -1,33 +1,29 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { signOut, onAuthStateChanged, signInWithRedirect, signInWithPopup, getRedirectResult } from 'firebase/auth';
-import { auth, googleProvider, githubProvider, authPersistenceReady } from '../lib/firebase';
+import {
+  signOut,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult
+} from 'firebase/auth';
+import { auth, googleProvider, githubProvider } from '../lib/firebase';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
 import { apiBaseUrl, resolveApiUrl } from '../lib/api';
 
-// Configure axios defaults
 axios.defaults.baseURL = apiBaseUrl || '';
 
 const AuthContext = createContext();
-const OAUTH_REDIRECT_PENDING_KEY = 'velocitybrain_oauth_redirect_pending';
-const OAUTH_REDIRECT_PROVIDER_KEY = 'velocitybrain_oauth_redirect_provider';
-const AUTH_BOOTSTRAP_TIMEOUT_MS = 10000;
 
-const withTimeout = (promise, timeoutMs, label) => new Promise((resolve, reject) => {
-  const timer = setTimeout(() => {
-    reject(new Error(`${label} timed out`));
-  }, timeoutMs);
+const OAUTH_PENDING_KEY = 'velocitybrain_oauth_pending';
+const OAUTH_PROVIDER_KEY = 'velocitybrain_oauth_provider';
+const SESSION_VALIDATED_AT_KEY = 'velocitybrain_session_validated_at';
+const SESSION_VALIDATE_MS = 5 * 60 * 1000;
 
-  promise
-    .then((value) => {
-      clearTimeout(timer);
-      resolve(value);
-    })
-    .catch((error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-});
+const POPUP_BLOCKED_CODES = new Set([
+  'auth/popup-blocked',
+  'auth/cancelled-popup-request'
+]);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -42,28 +38,12 @@ export const AuthProvider = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const authBootstrapRef = useRef(null);
+
   const syncInFlightRef = useRef(new Map());
   const syncedUidRef = useRef(null);
-  const axiosAuthInterceptorIdRef = useRef(null);
-  const isMobileBrowser = useCallback(() => {
-    if (typeof navigator === 'undefined') return false;
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  }, []);
-
-  // Use popup for desktop browsers so Firebase can complete the OAuth handshake
-  // without relying on redirect storage state after the full page reload.
-  const shouldUseOAuthPopup = useCallback(() => {
-    return !isMobileBrowser();
-  }, [isMobileBrowser]);
+  const redirectHandledRef = useRef(false);
 
   const setAuthState = useCallback((userData, token) => {
-    console.info('[Auth] Setting auth state', {
-      userId: userData?.id,
-      email: userData?.email,
-      hasToken: Boolean(token)
-    });
-
     localStorage.setItem('velocitybrain_user', JSON.stringify(userData));
 
     if (token) {
@@ -77,27 +57,7 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   }, []);
 
-  const rememberOAuthRedirect = useCallback((provider) => {
-    sessionStorage.setItem(OAUTH_REDIRECT_PENDING_KEY, '1');
-    sessionStorage.setItem(OAUTH_REDIRECT_PROVIDER_KEY, provider);
-  }, []);
-
-  const hasPendingOAuthRedirect = useCallback(() => (
-    sessionStorage.getItem(OAUTH_REDIRECT_PENDING_KEY) === '1'
-  ), []);
-
-  const clearOAuthRedirect = useCallback(() => {
-    sessionStorage.removeItem(OAUTH_REDIRECT_PENDING_KEY);
-    sessionStorage.removeItem(OAUTH_REDIRECT_PROVIDER_KEY);
-  }, []);
-
-  const buildOAuthReturnError = useCallback((provider) => (
-    `${provider || 'OAuth'} sign-in returned to VelocityBrain, but no Firebase session was created. ` +
-    'Please make sure this domain is authorized in Firebase Authentication and try again.'
-  ), []);
-
   const clearAuthState = useCallback(() => {
-    console.info('[Auth] Clearing auth state');
     localStorage.removeItem('velocitybrain_token');
     localStorage.removeItem('velocitybrain_user');
     delete axios.defaults.headers.common.Authorization;
@@ -107,7 +67,22 @@ export const AuthProvider = ({ children }) => {
     setFirebaseUser(null);
   }, []);
 
-  const restoreSessionFromStorage = useCallback(async () => {
+  const markOAuthPending = useCallback((provider) => {
+    localStorage.setItem(OAUTH_PENDING_KEY, '1');
+    localStorage.setItem(OAUTH_PROVIDER_KEY, provider);
+  }, []);
+
+  const clearOAuthPending = useCallback(() => {
+    localStorage.removeItem(OAUTH_PENDING_KEY);
+    localStorage.removeItem(OAUTH_PROVIDER_KEY);
+  }, []);
+
+  const isOAuthPending = useCallback(
+    () => localStorage.getItem(OAUTH_PENDING_KEY) === '1',
+    []
+  );
+
+  const restoreSessionFromStorage = useCallback(async ({ forceValidate = false } = {}) => {
     const storedToken = localStorage.getItem('velocitybrain_token');
     const storedUserRaw = localStorage.getItem('velocitybrain_user');
 
@@ -118,102 +93,114 @@ export const AuthProvider = ({ children }) => {
     try {
       const storedUser = JSON.parse(storedUserRaw);
       axios.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+
+      const validatedAt = Number(sessionStorage.getItem(SESSION_VALIDATED_AT_KEY) || 0);
+      const recentlyValidated = !forceValidate && validatedAt && Date.now() - validatedAt < SESSION_VALIDATE_MS;
+
+      if (recentlyValidated) {
+        setError(null);
+        setAuthState(storedUser, storedToken);
+        return { success: true, user: storedUser, fromCache: true };
+      }
+
       const response = await axios.get(resolveApiUrl('/api/auth/me'));
       const restoredUser = response.data?.user || storedUser;
+      sessionStorage.setItem(SESSION_VALIDATED_AT_KEY, String(Date.now()));
       setError(null);
       setAuthState(restoredUser, storedToken);
-      console.info('[Auth] Restored session from stored token', {
-        userId: restoredUser?.id,
-        email: restoredUser?.email
-      });
       return { success: true, user: restoredUser };
-    } catch (restoreErr) {
-      console.warn('[Auth] Stored session is no longer valid', {
-        status: restoreErr?.response?.status,
-        message: restoreErr?.message
-      });
+    } catch (err) {
+      if (err?.response?.status === 429) {
+        try {
+          const storedUser = JSON.parse(storedUserRaw);
+          setAuthState(storedUser, storedToken);
+          return { success: true, user: storedUser, fromCache: true };
+        } catch {
+          return { success: false };
+        }
+      }
       return { success: false };
     }
   }, [setAuthState]);
 
-  const syncFirebaseUser = useCallback(async (firebaseUser) => {
-    if (!firebaseUser?.uid) {
-      return {
-        success: false,
-        error: 'Missing Firebase user information.'
-      };
+  const hasActiveBackendSession = useCallback((nextFirebaseUser) => {
+    if (!nextFirebaseUser?.uid) {
+      return false;
     }
 
-    if (syncedUidRef.current === firebaseUser.uid && user) {
-      console.info('[Auth] Firebase user already synced in this session', {
-        uid: firebaseUser.uid,
-        userId: user.id
-      });
+    const storedToken = localStorage.getItem('velocitybrain_token');
+    const storedUserRaw = localStorage.getItem('velocitybrain_user');
+    if (!storedToken || !storedUserRaw) {
+      return false;
+    }
+
+    try {
+      const storedUser = JSON.parse(storedUserRaw);
+      return (
+        syncedUidRef.current === nextFirebaseUser.uid ||
+        storedUser?.id === nextFirebaseUser.uid ||
+        (storedUser?.email && storedUser.email === nextFirebaseUser.email)
+      );
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const syncFirebaseUser = useCallback(async (nextFirebaseUser, { force = false } = {}) => {
+    if (!nextFirebaseUser?.uid) {
+      return { success: false, error: 'Missing Firebase user information.' };
+    }
+
+    if (!force && hasActiveBackendSession(nextFirebaseUser)) {
+      const storedUserRaw = localStorage.getItem('velocitybrain_user');
+      const storedToken = localStorage.getItem('velocitybrain_token');
+      if (storedUserRaw && storedToken) {
+        const storedUser = JSON.parse(storedUserRaw);
+        syncedUidRef.current = nextFirebaseUser.uid;
+        setAuthState(storedUser, storedToken);
+        return { success: true, user: storedUser };
+      }
+    }
+
+    if (syncedUidRef.current === nextFirebaseUser.uid && user) {
       return { success: true, user };
     }
 
-    if (syncInFlightRef.current.has(firebaseUser.uid)) {
-      console.info('[Auth] Reusing in-flight backend session sync', {
-        uid: firebaseUser.uid
-      });
-      return syncInFlightRef.current.get(firebaseUser.uid);
+    if (syncInFlightRef.current.has(nextFirebaseUser.uid)) {
+      return syncInFlightRef.current.get(nextFirebaseUser.uid);
     }
-
-    console.info('[Auth] Syncing Firebase user with backend', {
-      uid: firebaseUser?.uid,
-          email: firebaseUser?.email,
-          apiBaseUrl: axios.defaults.baseURL || '(relative /api)'
-        });
 
     const syncPromise = (async () => {
       try {
-        const idToken = await firebaseUser.getIdToken();
-        const response = await axios.post(resolveApiUrl('/api/auth/firebase-session'), {
-          idToken
-        });
+        const idToken = await nextFirebaseUser.getIdToken();
+        const response = await axios.post(resolveApiUrl('/api/auth/firebase-session'), { idToken });
 
         if (response.data?.requiresTwoFactor) {
-          const twoFactorMessage =
+          const message =
             response.data?.message ||
-            'Two-factor authentication is required. Complete 2FA from Settings after signing in with email and password.';
-          setError(twoFactorMessage);
-          return { success: false, error: twoFactorMessage };
+            'Two-factor authentication is required. Sign in with email and password to complete 2FA.';
+          setError(message);
+          return { success: false, error: message };
         }
 
         const { user: syncedUser, token } = response.data;
         if (!syncedUser?.id || !token) {
-          const missingSessionMessage = 'Sign-in succeeded with Google, but the server did not return a session. Please try again.';
-          setError(missingSessionMessage);
-          return { success: false, error: missingSessionMessage };
+          const message = 'Sign-in succeeded, but the server did not return a session. Please try again.';
+          setError(message);
+          return { success: false, error: message };
         }
 
-        console.info('[Auth] Backend session sync succeeded', {
-          userId: syncedUser?.id,
-          email: syncedUser?.email,
-          hasToken: Boolean(token)
-        });
-        syncedUidRef.current = firebaseUser.uid;
+        syncedUidRef.current = nextFirebaseUser.uid;
+        sessionStorage.setItem(SESSION_VALIDATED_AT_KEY, String(Date.now()));
         setError(null);
         setAuthState(syncedUser, token);
+        clearOAuthPending();
         return { success: true, user: syncedUser };
       } catch (backendErr) {
-        const status = backendErr?.response?.status;
-        console.error('[Auth] Backend session sync failed', {
-          code: backendErr?.code,
-          status,
-          message: backendErr?.message,
-          response: backendErr?.response?.data
-        });
-        if (!isBackendUnavailable(backendErr)) {
-          console.error('Backend sync error:', backendErr?.response?.data || backendErr.message);
-        }
-
         syncedUidRef.current = null;
-
+        const status = backendErr?.response?.status;
         const errorMessage = getErrorMessage(backendErr, 'Unable to complete sign-in right now.');
 
-        // Keep the Firebase session for transient/server errors so the user can retry
-        // without getting stuck in a "picked Gmail then back to login" loop.
         if (isBackendUnavailable(backendErr) || status === 503 || status >= 500) {
           setError(errorMessage);
           return { success: false, error: errorMessage };
@@ -222,237 +209,209 @@ export const AuthProvider = ({ children }) => {
         if (status === 401) {
           try {
             await signOut(auth);
-          } catch (signOutErr) {
-            console.warn('[Auth] Firebase sign-out after failed sync', signOutErr);
+          } catch {
+            // ignore sign-out errors
           }
           clearAuthState();
-          return { success: false, error: errorMessage };
         }
 
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
-        syncInFlightRef.current.delete(firebaseUser.uid);
+        syncInFlightRef.current.delete(nextFirebaseUser.uid);
       }
     })();
 
-    syncInFlightRef.current.set(firebaseUser.uid, syncPromise);
+    syncInFlightRef.current.set(nextFirebaseUser.uid, syncPromise);
     return syncPromise;
-  }, [clearAuthState, setAuthState, user]);
+  }, [clearAuthState, clearOAuthPending, hasActiveBackendSession, setAuthState, user]);
 
-  const resyncBackendSession = useCallback(async () => {
-    if (!firebaseUser) return { success: false, error: 'Missing Firebase user information.' };
-    return syncFirebaseUser(firebaseUser);
-  }, [firebaseUser, syncFirebaseUser]);
+  const handleFirebaseUser = useCallback(async (nextFirebaseUser, options = {}) => {
+    if (!nextFirebaseUser) {
+      return { success: false };
+    }
 
-  // Configure axios defaults on mount and restore a valid stored session immediately.
+    setFirebaseUser(nextFirebaseUser);
+    return syncFirebaseUser(nextFirebaseUser, options);
+  }, [syncFirebaseUser]);
+
+  const completeOAuthRedirect = useCallback(async () => {
+    if (redirectHandledRef.current) {
+      return null;
+    }
+    redirectHandledRef.current = true;
+
+    try {
+      const result = await getRedirectResult(auth);
+      if (result?.user) {
+        console.info('[Auth] OAuth redirect completed', {
+          email: result.user.email,
+          providerId: result.providerId
+        });
+        return result.user;
+      }
+    } catch (redirectErr) {
+      console.error('[Auth] OAuth redirect result failed', redirectErr);
+      if (isOAuthPending()) {
+        const provider = localStorage.getItem(OAUTH_PROVIDER_KEY) || 'OAuth';
+        setError(redirectErr.message || `${provider} sign-in failed. Please try again.`);
+      }
+      clearOAuthPending();
+    }
+
+    return null;
+  }, [clearOAuthPending, isOAuthPending]);
+
+  const signInWithProvider = useCallback(async (provider, providerLabel) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.info(`[Auth] Starting ${providerLabel} popup sign-in`);
+      const result = await signInWithPopup(auth, provider);
+      const syncResult = await handleFirebaseUser(result.user, { force: true });
+      setLoading(false);
+
+      if (!syncResult.success) {
+        return { success: false, error: syncResult.error };
+      }
+
+      return { success: true, user: syncResult.user };
+    } catch (popupErr) {
+      if (!POPUP_BLOCKED_CODES.has(popupErr?.code)) {
+        const message = popupErr.message || `${providerLabel} sign-in failed.`;
+        setError(message);
+        setLoading(false);
+        return { success: false, error: message };
+      }
+
+      try {
+        console.info(`[Auth] ${providerLabel} popup blocked, using redirect`);
+        markOAuthPending(providerLabel);
+        redirectHandledRef.current = false;
+        await signInWithRedirect(auth, provider);
+        return { success: true, pendingRedirect: true };
+      } catch (redirectErr) {
+        clearOAuthPending();
+        const message = redirectErr.message || `${providerLabel} sign-in failed.`;
+        setError(message);
+        setLoading(false);
+        return { success: false, error: message };
+      }
+    }
+  }, [clearOAuthPending, handleFirebaseUser, markOAuthPending]);
+
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
 
-    const bootstrapStoredSession = async () => {
-      const token = localStorage.getItem('velocitybrain_token');
-      console.info('[Auth] Bootstrapping axios auth header', {
-        apiBaseUrl: axios.defaults.baseURL || '(relative /api)',
-        hasStoredToken: Boolean(token)
-      });
-      if (!token) {
+    const bootstrap = async () => {
+      const storedToken = localStorage.getItem('velocitybrain_token');
+      if (storedToken) {
+        axios.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+        const restored = await restoreSessionFromStorage();
+        if (restored.success && active) {
+          setLoading(false);
+        }
+      }
+
+      await auth.authStateReady();
+
+      const redirectUser = await completeOAuthRedirect();
+      if (redirectUser && active) {
+        await handleFirebaseUser(redirectUser, { force: true });
+      } else if (isOAuthPending() && !auth.currentUser && active) {
+        const provider = localStorage.getItem(OAUTH_PROVIDER_KEY) || 'OAuth';
+        clearOAuthPending();
+        setError(
+          `${provider} sign-in returned without a session. Confirm this domain is authorized in Firebase ` +
+          'and listed under Google Cloud → Credentials → Authorised JavaScript origins.'
+        );
+      }
+    };
+
+    bootstrap().finally(() => {
+      if (active) {
+        setLoading(false);
+      }
+    });
+
+    const unsubscribe = onAuthStateChanged(auth, async (nextFirebaseUser) => {
+      if (!active) return;
+
+      if (nextFirebaseUser) {
+        await handleFirebaseUser(nextFirebaseUser);
+        setLoading(false);
         return;
       }
 
-      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-      const restored = await restoreSessionFromStorage();
-      if (!cancelled && restored.success) {
-        setLoading(false);
+      if (isOAuthPending()) {
+        return;
       }
-    };
 
-    bootstrapStoredSession();
+      const restored = await restoreSessionFromStorage();
+      if (!restored.success) {
+        clearAuthState();
+      }
+      setLoading(false);
+    });
 
     return () => {
-      cancelled = true;
+      active = false;
+      unsubscribe();
     };
-  }, [restoreSessionFromStorage]);
+  }, [
+    clearAuthState,
+    clearOAuthPending,
+    completeOAuthRedirect,
+    handleFirebaseUser,
+    isOAuthPending,
+    restoreSessionFromStorage
+  ]);
 
   useEffect(() => {
-    if (axiosAuthInterceptorIdRef.current != null) {
-      return;
-    }
-
-    axiosAuthInterceptorIdRef.current = axios.interceptors.response.use(
+    const interceptorId = axios.interceptors.response.use(
       (response) => response,
       async (axiosError) => {
         const status = axiosError?.response?.status;
         const originalRequest = axiosError?.config;
 
-        if (!originalRequest || status !== 401) {
+        if (!originalRequest || status !== 401 || originalRequest.__velocitybrainRetriedAuth) {
           return Promise.reject(axiosError);
         }
 
-        if (originalRequest.__velocitybrainRetriedAuth) {
-          return Promise.reject(axiosError);
-        }
-
-        if (isBackendUnavailable(axiosError)) {
+        if (isBackendUnavailable(axiosError) || !auth.currentUser) {
           return Promise.reject(axiosError);
         }
 
         originalRequest.__velocitybrainRetriedAuth = true;
 
-        try {
-          const syncResult = await resyncBackendSession();
-          if (!syncResult?.success) {
-            return Promise.reject(axiosError);
-          }
-
-          const refreshedToken = localStorage.getItem('velocitybrain_token');
-          if (refreshedToken) {
-            originalRequest.headers = originalRequest.headers || {};
-            originalRequest.headers.Authorization = `Bearer ${refreshedToken}`;
-          }
-
-          return axios(originalRequest);
-        } catch (refreshErr) {
+        const syncResult = await syncFirebaseUser(auth.currentUser);
+        if (!syncResult.success) {
           return Promise.reject(axiosError);
         }
+
+        const refreshedToken = localStorage.getItem('velocitybrain_token');
+        if (refreshedToken) {
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${refreshedToken}`;
+        }
+
+        return axios(originalRequest);
       }
     );
-  }, [resyncBackendSession]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    if (!authBootstrapRef.current) {
-      authBootstrapRef.current = (async () => {
-        try {
-          await authPersistenceReady;
-          const redirectResult = await withTimeout(
-            getRedirectResult(auth),
-            AUTH_BOOTSTRAP_TIMEOUT_MS,
-            'OAuth redirect result'
-          );
-
-          if (redirectResult?.user) {
-            console.info('[Auth] OAuth redirect result found', {
-              email: redirectResult.user.email,
-              providerId: redirectResult.providerId
-            });
-            setFirebaseUser(redirectResult.user);
-            const syncResult = await syncFirebaseUser(redirectResult.user);
-            if (syncResult.success) {
-              clearOAuthRedirect();
-            } else if (isMounted) {
-              setError(syncResult.error || 'Unable to complete sign-in right now.');
-            }
-          }
-
-          await withTimeout(
-            auth.authStateReady(),
-            AUTH_BOOTSTRAP_TIMEOUT_MS,
-            'Firebase auth state'
-          );
-
-          if (!redirectResult?.user && hasPendingOAuthRedirect() && !auth.currentUser) {
-            const provider = sessionStorage.getItem(OAUTH_REDIRECT_PROVIDER_KEY);
-            console.warn('[Auth] OAuth redirect returned without a Firebase user', {
-              provider
-            });
-            clearOAuthRedirect();
-            if (isMounted) {
-              setError(buildOAuthReturnError(provider));
-            }
-          }
-        } catch (err) {
-          console.error('[Auth] OAuth redirect result error', err);
-          if (isMounted) {
-            if (hasPendingOAuthRedirect() && !auth.currentUser) {
-              clearOAuthRedirect();
-              setError(err.message || 'OAuth sign-in failed');
-            }
-          }
-        }
-      })();
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (nextFirebaseUser) => {
-      if (!isMounted) return;
-
-      try {
-        if (nextFirebaseUser) {
-          console.info('[Auth] Firebase auth state changed: signed in', {
-            email: nextFirebaseUser.email,
-            uid: nextFirebaseUser.uid
-          });
-          setFirebaseUser(nextFirebaseUser);
-          const result = await syncFirebaseUser(nextFirebaseUser);
-          if (result.success) {
-            clearOAuthRedirect();
-          } else if (isMounted) {
-            setError(result.error || 'Unable to complete sign-in right now.');
-          }
-          return;
-        }
-
-        if (hasPendingOAuthRedirect()) {
-          console.info('[Auth] Firebase reported signed out while OAuth redirect is pending');
-          try {
-            await authBootstrapRef.current;
-          } catch (bootstrapErr) {
-            console.warn('[Auth] OAuth bootstrap did not complete before signed-out state', bootstrapErr);
-          }
-
-          if (!isMounted) return;
-
-          if (auth.currentUser) {
-            console.info('[Auth] Firebase user became available after redirect bootstrap', {
-              email: auth.currentUser.email,
-              uid: auth.currentUser.uid
-            });
-            setFirebaseUser(auth.currentUser);
-            const result = await syncFirebaseUser(auth.currentUser);
-            if (result.success) {
-              clearOAuthRedirect();
-            } else if (isMounted) {
-              setError(result.error || 'Unable to complete sign-in right now.');
-            }
-            return;
-          }
-
-          const provider = sessionStorage.getItem(OAUTH_REDIRECT_PROVIDER_KEY);
-          clearOAuthRedirect();
-          setError(buildOAuthReturnError(provider));
-          return;
-        }
-
-        console.info('[Auth] Firebase auth state changed: signed out');
-        const restored = await restoreSessionFromStorage();
-        if (!restored.success) {
-          clearAuthState();
-        }
-      } catch (err) {
-        console.error('[Auth] Auth state listener error', err);
-        clearAuthState();
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    });
 
     return () => {
-      isMounted = false;
-      unsubscribe();
+      axios.interceptors.response.eject(interceptorId);
     };
-  }, [buildOAuthReturnError, clearAuthState, clearOAuthRedirect, hasPendingOAuthRedirect, restoreSessionFromStorage, setAuthState, syncFirebaseUser]);
+  }, [syncFirebaseUser]);
 
   const logout = useCallback(async () => {
     clearAuthState();
     setError(null);
-
     try {
-      console.info('[Auth] Logging out current user');
       await signOut(auth);
     } catch (err) {
-      console.error('[Auth] Firebase logout error', err);
+      console.error('[Auth] Logout failed', err);
     }
   }, [clearAuthState]);
 
@@ -465,116 +424,30 @@ export const AuthProvider = ({ children }) => {
     setAuthState(userData, token);
   }, [setAuthState]);
 
-  const loginWithGithub = useCallback(async () => {
-    try {
-      console.info('[Auth] Starting GitHub OAuth redirect');
-      setLoading(true);
-      setError(null);
+  const loginWithGoogle = useCallback(
+    () => signInWithProvider(googleProvider, 'Google'),
+    [signInWithProvider]
+  );
 
-      await authPersistenceReady;
-
-      if (!shouldUseOAuthPopup()) {
-        console.info('[Auth] Using GitHub redirect flow');
-        rememberOAuthRedirect('GitHub');
-        await signInWithRedirect(auth, githubProvider);
-        return { success: true };
-      }
-
-      console.info('[Auth] Using GitHub popup flow');
-      const result = await signInWithPopup(auth, githubProvider);
-      setFirebaseUser(result.user);
-      const syncResult = await syncFirebaseUser(result.user);
-      setLoading(false);
-      if (!syncResult.success) {
-        setError(syncResult.error || 'Unable to complete sign-in right now.');
-        return { success: false, error: syncResult.error };
-      }
-
-      return { success: true, user: syncResult.user };
-    } catch (err) {
-      if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
-        try {
-          console.warn('[Auth] GitHub popup blocked, falling back to redirect');
-          rememberOAuthRedirect('GitHub');
-          await signInWithRedirect(auth, githubProvider);
-          return { success: true };
-        } catch (redirectErr) {
-          const errorMessage = redirectErr.message || 'GitHub login failed';
-          setError(errorMessage);
-          setLoading(false);
-          return { success: false, error: errorMessage };
-        }
-      }
-
-      const errorMessage = err.message || 'GitHub login failed';
-      setError(errorMessage);
-      setLoading(false);
-      return { success: false, error: errorMessage };
-    }
-  }, [rememberOAuthRedirect, shouldUseOAuthPopup, syncFirebaseUser]);
-
-  const loginWithGoogle = useCallback(async () => {
-    try {
-      console.info('[Auth] Starting Google OAuth redirect');
-      setLoading(true);
-      setError(null);
-
-      await authPersistenceReady;
-
-      if (!shouldUseOAuthPopup()) {
-        console.info('[Auth] Using Google redirect flow');
-        rememberOAuthRedirect('Google');
-        await signInWithRedirect(auth, googleProvider);
-        return { success: true };
-      }
-
-      console.info('[Auth] Using Google popup flow');
-      const result = await signInWithPopup(auth, googleProvider);
-      setFirebaseUser(result.user);
-      const syncResult = await syncFirebaseUser(result.user);
-      setLoading(false);
-      if (!syncResult.success) {
-        setError(syncResult.error || 'Unable to complete sign-in right now.');
-        return { success: false, error: syncResult.error };
-      }
-
-      return { success: true, user: syncResult.user };
-    } catch (err) {
-      if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
-        try {
-          console.warn('[Auth] Google popup blocked, falling back to redirect');
-          rememberOAuthRedirect('Google');
-          await signInWithRedirect(auth, googleProvider);
-          return { success: true };
-        } catch (redirectErr) {
-          const errorMessage = redirectErr.message || 'Google login failed';
-          setError(errorMessage);
-          setLoading(false);
-          return { success: false, error: errorMessage };
-        }
-      }
-
-      const errorMessage = err.message || 'Google login failed';
-      setError(errorMessage);
-      setLoading(false);
-      return { success: false, error: errorMessage };
-    }
-  }, [rememberOAuthRedirect, shouldUseOAuthPopup, syncFirebaseUser]);
-
-  const value = {
-    user,
-    firebaseUser,
-    loading,
-    error,
-    logout,
-    loginWithGithub,
-    loginWithGoogle,
-    updateUser,
-    completeAuth
-  };
+  const loginWithGithub = useCallback(
+    () => signInWithProvider(githubProvider, 'GitHub'),
+    [signInWithProvider]
+  );
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        firebaseUser,
+        loading,
+        error,
+        logout,
+        loginWithGithub,
+        loginWithGoogle,
+        updateUser,
+        completeAuth
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

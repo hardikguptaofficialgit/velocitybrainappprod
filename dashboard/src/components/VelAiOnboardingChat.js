@@ -153,11 +153,15 @@ export default function VelAiOnboardingChat({ form, onFormChange, onComplete }) 
       } catch {
         if (!cancelled) setAiReady(false);
       }
-      await runAssistantTurn({ bootstrap: true });
+      if (!cancelled) {
+        await runAssistantTurn({ bootstrap: true });
+      }
     })();
 
     return () => { cancelled = true; };
-  }, [runAssistantTurn]);
+    // Bootstrap VelAI once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {

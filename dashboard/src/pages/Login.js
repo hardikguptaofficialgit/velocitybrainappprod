@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Github, Google } from '../components/Icons';
 import Logo from '../components/Logo';
 
+const loginIllustrationUrl = `${process.env.PUBLIC_URL}/authillu.png`;
+
 export default function Login() {
   const { loginWithGithub, loginWithGoogle, error, user, loading } = useAuth();
   const [oauthAction, setOauthAction] = useState(null);
@@ -69,23 +71,42 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#0A0A0B] text-white font-sans p-4 lg:p-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
       
-      {/* LEFT PANEL: BRANDING (Hidden on Mobile) */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative p-12 flex-col justify-between overflow-hidden rounded-3xl transition-all bg-[#121214] border border-white/5 shadow-2xl">
-        <div className="relative z-10">
+      {/* LEFT PANEL: illustration background + branding */}
+      <div
+        className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between overflow-hidden rounded-[3rem] border border-white/5 shadow-2xl min-h-[calc(100vh-3rem)] bg-black"
+        style={{
+          backgroundImage: `url(${loginIllustrationUrl})`,
+          backgroundPosition: 'left center',
+          backgroundSize: 'auto 100%',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0B]/90 via-[#0A0A0B]/25 to-[#0A0A0B]/95 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0A0A0B]/40 pointer-events-none" />
+
+        <div className="relative z-10 p-10 xl:p-12">
           <Link to="/" className="inline-flex items-center gap-4 hover:opacity-80 transition-opacity">
             <Logo size={40} />
-            <span className="text-white font-bold text-xl tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>VelocityBrain</span>
+            <span className="text-white font-bold text-xl tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
+              VelocityBrain
+            </span>
           </Link>
         </div>
 
-        <div className="relative z-10 max-w-lg">
-          <p className="text-[#EA803A] text-[11px] font-bold uppercase tracking-widest mb-6 opacity-90" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+        <div className="relative z-10 p-10 xl:p-12 pt-0 max-w-xl mt-auto">
+          <p
+            className="text-[#EA803A] text-[11px] font-bold uppercase tracking-widest mb-4 opacity-90"
+            style={{ fontFamily: 'JetBrains Mono, monospace' }}
+          >
             {'// Memory & Execution Engine'}
           </p>
-          <h1 className="text-5xl xl:text-6xl font-extrabold text-white leading-[1.15] mb-8" style={{ fontFamily: 'Syne, sans-serif' }}>
+          <h1
+            className="text-4xl xl:text-[2.75rem] font-extrabold text-white leading-[1.12] mb-4"
+            style={{ fontFamily: 'Syne, sans-serif' }}
+          >
             Give your agent a real brain.
           </h1>
-          <p className="text-zinc-400 text-lg leading-relaxed font-light">
+          <p className="text-zinc-300 text-base xl:text-lg leading-relaxed font-light">
             Local-first memory, deterministic workflows, and enterprise-grade execution. Stop guessing context and start building reliable AI systems.
           </p>
         </div>
@@ -119,12 +140,13 @@ export default function Login() {
             </div>
           )}
 
+          {/* Elevated Dark Buttons */}
           <div className="space-y-5">
             <button
               type="button"
               onClick={handleGithubLogin}
               disabled={oauthDisabled}
-              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d]"
+              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d] shadow-lg shadow-black/40"
             >
               <Github className="h-6 w-6 text-white" />
               {oauthAction === 'github' ? 'Continuing with GitHub...' : 'Continue with GitHub'}
@@ -133,7 +155,7 @@ export default function Login() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={oauthDisabled}
-              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d]"
+              className="w-full flex items-center justify-center gap-4 px-8 py-4 rounded-2xl font-semibold text-zinc-200 text-base transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:text-white bg-[#161618] border border-white/5 hover:border-white/10 hover:bg-[#1a1a1d] shadow-lg shadow-black/40"
             >
               <Google className="h-6 w-6 text-[#EA803A]" />
               {oauthAction === 'google' ? 'Continuing with Google...' : 'Continue with Google'}

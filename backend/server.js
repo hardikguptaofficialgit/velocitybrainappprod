@@ -59,8 +59,10 @@ const allowedOrigins = new Set([
 // Trust proxy (required for rate limiting behind proxies)
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet());
+// Security middleware — allow OAuth popups (Firebase/Google) when this server serves the SPA.
+app.use(helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
+}));
 app.use(cors({
     origin(origin, callback) {
         const normalizedOrigin = normalizeOrigin(origin);
@@ -80,13 +82,46 @@ app.use(compression());
 // Logging
 app.use(morgan('combined'));
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests, please try again later.'
+// Rate limiting — authenticated dashboard traffic is excluded so onboarding/login
+// flows are not blocked by shared IPs hitting the global cap.
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'velocitybrain-dev-secret';
+
+const hasValidBearerToken = (req) => {
+    const header = req.headers.authorization;
+    if (!header || !header.startsWith('Bearer ')) {
+        return false;
+    }
+
+    try {
+        jwt.verify(header.slice(7), JWT_SECRET);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: Number.parseInt(process.env.RATE_LIMIT_MAX || '500', 10),
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => hasValidBearerToken(req),
+    message: { success: false, message: 'Too many requests, please try again later.' }
 });
-app.use('/api/', limiter);
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: Number.parseInt(process.env.RATE_LIMIT_AUTH_MAX || '60', 10),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many sign-in attempts, please try again later.' }
+});
+
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/firebase-session', authLimiter);
+app.use('/api/', apiLimiter);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));

@@ -30,6 +30,10 @@ export const getErrorMessage = (error, fallbackMessage) => {
     return error?.response?.data?.message || 'Your session expired. Please sign in again.';
   }
 
+  if (error?.response?.status === 429) {
+    return error?.response?.data?.message || 'Too many requests. Wait a moment and try again.';
+  }
+
   if (!error?.response && (error?.message === 'Network Error' || error?.code === 'ERR_NETWORK')) {
     return 'Could not reach the Velocity Brain API. This is often a network or CORS configuration issue in production.';
   }
