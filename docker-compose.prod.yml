@@ -73,6 +73,7 @@ services:
       BACKEND_API_URL: http://backend:5001
       ENV: production
       PORT: 8080
+      VELOCITYBRAIN_RUNTIME_MODE: self-hosted
     depends_on:
       db:
         condition: service_healthy
