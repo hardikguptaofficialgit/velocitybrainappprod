@@ -601,6 +601,7 @@ export default function Onboarding() {
   const handleLogout = async () => {
     try { window.localStorage.removeItem(draftKey); } catch { /* ignore */ }
     await logout();
+    navigate('/login', { replace: true });
   };
 
   const handleSubmit = async () => {
@@ -1082,7 +1083,7 @@ export default function Onboarding() {
         <div className="rounded-t-3xl bg-[#121212] px-6 py-5 sm:px-8">
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#EA803A]">Step {currentStep + 1} of {steps.length}</p>
-            <button onClick={handleLogout} className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-zinc-300">Sign out</button>
+            <button type="button" onClick={handleLogout} className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-zinc-300">Sign out</button>
           </div>
           <h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">{currentStepDef.title}</h1>
           <p className="mt-1 text-[13px] text-zinc-400">

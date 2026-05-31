@@ -60,6 +60,56 @@ export const supportedAgents = [
     setup: 'velocitybrain serve mcp',
     summary: 'Lightweight MCP wiring for the same hosted memory and savings layer.',
     strengths: ['Simple MCP wiring', 'Shared tool surface', 'Same hosted defaults']
+  },
+  {
+    id: 'antigravity',
+    name: 'Antigravity',
+    icon: getAgentPrimaryLogo('antigravity'),
+    status: 'Ready',
+    surface: 'MCP',
+    setup: 'antigravity mcp add velocitybrain',
+    summary: 'Google DeepMind highly capable autonomous agent integration.',
+    strengths: ['Advanced reasoning', 'System-level access', 'Deep codebase understanding']
+  },
+  {
+    id: 'warp',
+    name: 'Warp AI',
+    icon: getAgentPrimaryLogo('warp'),
+    status: 'Ready',
+    surface: 'MCP',
+    setup: 'warp mcp add velocitybrain',
+    summary: 'AI-enhanced terminal workflows with shared memory.',
+    strengths: ['Terminal context', 'Command generation', 'Native execution']
+  },
+  {
+    id: 'cursor',
+    name: 'Cursor',
+    icon: getAgentPrimaryLogo('cursor'),
+    status: 'Ready',
+    surface: 'MCP',
+    setup: 'cursor mcp add velocitybrain',
+    summary: 'AI-first code editor integration with background workspace retrieval.',
+    strengths: ['Editor native', 'File context', 'Inline generation']
+  },
+  {
+    id: 'copilot',
+    name: 'GitHub Copilot',
+    icon: getAgentPrimaryLogo('copilot'),
+    status: 'Ready',
+    surface: 'MCP',
+    setup: 'copilot mcp add velocitybrain',
+    summary: 'Enterprise AI pair programmer wired to the Company Brain.',
+    strengths: ['Enterprise ready', 'Autocomplete', 'Widespread adoption']
+  },
+  {
+    id: 'windsurf',
+    name: 'Windsurf',
+    icon: getAgentPrimaryLogo('windsurf'),
+    status: 'Ready',
+    surface: 'MCP',
+    setup: 'windsurf mcp add velocitybrain',
+    summary: 'Codeium AI IDE integration with fast retrieval mechanisms.',
+    strengths: ['Fast autocomplete', 'Contextual chat', 'Editor integration']
   }
 ];
 
@@ -80,8 +130,8 @@ export const bundledAgentRuntimeStatus = {
     status: 'Template ready',
     templateReady: true,
     workspaceConfigured: false,
-    extraReadyCount: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' || agent.id === 'hermes' ? 2 : 1,
-    readinessScore: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' || agent.id === 'hermes' ? 3 : 2,
+    extraReadyCount: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' || agent.id === 'hermes' || agent.id === 'antigravity' ? 2 : 1,
+    readinessScore: agent.id === 'claude-code' || agent.id === 'codex' || agent.id === 'openclaw' || agent.id === 'hermes' || agent.id === 'antigravity' ? 3 : 2,
     template: agent.id === 'claude-code'
       ? { path: 'integrations/mcp/claude-code/mcpServers.velocitybrain.json' }
       : agent.id === 'codex'

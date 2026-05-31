@@ -596,7 +596,9 @@ export default function Settings() {
             to="/dashboard/integrations"
             className="inline-flex items-center justify-center rounded-lg border border-[#2a2a2a] bg-[#111] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1a1a1a] transition-colors"
           >
-            {INTEGRATIONS_COMING_SOON ? 'Company Integrations (soon)' : 'Open Company Integrations'}
+            {INTEGRATIONS_COMING_SOON 
+              ? `${user?.accountType === 'individual' ? 'Personal' : 'Company'} Integrations (soon)` 
+              : `Open ${user?.accountType === 'individual' ? 'Personal' : 'Company'} Integrations`}
           </Link>
         </div>
 

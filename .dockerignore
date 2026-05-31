@@ -22,3 +22,7 @@ excalidraw.log
 data
 data/pytest-tmp
 *.log
+.tmp
+.tmp_*
+pytest-cache-files-*
+vb-pairing-*

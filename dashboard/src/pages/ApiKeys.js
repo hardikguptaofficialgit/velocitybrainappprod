@@ -330,9 +330,8 @@ const ApiKeys = () => {
                                   value={agentId}
                                   onChange={(newAgentId) => setSelectedAgents((prev) => ({ ...prev, [key.id]: newAgentId }))}
                                   options={supportedAgents.map((agent) => ({ value: agent.id, label: agent.name }))}
-                                  className="[&_button]:rounded-lg [&_button]:border-transparent [&_button]:bg-transparent [&_button]:px-0 [&_button]:py-0"
-                                  buttonClassName="w-full text-left"
-                                  menuClassName="max-h-56"
+                                  buttonClassName="!border-transparent !bg-transparent !shadow-none focus:!ring-0 !px-2 !py-1 text-sm font-medium"
+                                  menuClassName="max-h-56 w-[240px] mt-2 shadow-2xl border-[#2a2a2a]"
                                 />
                               </div>
                               <button

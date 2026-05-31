@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Activity, ArrowRight, Cpu, Database, Shield, TrendingUp } from '../components/Icons';
+import { ArrowRight, Database } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
 import { getErrorMessage, isBackendUnavailable } from '../lib/network';
 import { INTEGRATIONS_COMING_SOON } from '../lib/productFlags';
@@ -43,34 +43,11 @@ const fallbackData = {
   insights: []
 };
 
-// Curly scalloped shape with an engraved styling trick
-const CustomShapeIcon = ({ className }) => (
-  <svg 
-    viewBox="0 0 100 100" 
-    className={className} 
-    style={{ filter: 'drop-shadow(0 1px 0px rgba(255,255,255,0.12))' }} 
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M50 3 C 60 3 63 12 72 12 C 81 12 87 6 92 12 C 97 18 91 26 91 35 C 91 44 98 48 98 50 C 98 52 91 56 91 65 C 91 74 97 82 92 88 C 87 94 81 88 72 88 C 63 88 60 97 50 97 C 40 97 37 88 28 88 C 19 88 13 94 8 88 C 3 82 9 74 9 65 C 9 56 2 52 2 50 C 2 48 9 44 9 35 C 9 26 3 18 8 12 C 13 6 19 12 28 12 C 37 12 40 3 50 3 Z"
-      fill="#000000"
-      stroke="currentColor"
-      strokeOpacity="0.4"
-      strokeWidth="3"
-    />
-  </svg>
-);
-
-const StatCard = ({ title, value, detail, icon: Icon, color }) => (
+const StatCard = ({ title, value, detail }) => (
   <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-700/40 to-zinc-900/10 shadow-md">
     <div className="bg-[#0d0d0d] rounded-xl p-5 h-full flex flex-col justify-between">
-      <div className="flex items-center justify-between text-zinc-400 mb-4">
+      <div className="text-zinc-400 mb-4">
         <span className="text-sm font-medium tracking-wide">{title}</span>
-        {/* Reduced size to w-9 h-9 for a sleeker look */}
-        <div className={`relative w-9 h-9 flex items-center justify-center ${color}`}>
-          <CustomShapeIcon className="absolute inset-0 w-full h-full" />
-          <Icon className="w-4 h-4 relative z-10 opacity-90" />
-        </div>
       </div>
       <div>
         <p className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white via-zinc-200 to-zinc-500 mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>
@@ -164,10 +141,10 @@ const Dashboard = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Saved Tokens" value={(stats.totalSavedTokens || 0).toLocaleString()} detail={`${stats.totalApiCalls || 0} observed requests`} icon={Activity} color="text-[#EA803A]" />
-        <StatCard title="Connected Agents" value={stats.connectedAgents || 0} detail={`${stats.connectedRepos || 0} repositories currently linked`} icon={Cpu} color="text-blue-400" />
-        <StatCard title="Active API Keys" value={stats.activeApiKeys || 0} detail="Available for direct API access or agent pairing" icon={Shield} color="text-[#5fd1b3]" />
-        <StatCard title="Saved Cost" value={`$${Number(stats.totalSavedUsd || 0).toFixed(2)}`} detail={`${stats.successRate || 0}% reuse hit rate`} icon={TrendingUp} color="text-[#f4b183]" />
+        <StatCard title="Saved Tokens" value={(stats.totalSavedTokens || 0).toLocaleString()} detail={`${stats.totalApiCalls || 0} observed requests`} />
+        <StatCard title="Connected Agents" value={stats.connectedAgents || 0} detail={`${stats.connectedRepos || 0} repositories currently linked`} />
+        <StatCard title="Active API Keys" value={stats.activeApiKeys || 0} detail="Available for direct API access or agent pairing" />
+        <StatCard title="Saved Cost" value={`$${Number(stats.totalSavedUsd || 0).toFixed(2)}`} detail={`${stats.successRate || 0}% reuse hit rate`} />
       </div>
 
       <div className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">

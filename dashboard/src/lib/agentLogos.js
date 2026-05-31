@@ -9,9 +9,8 @@ export const agentLogoCatalog = {
   },
   codex: {
     sources: [
-      'https://svgl.app/library/codex.svg',
-      'https://svgl.app/codex.svg',
-      'https://svgl.app/library/openai_dark.svg'
+      'https://svgl.app/library/openai_dark.svg',
+      'https://svgl.app/library/openai.svg'
     ],
     frameClassName: 'border-[#262626] bg-[#161616]'
   },
@@ -43,6 +42,36 @@ export const agentLogoCatalog = {
       'https://svgl.app/cline.svg'
     ],
     frameClassName: 'border-[#2d333b] bg-[#313B43]'
+  },
+  antigravity: {
+    sources: [
+      'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg'
+    ],
+    frameClassName: 'border-[#262626] bg-[#161616]'
+  },
+  warp: {
+    sources: [
+      'https://svgl.app/library/warp.svg'
+    ],
+    frameClassName: 'border-[#262626] bg-[#161616]'
+  },
+  cursor: {
+    sources: [
+      'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/cursor.svg'
+    ],
+    frameClassName: 'border-[#262626] bg-[#161616]'
+  },
+  copilot: {
+    sources: [
+      'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/githubcopilot.svg'
+    ],
+    frameClassName: 'border-[#262626] bg-[#161616]'
+  },
+  windsurf: {
+    sources: [
+      'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/windsurf.svg'
+    ],
+    frameClassName: 'border-[#262626] bg-[#161616]'
   }
 };
 

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import axios from 'axios';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import BlobLoader from '../components/BlobLoader';
 import { AlertTriangle, ArrowRight, CheckCircle, Github, Google, RefreshCw, X } from '../components/Icons';
 import { resolveApiUrl } from '../lib/api';
@@ -28,14 +29,224 @@ const providerMeta = {
     label: 'Google Workspace',
     description: 'Sync Gmail, Drive, Docs, and Calendar context.',
     scopeCopy: 'Gmail, Drive, Docs, Calendar',
-    icon: <Google className="h-6 w-6 object-contain drop-shadow-md" />
+    icon: (
+      <img
+        src="https://svgl.app/library/google.svg"
+        alt="Google Workspace"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
   },
   github: {
     id: 'github',
     label: 'GitHub',
     description: 'Sync repositories, pull requests, and issues.',
     scopeCopy: 'Repos, PRs, issues',
-    icon: <Github className="h-6 w-6 drop-shadow-md" />
+    icon: (
+      <img
+        src="https://svgl.app/library/github_dark.svg"
+        alt="GitHub"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  notion: {
+    id: 'notion',
+    label: 'Notion',
+    description: 'Sync pages, databases, and workspace context.',
+    scopeCopy: 'Pages, databases',
+    icon: (
+      <img
+        src="https://svgl.app/library/notion.svg"
+        alt="Notion"
+        className="h-6 w-6 object-contain drop-shadow-md invert"
+        loading="lazy"
+      />
+    )
+  },
+  linear: {
+    id: 'linear',
+    label: 'Linear',
+    description: 'Sync issues, cycles, and project context.',
+    scopeCopy: 'Issues, projects',
+    icon: (
+      <img
+        src="https://svgl.app/library/linear.svg"
+        alt="Linear"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  figma: {
+    id: 'figma',
+    label: 'Figma',
+    description: 'Sync designs, components, and prototypes.',
+    scopeCopy: 'Files, components',
+    icon: (
+      <img
+        src="https://svgl.app/library/figma.svg"
+        alt="Figma"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  discord: {
+    id: 'discord',
+    label: 'Discord',
+    description: 'Sync messages, channels, and roles.',
+    scopeCopy: 'Messages, channels',
+    icon: (
+      <img
+        src="https://svgl.app/library/discord.svg"
+        alt="Discord"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  gitlab: {
+    id: 'gitlab',
+    label: 'GitLab',
+    description: 'Sync repositories, merge requests, and issues.',
+    scopeCopy: 'Repos, MRs, issues',
+    icon: (
+      <img
+        src="https://svgl.app/library/gitlab.svg"
+        alt="GitLab"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  microsoft365: {
+    id: 'microsoft365',
+    label: 'Microsoft 365',
+    description: 'Sync organization directory, calendars, and files.',
+    scopeCopy: 'Directory, Calendar, Files',
+    icon: (
+      <img
+        src="https://svgl.app/library/microsoft.svg"
+        alt="Microsoft 365"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  outlook: {
+    id: 'outlook',
+    label: 'Outlook',
+    description: 'Sync emails, contacts, and calendar events.',
+    scopeCopy: 'Emails, events',
+    icon: (
+      <img
+        src="https://svgl.app/library/microsoft-outlook.svg"
+        alt="Outlook"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  gmail: {
+    id: 'gmail',
+    label: 'Gmail',
+    description: 'Sync inbox, labels, and threads.',
+    scopeCopy: 'Emails, threads',
+    icon: (
+      <img
+        src="https://svgl.app/library/gmail.svg"
+        alt="Gmail"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  googledocs: {
+    id: 'googledocs',
+    label: 'Google Docs',
+    description: 'Sync documents, comments, and revisions.',
+    scopeCopy: 'Docs, revisions',
+    icon: (
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/0/01/Google_Docs_logo_%282014-2020%29.svg"
+        alt="Google Docs"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  onedrive: {
+    id: 'onedrive',
+    label: 'OneDrive',
+    description: 'Sync cloud files and folders.',
+    scopeCopy: 'Files, folders',
+    icon: (
+      <img
+        src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/microsoftonedrive.svg"
+        alt="OneDrive"
+        className="h-6 w-6 object-contain drop-shadow-md invert opacity-90"
+        loading="lazy"
+      />
+    )
+  },
+  jira: {
+    id: 'jira',
+    label: 'Jira',
+    description: 'Sync agile boards, tickets, and sprints.',
+    scopeCopy: 'Tickets, boards',
+    icon: (
+      <img
+        src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/jira.svg"
+        alt="Jira"
+        className="h-6 w-6 object-contain drop-shadow-md invert opacity-90"
+        loading="lazy"
+      />
+    )
+  },
+  dropbox: {
+    id: 'dropbox',
+    label: 'Dropbox',
+    description: 'Sync shared folders, paper docs, and files.',
+    scopeCopy: 'Files, paper docs',
+    icon: (
+      <img
+        src="https://svgl.app/library/dropbox.svg"
+        alt="Dropbox"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  zoom: {
+    id: 'zoom',
+    label: 'Zoom',
+    description: 'Sync meeting transcripts, recordings, and schedules.',
+    scopeCopy: 'Meetings, transcripts',
+    icon: (
+      <img
+        src="https://svgl.app/library/zoom.svg"
+        alt="Zoom"
+        className="h-6 w-6 object-contain drop-shadow-md"
+        loading="lazy"
+      />
+    )
+  },
+  teams: {
+    id: 'teams',
+    label: 'Microsoft Teams',
+    description: 'Sync team channels, chats, and meetings.',
+    scopeCopy: 'Chats, channels',
+    icon: (
+      <img
+        src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/microsoftteams.svg"
+        alt="Teams"
+        className="h-6 w-6 object-contain drop-shadow-md invert opacity-90"
+        loading="lazy"
+      />
+    )
   }
 };
 
@@ -57,6 +268,7 @@ const renderStatusLabel = (integration) => {
 };
 
 export default function Integrations() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
   
@@ -133,50 +345,19 @@ export default function Integrations() {
     );
   }
 
-  if (INTEGRATIONS_COMING_SOON) {
-    return (
-      <div className="max-w-6xl mx-auto w-full space-y-8 pb-12">
-        <div className="flex flex-col gap-4 border-b border-[#2a2a2a] pb-6">
-          <div>
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
-              Company Integrations
-            </h1>
-            <p className="text-sm text-zinc-400 mt-1">
-              Slack, Google Workspace, and GitHub sync are launching soon. Agent pairing and API keys work today.
-            </p>
-          </div>
-        </div>
 
-        <div className="flex justify-center pt-8">
-          <div className="w-full max-w-md">
-            <div className="relative rounded-2xl p-[1px] bg-gradient-to-b from-[#EA803A] to-zinc-800 shadow-2xl">
-              <div className="bg-[#0d0d0d] rounded-2xl p-8 flex flex-col items-center text-center shadow-inner">
-                <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  Company Brain Launching Soon
-                </h2>
-                <p className="text-sm text-zinc-400 leading-relaxed mb-6">
-                  We are finalizing the contextual memory layer for Slack, Google Workspace, and GitHub. Finish onboarding and pair agents now; company sources will connect from this page when they launch.
-                </p>
-                <span className="px-6 py-2.5 rounded-lg border border-zinc-700 bg-zinc-800 text-sm font-semibold text-zinc-400 shadow-inner">
-                  Coming Soon
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-6xl mx-auto w-full space-y-8 pb-12">
       <div className="flex flex-col gap-4 border-b border-[#2a2a2a] pb-6">
         <div>
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
-            Company Integrations
+            {user?.accountType === 'individual' ? 'Personal Integrations' : 'Company Integrations'}
           </h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Connect your company's platforms to build a live operational context layer.
+            {user?.accountType === 'individual' 
+              ? "Connect your personal platforms to build a live operational context layer."
+              : "Connect your company's platforms to build a live operational context layer."}
           </p>
         </div>
       </div>
@@ -250,7 +431,7 @@ export default function Integrations() {
                       <span className={`rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-inner ${statusTone[toneKey] || statusTone.not_connected}`}>
                         {statusLabel}
                       </span>
-                      {connectionMode === 'demo' && (
+                      {(connectionMode === 'demo' && toneKey !== 'disconnected' && toneKey !== 'not_connected') && (
                         <span className="rounded-md border border-[#EA803A]/30 bg-[#EA803A]/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#EA803A]">
                           Demo Mode
                         </span>

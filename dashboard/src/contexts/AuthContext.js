@@ -445,15 +445,15 @@ export const AuthProvider = ({ children }) => {
   }, [buildOAuthReturnError, clearAuthState, clearOAuthRedirect, hasPendingOAuthRedirect, restoreSessionFromStorage, setAuthState, syncFirebaseUser]);
 
   const logout = useCallback(async () => {
+    clearAuthState();
+    setError(null);
+
     try {
       console.info('[Auth] Logging out current user');
       await signOut(auth);
     } catch (err) {
       console.error('[Auth] Firebase logout error', err);
     }
-    
-    clearAuthState();
-    setError(null);
   }, [clearAuthState]);
 
   const updateUser = useCallback((userData) => {
