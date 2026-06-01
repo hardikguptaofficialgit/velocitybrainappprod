@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Github, Google } from '../components/Icons';
 import Logo from '../components/Logo';
@@ -17,13 +17,6 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirect after authentication (onboarding first for new accounts)
-  useEffect(() => {
-    if (!loading && user) {
-      navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
-    }
-  }, [user, loading, navigate]);
-
   // Clear local error when context error updates
   useEffect(() => {
     if (error) setLocalError(null);
@@ -38,12 +31,6 @@ export default function Login() {
   const oauthError = oauthErrorMessages[new URLSearchParams(location.search).get('error')] || null;
 
   const displayError = oauthError || error || localError || null;
-
-  const navigateAfterAuth = (authenticatedUser) => {
-    const nextUser = authenticatedUser || user;
-    if (!nextUser) return;
-    navigate(nextUser.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
-  };
 
   const startOauthTimeout = (provider) => {
     clearTimeout(oauthTimeoutRef.current);
@@ -64,7 +51,7 @@ export default function Login() {
     try {
       const result = await loginWithGithub();
       if (result?.success) {
-        navigateAfterAuth(result.user);
+        navigate(result.user?.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
       } else if (!result?.pendingRedirect && !error) {
         setLocalError(result?.error || 'GitHub sign-in failed. Please try again.');
       }
@@ -81,7 +68,7 @@ export default function Login() {
     try {
       const result = await loginWithGoogle();
       if (result?.success) {
-        navigateAfterAuth(result.user);
+        navigate(result.user?.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
       } else if (!result?.pendingRedirect && !error) {
         setLocalError(result?.error || 'Google sign-in failed. Please try again.');
       }
@@ -93,12 +80,16 @@ export default function Login() {
 
   const oauthDisabled = Boolean(oauthAction);
 
-  if (loading || oauthPending || user) {
+  if (user) {
+    return <Navigate to={user.onboardingCompleted ? '/dashboard' : '/onboarding'} replace />;
+  }
+
+  if (loading || oauthPending) {
     return (
       <div className="min-h-screen bg-[#080808] flex items-center justify-center text-white">
         <BlobLoader
           size={84}
-          label={user ? 'Opening your workspace...' : 'Completing sign in...'}
+          label={oauthPending ? 'Completing secure sign in...' : 'Checking your session...'}
         />
       </div>
     );

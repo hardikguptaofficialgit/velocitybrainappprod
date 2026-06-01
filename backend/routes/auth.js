@@ -542,7 +542,7 @@ router.post('/firebase-session', [
         }
 
         const userId = decodedToken.uid;
-        const email = decodedToken.email;
+        const email = String(decodedToken.email || '').trim().toLowerCase();
         const name = decodedToken.name || decodedToken.displayName || '';
 
         if (!userId || !email) {
@@ -573,6 +573,9 @@ router.post('/firebase-session', [
                 await existingDoc.ref.update({
                     name: sanitizeText(name, 120) || existingDoc.data().name,
                     password_hash: existingDoc.data().password_hash || OAUTH_PASSWORD_PLACEHOLDER,
+                    firebase_uid: userId,
+                    auth_provider: decodedToken.firebase?.sign_in_provider || 'firebase',
+                    last_login_at: now,
                     updated_at: now
                 });
                 userDoc = await db.collection(COLLECTIONS.USERS).doc(existingDoc.id).get();
@@ -590,6 +593,9 @@ router.post('/firebase-session', [
                         tier: ACCESS_POLICY.defaultUserTier
                     }),
                     password_hash: OAUTH_PASSWORD_PLACEHOLDER,
+                    firebase_uid: userId,
+                    auth_provider: decodedToken.firebase?.sign_in_provider || 'firebase',
+                    last_login_at: now,
                     created_at: now,
                     updated_at: now
                 };

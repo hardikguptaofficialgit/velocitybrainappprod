@@ -156,7 +156,7 @@ const createInitialForm = (user) => ({
     integrationsSkipped: false,
     connectedSources: [],
     skippedSources: [],
-    infoCollectionMode: INFO_MODES.UNSET
+    infoCollectionMode: INFO_MODES.MANUAL
   }
 });
 
@@ -410,7 +410,7 @@ export default function Onboarding() {
   const hydratedDraftRef = useRef(false);
 
   const infoCollectionMode = form.onboardingSelections?.infoCollectionMode || INFO_MODES.UNSET;
-  const effectiveInfoMode = infoCollectionMode === INFO_MODES.UNSET ? INFO_MODES.VELAI : infoCollectionMode;
+  const effectiveInfoMode = infoCollectionMode === INFO_MODES.UNSET ? INFO_MODES.MANUAL : infoCollectionMode;
   const velaiInfoComplete = useMemo(
     () => isVelAiInfoComplete(form, velaiServerComplete),
     [form, velaiServerComplete]
@@ -783,7 +783,7 @@ export default function Onboarding() {
                   ? 'Slack, Google Workspace, and GitHub connections are coming soon. You can finish setup and connect sources later.'
                   : activeAccountCard.prompt}
                 <p className="mt-2 text-xs font-normal text-zinc-400">
-                  Next step: chat with <span className="font-semibold text-[#EA803A]">VelAI</span> or enter your profile manually.
+                  Next step: enter your profile manually, or switch to <span className="font-semibold text-[#EA803A]">VelAI</span> for guided setup.
                 </p>
               </div>
             )}
@@ -802,6 +802,7 @@ export default function Onboarding() {
               {usingVelAi ? (
                 <VelAiOnboardingChat
                   form={form}
+                  onFallbackToManual={() => setInfoCollectionMode(INFO_MODES.MANUAL)}
                   onFormChange={(nextForm) => setForm((current) => ({
                     ...current,
                     ...nextForm,

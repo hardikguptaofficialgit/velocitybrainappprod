@@ -7,10 +7,15 @@ export default function AuthShell() {
   return <Outlet />;
 }
 
-function AuthHandoff({ label = 'Completing sign in...' }) {
+function AuthHandoff({ label = 'Completing secure sign in...' }) {
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center text-sm text-zinc-500">
-      <BlobLoader size={84} label={label} />
+    <div className="min-h-screen bg-[#080808] flex items-center justify-center px-6 text-center text-sm text-zinc-500">
+      <div className="space-y-4">
+        <BlobLoader size={84} label={label} />
+        <p className="mx-auto max-w-xs text-xs leading-5 text-zinc-500">
+          Syncing your account and preparing onboarding. This should only take a moment.
+        </p>
+      </div>
     </div>
   );
 }

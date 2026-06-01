@@ -83,11 +83,21 @@ export const AuthProvider = ({ children }) => {
   const clearAuthState = useCallback(() => {
     localStorage.removeItem('velocitybrain_token');
     localStorage.removeItem('velocitybrain_user');
+    sessionStorage.removeItem(SESSION_VALIDATED_AT_KEY);
     delete axios.defaults.headers.common.Authorization;
     syncedUidRef.current = null;
     syncInFlightRef.current.clear();
     setUser(null);
     setFirebaseUser(null);
+  }, []);
+
+  const clearBackendSession = useCallback(() => {
+    localStorage.removeItem('velocitybrain_token');
+    localStorage.removeItem('velocitybrain_user');
+    sessionStorage.removeItem(SESSION_VALIDATED_AT_KEY);
+    delete axios.defaults.headers.common.Authorization;
+    syncedUidRef.current = null;
+    setUser(null);
   }, []);
 
   const markOAuthPending = useCallback((provider) => {
@@ -148,9 +158,12 @@ export const AuthProvider = ({ children }) => {
           return { success: false };
         }
       }
+      if (err?.response?.status === 401) {
+        clearBackendSession();
+      }
       return { success: false };
     }
-  }, [setAuthState]);
+  }, [clearBackendSession, setAuthState]);
 
   /**
    * Exchange a Firebase ID token for a backend JWT.

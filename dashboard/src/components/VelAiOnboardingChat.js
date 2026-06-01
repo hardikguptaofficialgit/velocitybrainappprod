@@ -39,7 +39,7 @@ const toApiMessages = (messages) =>
 
 const normalizeChatText = (text) => String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
-export default function VelAiOnboardingChat({ form, onFormChange, onComplete }) {
+export default function VelAiOnboardingChat({ form, onFormChange, onComplete, onFallbackToManual }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
@@ -279,7 +279,18 @@ export default function VelAiOnboardingChat({ form, onFormChange, onComplete }) 
 
       <form onSubmit={handleSend} className="mt-3 flex-shrink-0">
         {localError && (
-          <p className="mb-1.5 text-[11px] text-red-400">{localError}</p>
+          <div className="mb-2 rounded-lg bg-red-500/10 p-2 text-[11px] text-red-300">
+            <p>{localError}</p>
+            {onFallbackToManual && (
+              <button
+                type="button"
+                onClick={onFallbackToManual}
+                className="mt-1.5 font-semibold text-[#EA803A] hover:text-[#f0965a]"
+              >
+                Continue with manual setup
+              </button>
+            )}
+          </div>
         )}
         <div className="flex items-end gap-2">
           <textarea
