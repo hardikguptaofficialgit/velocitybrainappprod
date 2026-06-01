@@ -56,6 +56,7 @@ export const AuthProvider = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [oauthPending, setOauthPending] = useState(() => localStorage.getItem(OAUTH_PENDING_KEY) === '1');
 
   // Tracks in-flight backend sync promises keyed by Firebase uid
   const syncInFlightRef = useRef(new Map());
@@ -92,11 +93,13 @@ export const AuthProvider = ({ children }) => {
   const markOAuthPending = useCallback((provider) => {
     localStorage.setItem(OAUTH_PENDING_KEY, '1');
     localStorage.setItem(OAUTH_PROVIDER_KEY, provider);
+    setOauthPending(true);
   }, []);
 
   const clearOAuthPending = useCallback(() => {
     localStorage.removeItem(OAUTH_PENDING_KEY);
     localStorage.removeItem(OAUTH_PROVIDER_KEY);
+    setOauthPending(false);
   }, []);
 
   const isOAuthPending = useCallback(
@@ -498,6 +501,7 @@ export const AuthProvider = ({ children }) => {
         user,
         firebaseUser,
         loading,
+        oauthPending,
         error,
         logout,
         loginWithGithub,

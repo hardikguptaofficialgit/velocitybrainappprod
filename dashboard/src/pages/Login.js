@@ -3,13 +3,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Github, Google } from '../components/Icons';
 import Logo from '../components/Logo';
+import BlobLoader from '../components/BlobLoader';
 import loginIllustration from '../assets/authillu.png';
 
 const OAUTH_TIMEOUT_MS = 45_000;
 const OAUTH_TIMEOUT_MESSAGE = 'Sign-in timed out. Please try again.';
 
 export default function Login() {
-  const { loginWithGithub, loginWithGoogle, error, user, loading } = useAuth();
+  const { loginWithGithub, loginWithGoogle, error, user, loading, oauthPending } = useAuth();
   const [oauthAction, setOauthAction] = useState(null);
   const [localError, setLocalError] = useState(null);
   const oauthTimeoutRef = useRef(null);
@@ -91,6 +92,17 @@ export default function Login() {
   };
 
   const oauthDisabled = Boolean(oauthAction);
+
+  if (loading || oauthPending || user) {
+    return (
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center text-white">
+        <BlobLoader
+          size={84}
+          label={user ? 'Opening your workspace...' : 'Completing sign in...'}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#0A0A0B] text-white font-sans p-4 lg:p-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>

@@ -216,6 +216,37 @@ body {
   animation: onboardingFloat 7s ease-in-out infinite, onboardingGlow 7s ease-in-out infinite;
 }
 
+.onboarding-bg-reveal {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #050505;
+}
+
+.onboarding-bg-tile {
+  position: absolute;
+  background-size: 400% 300%;
+  background-repeat: no-repeat;
+  filter: saturate(0.92) contrast(1.04);
+  will-change: clip-path, opacity, transform;
+}
+
+.onboarding-bg-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(234, 128, 58, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(5, 5, 5, 0.34), rgba(5, 5, 5, 0.72)),
+    rgba(5, 5, 5, 0.48);
+  backdrop-filter: blur(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-bg-tile {
+    transition: none !important;
+  }
+}
+
 /* Claymorphism Cards */
 .clay-card {
   background: var(--clay-surface);
