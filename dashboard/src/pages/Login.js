@@ -1,13 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Github, Google } from '../components/Icons';
 import Logo from '../components/Logo';
 import loginIllustration from '../assets/authillu.png';
 
+const OAUTH_TIMEOUT_MS = 45_000;
+const OAUTH_TIMEOUT_MESSAGE = 'Sign-in timed out. Please try again.';
+
 export default function Login() {
   const { loginWithGithub, loginWithGoogle, error, user, loading } = useAuth();
   const [oauthAction, setOauthAction] = useState(null);
+  const [localError, setLocalError] = useState(null);
+  const oauthTimeoutRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,14 +23,10 @@ export default function Login() {
     }
   }, [user, loading, navigate]);
 
-  // Also redirect if localStorage has token (backup check)
+  // Clear local error when context error updates
   useEffect(() => {
-    const token = localStorage.getItem('velocitybrain_token');
-    if (token && !loading && !user) {
-      // Token exists but user not loaded yet, wait for auth context
-      return;
-    }
-  }, [loading, user]);
+    if (error) setLocalError(null);
+  }, [error]);
 
   const oauthErrorMessages = {
     oauth_failed: 'OAuth sign-in could not be completed. Please try again.',
@@ -35,32 +36,56 @@ export default function Login() {
 
   const oauthError = oauthErrorMessages[new URLSearchParams(location.search).get('error')] || null;
 
+  const displayError = oauthError || error || localError || null;
+
   const navigateAfterAuth = (authenticatedUser) => {
     const nextUser = authenticatedUser || user;
     if (!nextUser) return;
     navigate(nextUser.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
   };
 
+  const startOauthTimeout = (provider) => {
+    clearTimeout(oauthTimeoutRef.current);
+    oauthTimeoutRef.current = setTimeout(() => {
+      setOauthAction(null);
+      setLocalError(OAUTH_TIMEOUT_MESSAGE);
+    }, OAUTH_TIMEOUT_MS);
+  };
+
+  const clearOauthTimeout = () => {
+    clearTimeout(oauthTimeoutRef.current);
+  };
+
   const handleGithubLogin = async () => {
+    setLocalError(null);
     setOauthAction('github');
+    startOauthTimeout('github');
     try {
       const result = await loginWithGithub();
       if (result?.success) {
         navigateAfterAuth(result.user);
+      } else if (!result?.pendingRedirect && !error) {
+        setLocalError(result?.error || 'GitHub sign-in failed. Please try again.');
       }
     } finally {
+      clearOauthTimeout();
       setOauthAction(null);
     }
   };
 
   const handleGoogleLogin = async () => {
+    setLocalError(null);
     setOauthAction('google');
+    startOauthTimeout('google');
     try {
       const result = await loginWithGoogle();
       if (result?.success) {
         navigateAfterAuth(result.user);
+      } else if (!result?.pendingRedirect && !error) {
+        setLocalError(result?.error || 'Google sign-in failed. Please try again.');
       }
     } finally {
+      clearOauthTimeout();
       setOauthAction(null);
     }
   };
@@ -84,22 +109,9 @@ export default function Login() {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0A0A0B]/40 pointer-events-none" />
 
         <div className="relative z-10 p-10 xl:p-12">
-          <Link to="/" className="inline-flex items-center gap-4 hover:opacity-80 transition-opacity">
-            <Logo size={40} />
-           
-          </Link>
+        
         </div>
 
-        <div className="relative z-10 p-10 xl:p-12 pt-0 max-w-xl mt-auto">
-        
-          <h1
-            className="text-4xl xl:text-[1.25rem] font-extrabold text-white leading-[1.12] mb-4"
-            style={{ fontFamily: 'Syne, sans-serif' }}
-          >
-            Give your agent a real brain.
-          </h1>
-          
-        </div>
       </div>
 
       {/* RIGHT PANEL: FORM AREA */}
@@ -123,10 +135,10 @@ export default function Login() {
             </p>
           </div>
 
-          {(oauthError || error) && (
+          {displayError && (
             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 mb-8">
               <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
-              <p className="text-sm text-red-300" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{oauthError || error}</p>
+              <p className="text-sm text-red-300" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{displayError}</p>
             </div>
           )}
 

@@ -8,11 +8,11 @@ const OAuthCallback = () => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    // OAuth redirect is handled by AuthContext
-    // This page just redirects based on auth state
+    // OAuth redirect completion is handled by AuthContext.
+    // Redirect to the correct destination once auth state resolves.
     if (!loading) {
       if (user) {
-        navigate('/dashboard', { replace: true });
+        navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
       } else {
         navigate('/login', { replace: true });
       }

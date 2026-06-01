@@ -496,10 +496,13 @@ router.post('/2fa/complete', [
 });
 
 // Firebase Session Authentication
-// This endpoint syncs Firebase OAuth users with the backend database
+// Verifies a Firebase ID token using the Admin SDK and exchanges it for a
+// backend JWT.  This is the canonical sign-in path for all OAuth users.
 router.post('/firebase-session', [
     body('idToken').notEmpty().trim()
 ], async (req, res) => {
+    const reqTs = Date.now();
+
     try {
         if (!firebaseInitialized) {
             return res.status(503).json({ 
@@ -514,7 +517,30 @@ router.post('/firebase-session', [
         }
 
         const { idToken } = req.body;
-        const decodedToken = await auth.verifyIdToken(idToken);
+
+        // Verify token with Firebase Admin SDK.
+        // checkRevoked=true rejects tokens whose sessions have been revoked.
+        let decodedToken;
+        try {
+            decodedToken = await auth.verifyIdToken(idToken, true);
+        } catch (verifyErr) {
+            const code = verifyErr?.code || '';
+            console.warn('[AuthRoute] Firebase token verification failed', {
+                code,
+                ts: reqTs,
+                message: verifyErr?.message
+            });
+
+            const message =
+                code === 'auth/id-token-expired'
+                    ? 'Your sign-in session has expired. Please sign in again.'
+                    : code === 'auth/id-token-revoked'
+                        ? 'Your sign-in session has been revoked. Please sign in again.'
+                        : 'Invalid or expired Firebase identity token.';
+
+            return res.status(401).json({ success: false, message });
+        }
+
         const userId = decodedToken.uid;
         const email = decodedToken.email;
         const name = decodedToken.name || decodedToken.displayName || '';
@@ -522,67 +548,90 @@ router.post('/firebase-session', [
         if (!userId || !email) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid Firebase identity token'
+                message: 'Firebase token is missing required fields (uid / email).'
             });
         }
 
-        console.info('[AuthRoute] Firebase session sync requested', {
+        console.info('[AuthRoute] Firebase session sync started', {
             userId,
-            email
+            email,
+            ts: reqTs
         });
 
         const OAUTH_PASSWORD_PLACEHOLDER = '__firebase_oauth_account__';
         const now = new Date().toISOString();
 
-        // Check if user exists in our database
-        const existingUsers = await db.collection(COLLECTIONS.USERS).where('email', '==', email).get();
-        
         let userDoc;
         let userData;
 
-        if (!existingUsers.empty) {
-            // Update existing user
-            const existingDoc = existingUsers.docs[0];
-            await existingDoc.ref.update({
-                name: sanitizeText(name, 120) || existingDoc.data().name,
-                password_hash: existingDoc.data().password_hash || OAUTH_PASSWORD_PLACEHOLDER,
-                updated_at: now
-            });
-            userDoc = await db.collection(COLLECTIONS.USERS).doc(existingDoc.id).get();
-            userData = userDoc.data();
-            console.info('[AuthRoute] Updated existing Firebase session user', {
-                userId: userDoc.id,
-                email: userData.email
-            });
-        } else {
-            // Create new user from Firebase OAuth
-            const userPayload = {
-                ...buildUserDefaults({
-                    email,
-                    name,
-                    tier: ACCESS_POLICY.defaultUserTier
-                }),
-                password_hash: OAUTH_PASSWORD_PLACEHOLDER,
-                created_at: now,
-                updated_at: now
-            };
-            await db.collection(COLLECTIONS.USERS).doc(userId).set(userPayload);
-            await db.collection(COLLECTIONS.USER_SETTINGS).doc(userId).set(buildDefaultUserSettings());
-            userDoc = await db.collection(COLLECTIONS.USERS).doc(userId).get();
-            userData = userDoc.data();
-            console.info('[AuthRoute] Created new Firebase session user', {
-                userId: userDoc.id,
-                email: userData.email
-            });
+        // Upsert user in Firestore
+        try {
+            const existingUsers = await db.collection(COLLECTIONS.USERS).where('email', '==', email).get();
 
+            if (!existingUsers.empty) {
+                const existingDoc = existingUsers.docs[0];
+                await existingDoc.ref.update({
+                    name: sanitizeText(name, 120) || existingDoc.data().name,
+                    password_hash: existingDoc.data().password_hash || OAUTH_PASSWORD_PLACEHOLDER,
+                    updated_at: now
+                });
+                userDoc = await db.collection(COLLECTIONS.USERS).doc(existingDoc.id).get();
+                userData = userDoc.data();
+                console.info('[AuthRoute] Updated existing Firebase user', {
+                    userId: userDoc.id,
+                    email: userData.email,
+                    ts: Date.now()
+                });
+            } else {
+                const userPayload = {
+                    ...buildUserDefaults({
+                        email,
+                        name,
+                        tier: ACCESS_POLICY.defaultUserTier
+                    }),
+                    password_hash: OAUTH_PASSWORD_PLACEHOLDER,
+                    created_at: now,
+                    updated_at: now
+                };
+                await db.collection(COLLECTIONS.USERS).doc(userId).set(userPayload);
+                await db.collection(COLLECTIONS.USER_SETTINGS).doc(userId).set(buildDefaultUserSettings());
+                userDoc = await db.collection(COLLECTIONS.USERS).doc(userId).get();
+                userData = userDoc.data();
+                console.info('[AuthRoute] Created new Firebase user', {
+                    userId: userDoc.id,
+                    email: userData.email,
+                    ts: Date.now()
+                });
+            }
+        } catch (dbErr) {
+            console.error('[AuthRoute] Firestore upsert failed', {
+                userId,
+                email,
+                ts: Date.now(),
+                error: dbErr?.message || dbErr
+            });
+            return res.status(503).json({
+                success: false,
+                message: 'Database unavailable. Please try again in a moment.'
+            });
         }
 
-        const settingsRef = db.collection(COLLECTIONS.USER_SETTINGS).doc(userDoc.id);
-        const settingsDoc = await settingsRef.get();
-        if (!settingsDoc.exists) {
-            await settingsRef.set(buildDefaultUserSettings());
-        } else {
-            await settingsRef.set(mergeSettings(settingsDoc.data()));
+        // Ensure user settings document exists
+        try {
+            const settingsRef = db.collection(COLLECTIONS.USER_SETTINGS).doc(userDoc.id);
+            const settingsDoc = await settingsRef.get();
+            if (!settingsDoc.exists) {
+                await settingsRef.set(buildDefaultUserSettings());
+            } else {
+                await settingsRef.set(mergeSettings(settingsDoc.data()));
+            }
+        } catch (settingsErr) {
+            // Non-fatal — user can still sign in without settings being refreshed
+            console.warn('[AuthRoute] User settings update failed (non-fatal)', {
+                userId: userDoc.id,
+                ts: Date.now(),
+                error: settingsErr?.message
+            });
         }
 
         if (userData['2fa_enabled']) {
@@ -593,15 +642,14 @@ router.post('/firebase-session', [
             }));
         }
 
-        // Generate JWT token
         const token = generateToken(userDoc.id);
-        console.info('[AuthRoute] Firebase session sync succeeded', {
+        const workspace = await getWorkspacePayload(userData.workspace_id);
+
+        console.info('[AuthRoute] Firebase session sync completed', {
             userId: userDoc.id,
             email: userData.email,
-            hasToken: Boolean(token)
+            durationMs: Date.now() - reqTs
         });
-
-        const workspace = await getWorkspacePayload(userData.workspace_id);
 
         res.json({
             success: true,
@@ -614,21 +662,15 @@ router.post('/firebase-session', [
             token
         });
     } catch (error) {
-        console.error('[AuthRoute] Firebase session error', {
-            body: {
-                hasIdToken: Boolean(req.body?.idToken)
-            },
-            error
+        console.error('[AuthRoute] Firebase session unexpected error', {
+            hasIdToken: Boolean(req.body?.idToken),
+            ts: Date.now(),
+            durationMs: Date.now() - reqTs,
+            error: error?.message || error
         });
-        if (error?.code === 'auth/argument-error' || error?.code?.startsWith('auth/')) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid Firebase identity token'
-            });
-        }
         res.status(500).json({
             success: false,
-            message: error.message || 'Session sync failed'
+            message: 'An unexpected error occurred during sign-in. Please try again.'
         });
     }
 });

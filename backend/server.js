@@ -42,6 +42,17 @@ const normalizeOrigin = (value) => {
     return value.replace(/\/+$/, '');
 };
 
+// PRODUCTION REQUIREMENT: CORS_ORIGINS must include every domain that the
+// dashboard is served from, including the primary Vercel deployment URL and
+// any custom domains.  Missing an origin here causes POST /api/auth/firebase-session
+// to be silently blocked by the browser, which makes Google/GitHub sign-in appear
+// to get stuck with no visible error.
+//
+// Example (backend .env or Vercel environment variable):
+//   CORS_ORIGINS=https://velocitybrain.vercel.app,https://app.velocitybrain.com
+//
+// Also ensure the same origins are listed in Firebase Console:
+//   Authentication → Settings → Authorized Domains
 const configuredCorsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map((origin) => normalizeOrigin(origin?.trim()))
