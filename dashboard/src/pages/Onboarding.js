@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import AvatarPicker from '../components/AvatarPicker';
@@ -93,25 +92,6 @@ const INFO_MODES = {
   UNSET: 'unset',
   VELAI: 'velai',
   MANUAL: 'manual'
-};
-
-const onboardingShellVariants = {
-  hidden: { opacity: 0, y: 28, scale: 0.985 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.58, ease: [0.22, 1, 0.36, 1], delay: 0.16 }
-  }
-};
-
-const onboardingHeaderVariants = {
-  hidden: { opacity: 0, y: 14 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.42, ease: 'easeOut', delay: 0.36 }
-  }
 };
 
 const createCompanySourceDefaults = () => ({
@@ -253,7 +233,7 @@ const OnboardingBackgroundReveal = () => (
       const row = Math.floor(index / 4);
 
       return (
-        <motion.div
+        <div
           key={index}
           className="onboarding-bg-tile"
           style={{
@@ -263,13 +243,6 @@ const OnboardingBackgroundReveal = () => (
             height: '33.3334%',
             backgroundImage: "url('/onboardingbg.png')",
             backgroundPosition: `${column * 33.3334}% ${row * 50}%`
-          }}
-          initial={{ opacity: 0, scale: 1.12, clipPath: 'inset(48% 48% 48% 48%)' }}
-          animate={{ opacity: 1, scale: 1, clipPath: 'inset(0% 0% 0% 0%)' }}
-          transition={{
-            duration: 0.78,
-            ease: [0.22, 1, 0.36, 1],
-            delay: 0.04 + row * 0.1 + column * 0.055
           }}
         />
       );
@@ -1124,15 +1097,10 @@ export default function Onboarding() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-6 text-white sm:py-8">
       <OnboardingBackgroundReveal />
-      <motion.div
-        className="relative z-10 w-full max-w-2xl rounded-3xl bg-[#0A0A0A] shadow-2xl"
-        variants={onboardingShellVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="onboarding-shell-enter relative z-10 w-full max-w-2xl rounded-3xl bg-[#0A0A0A] shadow-2xl">
         {isSuccess && <CelebrationOverlay />}
         
-        <motion.div className="rounded-t-3xl bg-[#121212] px-6 py-5 sm:px-8" variants={onboardingHeaderVariants}>
+        <div className="rounded-t-3xl bg-[#121212] px-6 py-5 sm:px-8">
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#EA803A]">Step {currentStep + 1} of {steps.length}</p>
             <button type="button" onClick={handleLogout} className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-zinc-300">Sign out</button>
@@ -1148,7 +1116,7 @@ export default function Onboarding() {
           <div className="mt-5 h-1 w-full overflow-hidden rounded-full bg-zinc-800">
             <div className="h-full rounded-full bg-[#EA803A] transition-all duration-500 ease-out" style={{ width: `${completion}%` }} />
           </div>
-        </motion.div>
+        </div>
 
         <form onSubmit={handleFormSubmit} className="flex flex-col">
           <div
@@ -1205,7 +1173,7 @@ export default function Onboarding() {
             )}
           </div>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 }

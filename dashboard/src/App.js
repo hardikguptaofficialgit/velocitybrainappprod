@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AppErrorBoundary from './components/AppErrorBoundary';
+import AuthShell, { ProtectedRouteShell, OnboardingRouteShell } from './components/AuthShell';
+import Onboarding from './pages/Onboarding';
 import './App.css';
 
 const Layout = lazy(() => import('./components/Layout'));
@@ -21,14 +23,6 @@ const Research = lazy(() => import('./pages/Research'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
-const AuthShell = lazy(() => import('./components/AuthShell'));
-const ProtectedRouteShell = lazy(() =>
-  import('./components/AuthShell').then((module) => ({ default: module.ProtectedRouteShell }))
-);
-const OnboardingRouteShell = lazy(() =>
-  import('./components/AuthShell').then((module) => ({ default: module.OnboardingRouteShell }))
-);
-const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 const AppShellFallback = () => (
   <div className="min-h-screen bg-[#080808] flex items-center justify-center text-sm text-zinc-500">

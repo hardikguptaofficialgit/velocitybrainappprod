@@ -225,10 +225,25 @@ body {
 
 .onboarding-bg-tile {
   position: absolute;
+  opacity: 1;
   background-size: 400% 300%;
   background-repeat: no-repeat;
   filter: saturate(0.92) contrast(1.04);
-  will-change: clip-path, opacity, transform;
+}
+
+.onboarding-shell-enter {
+  animation: onboardingShellEnter 320ms ease-out both;
+}
+
+@keyframes onboardingShellEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .onboarding-bg-shade {
