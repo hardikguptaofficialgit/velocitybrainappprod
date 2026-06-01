@@ -5,12 +5,13 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AppErrorBoundary from './components/AppErrorBoundary';
 import AuthShell, { ProtectedRouteShell, OnboardingRouteShell } from './components/AuthShell';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import ApiKeys from './pages/ApiKeys';
 import Onboarding from './pages/Onboarding';
+import BlobLoader from './components/BlobLoader';
 import './App.css';
 
-const Layout = lazy(() => import('./components/Layout'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const ApiKeys = lazy(() => import('./pages/ApiKeys'));
 const Agents = lazy(() => import('./pages/Agents'));
 const Integrations = lazy(() => import('./pages/Integrations'));
 const Usage = lazy(() => import('./pages/Usage'));
@@ -25,8 +26,13 @@ const Terms = lazy(() => import('./pages/Terms'));
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
 
 const AppShellFallback = () => (
-  <div className="min-h-screen bg-[#080808] flex items-center justify-center text-sm text-zinc-500">
-    Loading...
+  <div className="min-h-screen bg-[#080808] flex items-center justify-center px-6 text-center text-sm text-zinc-500">
+    <div className="space-y-4">
+      <BlobLoader size={72} label="Loading VelocityBrain..." />
+      <p className="max-w-xs text-xs leading-5 text-zinc-500">
+        Opening your workspace. If this takes more than a few seconds, refresh the page.
+      </p>
+    </div>
   </div>
 );
 
