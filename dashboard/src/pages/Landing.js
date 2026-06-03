@@ -136,15 +136,51 @@ const proofPoints = [
 ];
 
 const companyBrainSources = [
-  { name: 'Slack', detail: 'team messages and channels', tone: '#8b5cf6' },
-  { name: 'Google Workspace', detail: 'mail, docs, calendar context', tone: '#5d89ff' },
-  { name: 'GitHub', detail: 'repos, issues, commits, pull requests', tone: '#f2f2f2' },
-  { name: 'Notion', detail: 'docs, decisions, operating notes', tone: '#ffffff' },
-  { name: 'Linear', detail: 'roadmaps, tickets, product loops', tone: '#7fe3c8' },
-  { name: 'Jira', detail: 'delivery plans and issue history', tone: '#5d89ff' },
-  { name: 'Figma', detail: 'design context and product surfaces', tone: '#f472b6' },
-  { name: 'Discord', detail: 'community and support memory', tone: '#8b5cf6' },
-  { name: 'Dropbox', detail: 'files, folders, shared artifacts', tone: '#60a5fa' },
+  {
+    name: 'Slack',
+    detail: 'team messages and channels',
+    icon: 'https://svgl.app/library/slack.svg',
+  },
+  {
+    name: 'Google Workspace',
+    detail: 'mail, docs, calendar context',
+    icon: 'https://svgl.app/library/google.svg',
+  },
+  {
+    name: 'GitHub',
+    detail: 'repos, issues, commits, pull requests',
+    icon: 'https://svgl.app/library/github_light.svg',
+  },
+  {
+    name: 'Notion',
+    detail: 'docs, decisions, operating notes',
+    icon: 'https://svgl.app/library/notion.svg',
+  },
+  {
+    name: 'Linear',
+    detail: 'roadmaps, tickets, product loops',
+    icon: 'https://svgl.app/library/linear.svg',
+  },
+  {
+    name: 'Jira',
+    detail: 'delivery plans and issue history',
+    icon: 'https://svgl.app/library/jira.svg',
+  },
+  {
+    name: 'Figma',
+    detail: 'design context and product surfaces',
+    icon: 'https://svgl.app/library/figma.svg',
+  },
+  {
+    name: 'Discord',
+    detail: 'community and support memory',
+    icon: 'https://svgl.app/library/discord.svg',
+  },
+  {
+    name: 'Dropbox',
+    detail: 'files, folders, shared artifacts',
+    icon: 'https://svgl.app/library/dropbox.svg',
+  },
 ];
 
 const integrationCardThemes = {
@@ -868,19 +904,20 @@ export default function Landing() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {companyBrainSources.map((source) => (
                     <div key={source.name} className="group rounded-xl border border-[#1f1f1f] bg-[#0d0d0d] p-3 transition-colors hover:border-[#333] hover:bg-[#111]">
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-2.5 w-2.5 rounded-full shadow-[0_0_14px_currentColor]"
-                            style={{ color: source.tone, background: source.tone }}
+                      <div className="mb-2 flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#262626] bg-[#151515]">
+                          <img
+                            src={source.icon}
+                            alt={`${source.name} logo`}
+                            className="h-4.5 w-4.5 max-h-5 max-w-5 object-contain"
+                            loading="lazy"
                           />
-                          <p className="syne text-sm font-bold text-white">{source.name}</p>
-                        </div>
-                        <span className="mono rounded border border-[#2a2a2a] px-1.5 py-[1px] text-[8px] uppercase tracking-[0.16em] text-zinc-500">
-                          Live
                         </span>
+                        <div className="min-w-0">
+                          <p className="syne text-sm font-bold text-white">{source.name}</p>
+                          <p className="text-[12px] leading-relaxed text-zinc-400">{source.detail}</p>
+                        </div>
                       </div>
-                      <p className="text-[12px] leading-relaxed text-zinc-400">{source.detail}</p>
                     </div>
                   ))}
                 </div>
