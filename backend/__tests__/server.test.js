@@ -1,5 +1,6 @@
 const request = require('supertest');
 const OTPAuth = require('otpauth');
+const bcrypt = require('bcryptjs');
 
 process.env.INTERNAL_USAGE_SECRET = 'test-usage-secret';
 process.env.ALLOW_PUBLIC_SIGNUP = 'false';
@@ -251,6 +252,95 @@ describe('Backend API', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.user.email).toBe('new@example.com');
         expect(response.body.access.label).toBe('Open signup');
+    });
+
+    test('auth login returns a session for password accounts', async () => {
+        const passwordHash = await bcrypt.hash('supersecret123', 12);
+        firebase.__setMockData({
+            users: [
+                {
+                    id: 'password-user-1',
+                    data: {
+                        email: 'password@example.com',
+                        name: 'Password User',
+                        password_hash: passwordHash,
+                        tier: 'free',
+                        status: 'active',
+                        onboarding_completed: false
+                    }
+                }
+            ],
+            apiKeys: [],
+            usageLogs: []
+        });
+
+        const response = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: 'password@example.com',
+                password: 'supersecret123'
+            });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.user.email).toBe('password@example.com');
+        expect(response.body.user.onboardingCompleted).toBe(false);
+        expect(response.body.token).toBe('token-for-password-user-1');
+    });
+
+    test('auth login supports two-factor challenge completion', async () => {
+        const passwordHash = await bcrypt.hash('supersecret123', 12);
+        const twoFactorSecret = new OTPAuth.Secret().base32;
+        firebase.__setMockData({
+            users: [
+                {
+                    id: 'two-factor-user-1',
+                    data: {
+                        email: 'twofactor@example.com',
+                        name: 'Two Factor User',
+                        password_hash: passwordHash,
+                        tier: 'free',
+                        status: 'active',
+                        onboarding_completed: true,
+                        '2fa_enabled': true,
+                        '2fa_secret': twoFactorSecret
+                    }
+                }
+            ],
+            apiKeys: [],
+            usageLogs: []
+        });
+
+        const loginResponse = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: 'twofactor@example.com',
+                password: 'supersecret123'
+            });
+
+        expect(loginResponse.statusCode).toBe(202);
+        expect(loginResponse.body.success).toBe(true);
+        expect(loginResponse.body.requiresTwoFactor).toBe(true);
+        expect(loginResponse.body.challengeToken).toBeTruthy();
+
+        const totp = new OTPAuth.TOTP({
+            issuer: 'VelocityBrain',
+            label: 'twofactor@example.com',
+            secret: twoFactorSecret
+        });
+
+        const completeResponse = await request(app)
+            .post('/api/auth/2fa/complete')
+            .send({
+                challengeToken: loginResponse.body.challengeToken,
+                token: totp.generate()
+            });
+
+        expect(completeResponse.statusCode).toBe(200);
+        expect(completeResponse.body.success).toBe(true);
+        expect(completeResponse.body.user.email).toBe('twofactor@example.com');
+        expect(completeResponse.body.user.twoFactorEnabled).toBe(true);
+        expect(completeResponse.body.token).toBe('token-for-two-factor-user-1');
     });
 
     test('auth me returns the authenticated user payload', async () => {

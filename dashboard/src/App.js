@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import ApiKeys from './pages/ApiKeys';
 import Onboarding from './pages/Onboarding';
 import BlobLoader from './components/BlobLoader';
+import { isBackendUnavailable } from './lib/network';
 import './App.css';
 
 const Agents = lazy(() => import('./pages/Agents'));
@@ -36,7 +37,18 @@ const AppShellFallback = () => (
   </div>
 );
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => !isBackendUnavailable(error) && failureCount < 1,
+      refetchOnWindowFocus: false,
+      staleTime: 15_000
+    },
+    mutations: {
+      retry: false
+    }
+  }
+});
 
 function App() {
   return (

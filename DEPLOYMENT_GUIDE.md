@@ -2,6 +2,30 @@
 
 ## Production Compose Command
 
+## Shared Droplet Defaults
+
+This production stack is intended to run behind the host reverse proxy when it
+shares a droplet with other products such as Linkit. The container nginx listens
+on port 80 inside Docker, but the host publishes it on `NGINX_PORT` instead of
+claiming public ports 80/443.
+
+Recommended API domain:
+
+```text
+velocity.linkitapp.in
+```
+
+Recommended production values:
+
+```text
+NGINX_PORT=8088
+BACKEND_PUBLIC_URL=https://velocity.linkitapp.in
+REACT_APP_API_URL=https://velocity.linkitapp.in
+```
+
+Point your DNS A record to the droplet IP and route HTTPS from the host reverse
+proxy to `127.0.0.1:8088`.
+
 For the Docker production stack, use:
 
 ```bash
@@ -21,12 +45,61 @@ cp .env.prod .env
 docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-Do not rely on `docker-compose -f docker-compose.prod.yml up -d --build` without loading `.env.prod` first. Compose only auto-loads `.env`, not `.env.prod`, for `${VAR}` interpolation in the compose file. Without that, dashboard build args and passwords can be blank:
+Do not rely on `docker-compose -f docker-compose.prod.yml up -d --build` without loading `.env.prod` first. Compose only auto-loads `.env`, not `.env.prod`, for `${VAR}` interpolation in the compose file. Without that, passwords and service URLs can be blank:
 
 - Postgres password wiring
 - Redis password wiring
 - internal usage secret wiring
-- frontend build-time Firebase and API variables
+
+`docker-compose.prod.yml` is the API-only droplet stack. The React dashboard is deployed separately on Vercel and should not run on the droplet. Use `--remove-orphans` when applying the production compose file so any older `velocitybrain-dashboard` container is removed.
+
+By default, only Nginx publishes a host port on the droplet (`NGINX_PORT`, default `8088`). Postgres, Redis, the Python API, and the Node backend are Docker-network-only services, so they do not take over public host ports or interfere with other backends on the server.
+
+In Vercel, set:
+
+```text
+REACT_APP_API_URL=https://velocity.linkitapp.in
+```
+
+On the droplet, set `FRONTEND_URL` and `CORS_ORIGINS` in `.env.prod` to the real Vercel dashboard URL and any custom dashboard domain:
+
+```text
+FRONTEND_URL=https://your-dashboard-domain.com
+CORS_ORIGINS=https://your-dashboard-domain.com,https://your-vercel-project.vercel.app
+```
+
+## Private Repository Deploy Key
+
+For a private GitHub repository, create a droplet-only SSH deploy key instead of
+using your personal GitHub password or token on the server:
+
+```bash
+ssh-keygen -t ed25519 -C "velocitybrain-prod-01" -f ~/.ssh/velocitybrain_prod
+cat ~/.ssh/velocitybrain_prod.pub
+```
+
+Add the printed public key in GitHub:
+
+```text
+Repository -> Settings -> Deploy keys -> Add deploy key
+```
+
+Leave write access disabled unless the server must push commits. Then add an SSH
+host entry on the droplet:
+
+```text
+Host github-velocitybrain
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/velocitybrain_prod
+  IdentitiesOnly yes
+```
+
+Clone with:
+
+```bash
+git clone git@github-velocitybrain:hardikguptaofficialgit/velocitybrainappprod.git velocitybrain
+```
 
 If you prefer a single command, use:
 

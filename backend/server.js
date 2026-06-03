@@ -23,9 +23,7 @@ const PORT = process.env.PORT || 5001;
 const dashboardBuildPath = path.resolve(__dirname, '../dashboard/build');
 const docsRoot = path.resolve(__dirname, '../docs');
 const hasDashboardBuild = fs.existsSync(path.join(dashboardBuildPath, 'index.html'));
-const shouldServeDashboard =
-    process.env.SERVE_DASHBOARD === 'true' ||
-    (process.env.NODE_ENV === 'production' && hasDashboardBuild);
+const shouldServeDashboard = process.env.SERVE_DASHBOARD === 'true' && hasDashboardBuild;
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 const frontendPort = (() => {
     try {

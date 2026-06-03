@@ -14,8 +14,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./migrations/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./migrations/schema_constraints.sql:/docker-entrypoint-initdb.d/02-constraints.sql:ro
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    expose:
+      - "5432"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-velocity} -d $${POSTGRES_DB:-velocitybrain}"]
@@ -43,8 +43,8 @@ services:
     command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$REDIS_PASSWORD\""]
     volumes:
       - redis_data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    expose:
+      - "6379"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
@@ -79,8 +79,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "${API_PORT:-8080}:8080"
+    expose:
+      - "8080"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/v1/healthz"]
@@ -118,8 +118,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    ports:
-      - "${BACKEND_PORT:-5001}:5001"
+    expose:
+      - "5001"
     restart: unless-stopped
     networks:
       - velocitybrain-network
@@ -132,50 +132,21 @@ services:
           memory: 128M
           cpus: '0.1'
 
-  # React dashboard
-  dashboard:
-    build:
-      context: ./dashboard
-      dockerfile: Dockerfile
-      args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL}
-        REACT_APP_FIREBASE_API_KEY: ${REACT_APP_FIREBASE_API_KEY}
-        REACT_APP_FIREBASE_AUTH_DOMAIN: ${REACT_APP_FIREBASE_AUTH_DOMAIN}
-        REACT_APP_FIREBASE_PROJECT_ID: ${REACT_APP_FIREBASE_PROJECT_ID}
-        REACT_APP_FIREBASE_STORAGE_BUCKET: ${REACT_APP_FIREBASE_STORAGE_BUCKET}
-        REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${REACT_APP_FIREBASE_MESSAGING_SENDER_ID}
-        REACT_APP_FIREBASE_APP_ID: ${REACT_APP_FIREBASE_APP_ID}
-        REACT_APP_FIREBASE_MEASUREMENT_ID: ${REACT_APP_FIREBASE_MEASUREMENT_ID}
-        REACT_APP_REVENUECAT_API_KEY: ${REACT_APP_REVENUECAT_API_KEY}
-        REACT_APP_INTEGRATIONS_COMING_SOON: ${REACT_APP_INTEGRATIONS_COMING_SOON:-true}
-    container_name: velocitybrain-dashboard
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - velocitybrain-network
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.5'
-        reservations:
-          memory: 64M
-          cpus: '0.1'
-
-  # Nginx reverse proxy for the full SaaS product
+  # Nginx reverse proxy for the API-only droplet.
+  # The React dashboard is deployed separately on Vercel.
   nginx:
     image: nginx:alpine
     container_name: velocitybrain-nginx
     ports:
-      - "${NGINX_PORT:-80}:80"
+      # Keep VelocityBrain behind the host reverse proxy when sharing a droplet
+      # with other apps such as Linkit. Caddy/Nginx on the host owns 80/443.
+      - "${NGINX_PORT:-8088}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./logs/nginx:/var/log/nginx
     depends_on:
       - api
       - backend
-      - dashboard
     restart: unless-stopped
     networks:
       - velocitybrain-network

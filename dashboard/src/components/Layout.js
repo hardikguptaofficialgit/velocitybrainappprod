@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Activity, BarChart3, Cpu, Database, Key, LogOut, Menu, Settings, X } from './Icons';
 import Logo from './Logo';
 import BlobLoader from './BlobLoader';
+import PageErrorBoundary from './PageErrorBoundary';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -212,7 +213,9 @@ const Layout = () => {
         {/* Page Content */}
         <main className="flex-1 overflow-x-hidden p-4 lg:p-8">
           <div className="max-w-[1200px] mx-auto w-full animate-in fade-in duration-500">
-            <Outlet />
+            <PageErrorBoundary resetKey={location.pathname}>
+              <Outlet />
+            </PageErrorBoundary>
           </div>
         </main>
       </div>

@@ -12,6 +12,13 @@ export default class AppErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     console.error('[AppErrorBoundary] Render failure', error, info);
+
+    const message = `${error?.name || ''} ${error?.message || ''}`;
+    const isChunkLoadFailure = /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module/i.test(message);
+    if (isChunkLoadFailure && sessionStorage.getItem('velocitybrain_chunk_reload_attempted') !== '1') {
+      sessionStorage.setItem('velocitybrain_chunk_reload_attempted', '1');
+      window.location.reload();
+    }
   }
 
   handleClearSession = () => {
@@ -19,8 +26,14 @@ export default class AppErrorBoundary extends React.Component {
     localStorage.removeItem('velocitybrain_user');
     localStorage.removeItem('velocitybrain_oauth_pending');
     localStorage.removeItem('velocitybrain_oauth_provider');
+    localStorage.removeItem('velocitybrain_oauth_pending_started_at');
     sessionStorage.clear();
     window.location.assign('/login');
+  };
+
+  handleRefresh = () => {
+    sessionStorage.removeItem('velocitybrain_chunk_reload_attempted');
+    window.location.reload();
   };
 
   render() {
@@ -39,7 +52,7 @@ export default class AppErrorBoundary extends React.Component {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={this.handleRefresh}
               className="flex-1 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-black"
             >
               Refresh

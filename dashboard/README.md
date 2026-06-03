@@ -34,6 +34,8 @@ Recommended production API URL for the current setup:
 https://velocity.linkitapp.in
 ```
 
+The `velocity.linkitapp.in` domain is the API/backend host. Point the dashboard's Vercel project at its own Vercel/custom frontend domain, then allow that frontend origin in the backend `FRONTEND_URL` and `CORS_ORIGINS` settings.
+
 Recommended Vercel settings:
 
 - Framework preset: `Create React App`

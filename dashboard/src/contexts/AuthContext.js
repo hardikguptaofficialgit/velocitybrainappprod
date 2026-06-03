@@ -17,9 +17,14 @@ const AuthContext = createContext();
 
 const OAUTH_PENDING_KEY = 'velocitybrain_oauth_pending';
 const OAUTH_PROVIDER_KEY = 'velocitybrain_oauth_provider';
+const OAUTH_PENDING_STARTED_AT_KEY = 'velocitybrain_oauth_pending_started_at';
 const SESSION_VALIDATED_AT_KEY = 'velocitybrain_session_validated_at';
 const SESSION_VALIDATE_MS = 5 * 60 * 1000;
-const BACKEND_SYNC_TIMEOUT_MS = 30_000;
+const BACKEND_SYNC_TIMEOUT_MS = 20_000;
+const SESSION_RESTORE_TIMEOUT_MS = 8_000;
+const AUTH_READY_TIMEOUT_MS = 6_000;
+const REDIRECT_RESULT_TIMEOUT_MS = 12_000;
+const OAUTH_PENDING_MAX_AGE_MS = 2 * 60 * 1000;
 
 const POPUP_BLOCKED_CODES = new Set([
   'auth/popup-blocked',
@@ -43,6 +48,16 @@ const safeErrorMessage = (raw, fallback = 'Something went wrong. Please try agai
   return fallback;
 };
 
+const getStoredOAuthPendingAge = () => {
+  const startedAt = Number(localStorage.getItem(OAUTH_PENDING_STARTED_AT_KEY) || 0);
+  return startedAt ? Date.now() - startedAt : Number.POSITIVE_INFINITY;
+};
+
+const hasFreshOAuthPendingFlag = () => (
+  localStorage.getItem(OAUTH_PENDING_KEY) === '1' &&
+  getStoredOAuthPendingAge() < OAUTH_PENDING_MAX_AGE_MS
+);
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -56,7 +71,8 @@ export const AuthProvider = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [oauthPending, setOauthPending] = useState(() => localStorage.getItem(OAUTH_PENDING_KEY) === '1');
+  const [oauthPending, setOauthPending] = useState(() => hasFreshOAuthPendingFlag());
+  const userRef = useRef(null);
 
   // Tracks in-flight backend sync promises keyed by Firebase uid
   const syncInFlightRef = useRef(new Map());
@@ -77,18 +93,24 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('velocitybrain_token');
       delete axios.defaults.headers.common.Authorization;
     }
+    userRef.current = userData;
     setUser(userData);
   }, []);
 
   const clearAuthState = useCallback(() => {
     localStorage.removeItem('velocitybrain_token');
     localStorage.removeItem('velocitybrain_user');
+    localStorage.removeItem(OAUTH_PENDING_KEY);
+    localStorage.removeItem(OAUTH_PROVIDER_KEY);
+    localStorage.removeItem(OAUTH_PENDING_STARTED_AT_KEY);
     sessionStorage.removeItem(SESSION_VALIDATED_AT_KEY);
     delete axios.defaults.headers.common.Authorization;
     syncedUidRef.current = null;
     syncInFlightRef.current.clear();
     setUser(null);
+    userRef.current = null;
     setFirebaseUser(null);
+    setOauthPending(false);
   }, []);
 
   const clearBackendSession = useCallback(() => {
@@ -97,24 +119,32 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.removeItem(SESSION_VALIDATED_AT_KEY);
     delete axios.defaults.headers.common.Authorization;
     syncedUidRef.current = null;
+    userRef.current = null;
     setUser(null);
   }, []);
 
   const markOAuthPending = useCallback((provider) => {
     localStorage.setItem(OAUTH_PENDING_KEY, '1');
     localStorage.setItem(OAUTH_PROVIDER_KEY, provider);
+    localStorage.setItem(OAUTH_PENDING_STARTED_AT_KEY, String(Date.now()));
     setOauthPending(true);
   }, []);
 
   const clearOAuthPending = useCallback(() => {
     localStorage.removeItem(OAUTH_PENDING_KEY);
     localStorage.removeItem(OAUTH_PROVIDER_KEY);
+    localStorage.removeItem(OAUTH_PENDING_STARTED_AT_KEY);
     setOauthPending(false);
   }, []);
 
   const isOAuthPending = useCallback(
-    () => localStorage.getItem(OAUTH_PENDING_KEY) === '1',
-    []
+    () => {
+      if (localStorage.getItem(OAUTH_PENDING_KEY) !== '1') return false;
+      if (hasFreshOAuthPendingFlag()) return true;
+      clearOAuthPending();
+      return false;
+    },
+    [clearOAuthPending]
   );
 
   const restoreSessionFromStorage = useCallback(async ({ forceValidate = false } = {}) => {
@@ -140,7 +170,7 @@ export const AuthProvider = ({ children }) => {
 
       const response = await withTimeout(
         axios.get(resolveApiUrl('/api/auth/me')),
-        BACKEND_SYNC_TIMEOUT_MS,
+        SESSION_RESTORE_TIMEOUT_MS,
         '/api/auth/me'
       );
       const restoredUser = response.data?.user || storedUser;
@@ -185,8 +215,8 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Avoid redundant syncs when the session is already established for this uid.
-    if (!force && syncedUidRef.current === uid && user) {
-      return { success: true, user };
+    if (!force && syncedUidRef.current === uid && userRef.current) {
+      return { success: true, user: userRef.current };
     }
 
     // Deduplicate concurrent sync calls for the same uid.
@@ -208,10 +238,17 @@ export const AuthProvider = ({ children }) => {
         if (response.data?.requiresTwoFactor) {
           const message = safeErrorMessage(
             response.data?.message,
-            'Two-factor authentication is required. Sign in with email and password to complete 2FA.'
+            'Two-factor authentication is required to complete sign-in.'
           );
           setError(message);
-          return { success: false, error: message, requiresTwoFactor: true };
+          clearOAuthPending();
+          return {
+            success: false,
+            error: message,
+            requiresTwoFactor: true,
+            challengeToken: response.data.challengeToken,
+            user: response.data.user
+          };
         }
 
         const { user: syncedUser, token } = response.data;
@@ -261,14 +298,18 @@ export const AuthProvider = ({ children }) => {
 
     syncInFlightRef.current.set(uid, syncPromise);
     return syncPromise;
-  }, [clearAuthState, clearOAuthPending, setAuthState, user]);
+  }, [clearAuthState, clearOAuthPending, setAuthState]);
 
   const completeOAuthRedirect = useCallback(async () => {
     if (redirectHandledRef.current) return null;
     redirectHandledRef.current = true;
 
     try {
-      const result = await getRedirectResult(auth);
+      const result = await withTimeout(
+        getRedirectResult(auth),
+        REDIRECT_RESULT_TIMEOUT_MS,
+        'OAuth redirect completion'
+      );
       if (result?.user) {
         console.info('[Auth] OAuth redirect completed', {
           email: result.user.email,
@@ -335,7 +376,13 @@ export const AuthProvider = ({ children }) => {
       const syncResult = await syncFirebaseUser(firebaseResult.user, { force: true });
 
       if (!syncResult.success) {
-        return { success: false, error: syncResult.error };
+        return {
+          success: false,
+          error: syncResult.error,
+          requiresTwoFactor: syncResult.requiresTwoFactor,
+          challengeToken: syncResult.challengeToken,
+          user: syncResult.user
+        };
       }
 
       return { success: true, user: syncResult.user };
@@ -353,8 +400,17 @@ export const AuthProvider = ({ children }) => {
       // Restore existing backend session from localStorage immediately so the
       // app doesn't flash the login page on every refresh.
       const storedToken = localStorage.getItem('velocitybrain_token');
+      const storedUserRaw = localStorage.getItem('velocitybrain_user');
       if (storedToken) {
         axios.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+        if (storedUserRaw) {
+          try {
+            setAuthState(JSON.parse(storedUserRaw), storedToken);
+            if (active) setLoading(false);
+          } catch {
+            clearBackendSession();
+          }
+        }
         const restored = await restoreSessionFromStorage();
         if (restored.success && active) {
           // Session restored from storage — set loading false so the app
@@ -363,12 +419,23 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      await auth.authStateReady();
+      try {
+        await withTimeout(
+          auth.authStateReady(),
+          AUTH_READY_TIMEOUT_MS,
+          'Firebase session check'
+        );
+      } catch (authReadyErr) {
+        console.warn('[Auth] Firebase auth readiness timed out', authReadyErr);
+      }
 
       // Handle pending OAuth redirect (popup-was-blocked flow)
       const redirectUser = await completeOAuthRedirect();
       if (redirectUser && active) {
-        await syncFirebaseUser(redirectUser, { force: true });
+        const syncResult = await syncFirebaseUser(redirectUser, { force: true });
+        if (!syncResult.success && active) {
+          clearOAuthPending();
+        }
       } else if (isOAuthPending() && !auth.currentUser && active) {
         const provider = localStorage.getItem(OAUTH_PROVIDER_KEY) || 'OAuth';
         clearOAuthPending();
@@ -430,10 +497,12 @@ export const AuthProvider = ({ children }) => {
     };
   }, [
     clearAuthState,
+    clearBackendSession,
     clearOAuthPending,
     completeOAuthRedirect,
     isOAuthPending,
     restoreSessionFromStorage,
+    setAuthState,
     syncFirebaseUser
   ]);
 
@@ -498,6 +567,112 @@ export const AuthProvider = ({ children }) => {
     setAuthState(userData, token);
   }, [setAuthState]);
 
+  const loginWithPassword = useCallback(async ({ email, password }) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await withTimeout(
+        axios.post(resolveApiUrl('/api/auth/login'), { email, password }),
+        BACKEND_SYNC_TIMEOUT_MS,
+        'POST /api/auth/login'
+      );
+
+      if (response.data?.requiresTwoFactor) {
+        return {
+          success: false,
+          requiresTwoFactor: true,
+          challengeToken: response.data.challengeToken,
+          user: response.data.user,
+          error: response.data.message || 'Two-factor authentication is required.'
+        };
+      }
+
+      const { user: signedInUser, token } = response.data;
+      if (!signedInUser?.id || !token) {
+        const message = 'Sign-in succeeded but the server did not return a session. Please try again.';
+        setError(message);
+        return { success: false, error: message };
+      }
+
+      setAuthState(signedInUser, token);
+      return { success: true, user: signedInUser };
+    } catch (err) {
+      const message = safeErrorMessage(
+        getErrorMessage(err, null),
+        'Unable to sign in right now. Please try again.'
+      );
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [setAuthState]);
+
+  const registerWithPassword = useCallback(async ({ name, email, password }) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await withTimeout(
+        axios.post(resolveApiUrl('/api/auth/register'), { name, email, password }),
+        BACKEND_SYNC_TIMEOUT_MS,
+        'POST /api/auth/register'
+      );
+
+      const { user: createdUser, token } = response.data;
+      if (!createdUser?.id || !token) {
+        const message = 'Account was created but the server did not return a session. Please try signing in.';
+        setError(message);
+        return { success: false, error: message };
+      }
+
+      setAuthState(createdUser, token);
+      return { success: true, user: createdUser };
+    } catch (err) {
+      const message = safeErrorMessage(
+        getErrorMessage(err, null),
+        'Unable to create your account right now. Please try again.'
+      );
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [setAuthState]);
+
+  const completeTwoFactor = useCallback(async ({ challengeToken, token }) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await withTimeout(
+        axios.post(resolveApiUrl('/api/auth/2fa/complete'), { challengeToken, token }),
+        BACKEND_SYNC_TIMEOUT_MS,
+        'POST /api/auth/2fa/complete'
+      );
+
+      const { user: signedInUser, token: sessionToken } = response.data;
+      if (!signedInUser?.id || !sessionToken) {
+        const message = 'Two-factor verification succeeded but the server did not return a session.';
+        setError(message);
+        return { success: false, error: message };
+      }
+
+      setAuthState(signedInUser, sessionToken);
+      return { success: true, user: signedInUser };
+    } catch (err) {
+      const message = safeErrorMessage(
+        getErrorMessage(err, null),
+        'Unable to verify that code. Please try again.'
+      );
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [setAuthState]);
+
   const loginWithGoogle = useCallback(
     () => signInWithProvider(googleProvider, 'Google'),
     [signInWithProvider]
@@ -519,6 +694,9 @@ export const AuthProvider = ({ children }) => {
         logout,
         loginWithGithub,
         loginWithGoogle,
+        loginWithPassword,
+        registerWithPassword,
+        completeTwoFactor,
         updateUser,
         completeAuth
       }}
