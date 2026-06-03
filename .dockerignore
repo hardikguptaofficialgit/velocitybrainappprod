@@ -18,6 +18,9 @@ excalidraw.log
 .env
 .env.local
 .env.prod
+secrets
+*firebase*adminsdk*.json
+firebase-service-account.json
 .velocitybrain
 data
 data/pytest-tmp

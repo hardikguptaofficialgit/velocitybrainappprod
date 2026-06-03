@@ -25,6 +25,8 @@ services:
       start_period: 60s
     networks:
       - velocitybrain-network
+    volumes:
+      - ./secrets/firebase-service-account.json:/app/firebase-service-account.json:ro
     deploy:
       resources:
         limits:
