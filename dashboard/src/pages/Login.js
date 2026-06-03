@@ -10,9 +10,6 @@ const OAUTH_TIMEOUT_MS = 45_000;
 const OAUTH_TIMEOUT_MESSAGE = 'Sign-in timed out. Please try again.';
 
 const initialForm = {
-  name: '',
-  email: '',
-  password: '',
   twoFactorCode: ''
 };
 
@@ -20,15 +17,12 @@ export default function Login() {
   const {
     loginWithGithub,
     loginWithGoogle,
-    loginWithPassword,
-    registerWithPassword,
     completeTwoFactor,
     error,
     user,
     loading,
     oauthPending
   } = useAuth();
-  const [mode, setMode] = useState('login');
   const [form, setForm] = useState(initialForm);
   const [oauthAction, setOauthAction] = useState(null);
   const [formAction, setFormAction] = useState(null);
@@ -82,17 +76,6 @@ export default function Login() {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  const resetLocalFlow = (nextMode) => {
-    setMode(nextMode);
-    setTwoFactorChallenge(null);
-    setLocalError(null);
-    setForm((current) => ({
-      ...initialForm,
-      email: current.email,
-      password: ''
-    }));
-  };
-
   const handleOauth = async (provider) => {
     const action = provider === 'github' ? loginWithGithub : loginWithGoogle;
     const providerLabel = provider === 'github' ? 'GitHub' : 'Google';
@@ -116,47 +99,6 @@ export default function Login() {
     } finally {
       clearOauthTimeout();
       setOauthAction(null);
-    }
-  };
-
-  const handlePasswordSubmit = async (event) => {
-    event.preventDefault();
-    setLocalError(null);
-
-    const email = form.email.trim();
-    const password = form.password;
-    if (!email || !password) {
-      setLocalError('Enter your email and password.');
-      return;
-    }
-    if (mode === 'register' && password.length < 8) {
-      setLocalError('Password must be at least 8 characters.');
-      return;
-    }
-
-    setFormAction(mode);
-    try {
-      const result = mode === 'register'
-        ? await registerWithPassword({ name: form.name.trim(), email, password })
-        : await loginWithPassword({ email, password });
-
-      if (result?.success) {
-        routeAfterAuth(result.user);
-        return;
-      }
-
-      if (result?.requiresTwoFactor) {
-        setTwoFactorChallenge({
-          token: result.challengeToken,
-          user: result.user
-        });
-        setLocalError(null);
-        return;
-      }
-
-      setLocalError(result?.error || 'Authentication failed. Please try again.');
-    } finally {
-      setFormAction(null);
     }
   };
 
@@ -195,7 +137,7 @@ export default function Login() {
   };
 
   const oauthDisabled = Boolean(oauthAction || formAction);
-  const formDisabled = Boolean(oauthAction || formAction);
+  const formDisabled = Boolean(formAction);
 
   if (user) {
     return <Navigate to={user.onboardingCompleted ? '/dashboard' : '/onboarding'} replace />;
@@ -247,14 +189,12 @@ export default function Login() {
         <div className="w-full max-w-md relative z-10 flex flex-col justify-center">
           <div className="mb-8 text-center lg:text-left">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
-              {twoFactorChallenge ? 'Verify your account' : mode === 'register' ? 'Create your account' : 'Welcome back'}
+              {twoFactorChallenge ? 'Verify your account' : 'Welcome back'}
             </h2>
             <p className="text-zinc-400 text-base font-light">
               {twoFactorChallenge
                 ? `Enter the code for ${twoFactorChallenge.user?.email || 'your account'}.`
-                : mode === 'register'
-                  ? 'Start with OAuth or create a password account.'
-                  : 'Sign in to access your workspace.'}
+                : 'Sign in with Google or GitHub to access your workspace.'}
             </p>
           </div>
 
@@ -267,23 +207,6 @@ export default function Login() {
 
           {!twoFactorChallenge && (
             <>
-              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#111113] p-1 border border-white/5 mb-5">
-                <button
-                  type="button"
-                  onClick={() => resetLocalFlow('login')}
-                  className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${mode === 'login' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}`}
-                >
-                  Sign in
-                </button>
-                <button
-                  type="button"
-                  onClick={() => resetLocalFlow('register')}
-                  className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${mode === 'register' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}`}
-                >
-                  Create account
-                </button>
-              </div>
-
               <div className="space-y-3 mb-6">
                 <button
                   type="button"
@@ -304,63 +227,11 @@ export default function Login() {
                   {oauthAction === 'google' ? 'Continuing with Google...' : 'Continue with Google'}
                 </button>
               </div>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-px flex-1 bg-white/10" />
-                <span className="text-xs uppercase text-zinc-600" style={{ fontFamily: 'JetBrains Mono, monospace' }}>or</span>
-                <div className="h-px flex-1 bg-white/10" />
-              </div>
             </>
           )}
 
-          <form onSubmit={twoFactorChallenge ? handleTwoFactorSubmit : handlePasswordSubmit} className="space-y-4">
-            {!twoFactorChallenge && mode === 'register' && (
-              <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase text-zinc-500">Name</span>
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={updateForm}
-                  disabled={formDisabled}
-                  autoComplete="name"
-                  className="w-full rounded-2xl border border-white/10 bg-[#111113] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-[#EA803A]"
-                  placeholder="Ada Lovelace"
-                />
-              </label>
-            )}
-
-            {!twoFactorChallenge && (
-              <>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase text-zinc-500">Email</span>
-                  <input
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={updateForm}
-                    disabled={formDisabled}
-                    autoComplete="email"
-                    className="w-full rounded-2xl border border-white/10 bg-[#111113] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-[#EA803A]"
-                    placeholder="you@company.com"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase text-zinc-500">Password</span>
-                  <input
-                    name="password"
-                    type="password"
-                    value={form.password}
-                    onChange={updateForm}
-                    disabled={formDisabled}
-                    autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                    className="w-full rounded-2xl border border-white/10 bg-[#111113] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-[#EA803A]"
-                    placeholder={mode === 'register' ? 'Minimum 8 characters' : 'Your password'}
-                  />
-                </label>
-              </>
-            )}
-
-            {twoFactorChallenge && (
+          {twoFactorChallenge && (
+            <form onSubmit={handleTwoFactorSubmit} className="space-y-4">
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase text-zinc-500">Authenticator code</span>
                 <input
@@ -374,27 +245,15 @@ export default function Login() {
                   placeholder="123456"
                 />
               </label>
-            )}
 
-            <button
-              type="submit"
-              disabled={formDisabled}
-              className="w-full rounded-2xl bg-[#EA803A] px-5 py-4 text-sm font-bold text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100 hover:bg-[#f0965a]"
-            >
-              {formAction === 'register'
-                ? 'Creating account...'
-                : formAction === 'login'
-                  ? 'Signing in...'
-                  : formAction === '2fa'
-                    ? 'Verifying...'
-                    : twoFactorChallenge
-                      ? 'Verify and continue'
-                      : mode === 'register'
-                        ? 'Create account'
-                        : 'Sign in'}
-            </button>
+              <button
+                type="submit"
+                disabled={formDisabled}
+                className="w-full rounded-2xl bg-[#EA803A] px-5 py-4 text-sm font-bold text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100 hover:bg-[#f0965a]"
+              >
+                {formAction === '2fa' ? 'Verifying...' : 'Verify and continue'}
+              </button>
 
-            {twoFactorChallenge && (
               <button
                 type="button"
                 onClick={() => {
@@ -405,8 +264,8 @@ export default function Login() {
               >
                 Back to sign in
               </button>
-            )}
-          </form>
+            </form>
+          )}
 
           <p className="text-center text-sm text-zinc-500 mt-8 font-light" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
             By continuing, you agree to our{' '}

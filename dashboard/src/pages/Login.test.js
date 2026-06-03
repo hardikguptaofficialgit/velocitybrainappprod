@@ -1,6 +1,6 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Login from './Login';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,8 +12,6 @@ jest.mock('../contexts/AuthContext', () => ({
 const defaultAuth = {
   loginWithGithub: jest.fn(),
   loginWithGoogle: jest.fn(),
-  loginWithPassword: jest.fn(),
-  registerWithPassword: jest.fn(),
   completeTwoFactor: jest.fn(),
   error: null,
   user: null,
@@ -26,8 +24,6 @@ const renderLogin = (authOverrides = {}) => {
     ...defaultAuth,
     loginWithGithub: jest.fn(async () => ({ success: false })),
     loginWithGoogle: jest.fn(async () => ({ success: false })),
-    loginWithPassword: jest.fn(async () => ({ success: false })),
-    registerWithPassword: jest.fn(async () => ({ success: false })),
     completeTwoFactor: jest.fn(async () => ({ success: false })),
     ...authOverrides
   };
@@ -45,64 +41,20 @@ const renderLogin = (authOverrides = {}) => {
   return auth;
 };
 
-const submitPasswordForm = () => {
-  const buttons = screen.getAllByRole('button', { name: 'Sign in' });
-  fireEvent.click(buttons[buttons.length - 1]);
-};
-
 describe('Login page', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders OAuth and password sign-in controls', () => {
+  it('renders only OAuth sign-in controls', () => {
     renderLogin();
 
     expect(screen.getByText('Welcome back')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue with GitHub' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Continue with Google/ })).toBeInTheDocument();
-    expect(screen.getByLabelText('Email')).toBeInTheDocument();
-    expect(screen.getByLabelText('Password')).toBeInTheDocument();
-  });
-
-  it('switches to account creation mode and calls register', async () => {
-    const registerWithPassword = jest.fn(async () => ({
-      success: true,
-      user: { id: 'user-1', onboardingCompleted: false }
-    }));
-    renderLogin({ registerWithPassword });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New User' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'supersecret123' } });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Create account' }).pop());
-
-    await waitFor(() => {
-      expect(registerWithPassword).toHaveBeenCalledWith({
-        name: 'New User',
-        email: 'new@example.com',
-        password: 'supersecret123'
-      });
-    });
-  });
-
-  it('shows the two-factor challenge after password login requires it', async () => {
-    const loginWithPassword = jest.fn(async () => ({
-      success: false,
-      requiresTwoFactor: true,
-      challengeToken: 'challenge-token',
-      user: { email: 'twofactor@example.com' }
-    }));
-    renderLogin({ loginWithPassword });
-
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'twofactor@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'supersecret123' } });
-    submitPasswordForm();
-
-    expect(await screen.findByText('Verify your account')).toBeInTheDocument();
-    expect(screen.getByText('Enter the code for twofactor@example.com.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Authenticator code')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create account' })).not.toBeInTheDocument();
   });
 
   it('renders a recovery action during pending OAuth handoff', () => {

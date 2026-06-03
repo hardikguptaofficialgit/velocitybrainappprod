@@ -69,12 +69,12 @@ const launchTargets = [
   {
     name: 'ChatGPT',
     icon: 'https://svgl.app/library/openai_dark.svg',
-    description: 'A planned surface for bringing the same memory layer into the chat tools people already use every day.',
+    description: 'A future surface for bringing the Company Brain into the chat tools people already use every day.',
   },
   {
     name: 'Claude',
     icon: 'https://svgl.app/library/claude-ai-icon.svg',
-    description: 'A planned connector surface so long-running conversations can reuse the right context instead of drifting across sessions.',
+    description: 'A future connector surface so long-running conversations can reuse the right context instead of drifting across sessions.',
   },
 ];
 
@@ -96,17 +96,17 @@ const launchUseCases = [
 const timelinePhases = [
   {
     phase: 'Shipping now',
-    date: 'Current product',
-    title: 'Memory and reuse for coding agents',
-    description: 'The shipped product today is a hosted memory, retrieval, and reuse layer for coding agents and engineering teams.',
-    items: ['Memory layer', 'MCP integrations', 'Repo-aware retrieval', 'Savings tracking'],
+    date: 'Live product',
+    title: 'Company Brain for teams',
+    description: 'Velocity Brain now ships as a hosted company brain that connects work sources, coding agents, and team memory into one reusable layer.',
+    items: ['Company Brain', 'OAuth integrations', 'MCP agents', 'API keys'],
   },
   {
-    phase: 'Near-term roadmap',
-    date: 'Planned',
-    title: 'Broader chat and assistant surfaces',
-    description: 'Next we want to bring the same memory and continuity layer into mainstream assistant products and recurring user workflows.',
-    items: ['Cross-session context', 'Shared personal memory', 'Assistant integrations', 'Cleaner onboarding'],
+    phase: 'Expanding now',
+    date: 'Current build',
+    title: 'More source systems and agent surfaces',
+    description: 'The current stack is wired for source sync, hosted APIs, dashboard onboarding, and reusable context across serious AI workflows.',
+    items: ['Slack', 'Google Workspace', 'GitHub', 'Integrations dashboard'],
   },
   {
     phase: 'Longer-term roadmap',
@@ -120,19 +120,31 @@ const timelinePhases = [
 const proofPoints = [
   {
     Icon: Database,
-    title: 'Memory before generation',
-    description: 'Give your AI the right memory, facts, and context before the model starts reasoning.',
+    title: 'Company context in one place',
+    description: 'Pull workspace facts, repo history, decisions, and integration events into one shared brain layer.',
   },
   {
     Icon: Lightning,
-    title: 'Reuse across runs',
-    description: 'Stop paying your AI to rediscover the same decisions, history, and structure every session.',
+    title: 'Agents start ahead',
+    description: 'Codex, Claude Code, Gemini CLI, Cursor, Warp, and other MCP clients can reuse the same context.',
   },
   {
     Icon: ShieldCheck,
-    title: 'Full stack control',
-    description: 'Shared context, safer workflows, and one brain layer across tools, agents, and models.',
+    title: 'OAuth-ready control plane',
+    description: 'Google, GitHub, and source integrations route through the hosted backend instead of scattered local config.',
   },
+];
+
+const companyBrainSources = [
+  { name: 'Slack', detail: 'team messages and channels', tone: '#8b5cf6' },
+  { name: 'Google Workspace', detail: 'mail, docs, calendar context', tone: '#5d89ff' },
+  { name: 'GitHub', detail: 'repos, issues, commits, pull requests', tone: '#f2f2f2' },
+  { name: 'Notion', detail: 'docs, decisions, operating notes', tone: '#ffffff' },
+  { name: 'Linear', detail: 'roadmaps, tickets, product loops', tone: '#7fe3c8' },
+  { name: 'Jira', detail: 'delivery plans and issue history', tone: '#5d89ff' },
+  { name: 'Figma', detail: 'design context and product surfaces', tone: '#f472b6' },
+  { name: 'Discord', detail: 'community and support memory', tone: '#8b5cf6' },
+  { name: 'Dropbox', detail: 'files, folders, shared artifacts', tone: '#60a5fa' },
 ];
 
 const integrationCardThemes = {
@@ -165,34 +177,34 @@ const integrationCardThemes = {
 const howItWorks = [
   {
     step: '01',
-    title: 'Connect your agent',
-    description: 'Install Velocity Brain once and plug it into Codex, Claude, or other MCP-aware clients.',
+    title: 'Connect company sources',
+    description: 'Bring Google Workspace, GitHub, Slack, Notion, Linear, Jira, Figma, Discord, and Dropbox into one brain.',
   },
   {
     step: '02',
-    title: 'Retrieve context first',
-    description: 'Before a task runs, Velocity Brain looks up the most useful repo memory and prior work.',
+    title: 'Normalize team memory',
+    description: 'Velocity Brain turns scattered source events into reusable context for dashboards, APIs, and agents.',
   },
   {
     step: '03',
-    title: 'Reuse and improve',
-    description: 'The next run starts with a better context package, lower waste, and a more consistent result.',
+    title: 'Reuse across agents',
+    description: 'Every run can start with the right company context instead of rebuilding the same prompt by hand.',
   },
 ];
 
 const announcementLayers = [
   {
     id: 'company-brain',
-    eyebrow: 'New',
-    title: 'Company Brain for engineering teams is taking shape.',
+    eyebrow: 'Launched',
+    title: 'Company Brain is live with source integrations and hosted APIs.',
     cta: 'Open page',
     href: '/company-brain',
     accent: '#EA803A',
   },
   {
     id: 'launch',
-    eyebrow: 'Roadmap',
-    title: 'Planned assistant integrations beyond coding tools.',
+    eyebrow: 'Live stack',
+    title: 'Connect the tools your company already works inside.',
     cta: 'Launch notes',
     onClick: 'launch',
     accent: '#EA803A',
@@ -272,8 +284,8 @@ export default function Landing() {
   const [activeAnnouncement, setActiveAnnouncement] = useState(0);
   const accountHref = user ? (user.onboardingCompleted ? '/dashboard' : '/onboarding') : '/login';
   const accountLabel = loading ? 'Checking...' : user ? (user.onboardingCompleted ? 'Dashboard' : 'Continue Setup') : 'Sign In';
-  const primaryCtaLabel = loading ? 'Loading...' : user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Start Now';
-  const footerCtaLabel = loading ? 'Loading...' : user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Start Free';
+  const primaryCtaLabel = loading ? 'Loading...' : user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Open Company Brain';
+  const footerCtaLabel = loading ? 'Loading...' : user ? (user.onboardingCompleted ? 'Open Dashboard' : 'Continue Setup') : 'Start Company Brain';
 
   useEffect(() => {
     const onScroll = () => setNavScrolled(window.scrollY > 30);
@@ -516,12 +528,12 @@ export default function Landing() {
       <Dialog
         isOpen={launchModalOpen}
         onClose={() => setLaunchModalOpen(false)}
-        eyebrow="Coming soon"
+        eyebrow="Expansion"
         title={
           <>
-            Stop losing context
+            Company Brain is live.
             <br />
-            in ChatGPT and Claude.
+            Chat surfaces come next.
           </>
         }
         maxWidth="max-w-xl"
@@ -545,7 +557,7 @@ export default function Landing() {
         }
       >
         <p className="text-zinc-400 text-[13px] leading-relaxed mb-5">
-          Chat interfaces are great to talk to, but they are still weak at keeping long-running memory clean and reliable.
+          Velocity Brain is live today as a Company Brain for connected team sources, hosted APIs, and MCP agents. ChatGPT and Claude surfaces are the next expansion path for the same reusable memory layer.
           The same thing happens again and again: you log something, update something, or explain something today, and the assistant later forgets the date, loses the structure, or makes you repeat yourself.
         </p>
 
@@ -569,7 +581,7 @@ export default function Landing() {
                   <img src={target.icon} alt={`${target.name} logo`} className="h-4 w-4 object-contain" />
                 </div>
                 <div>
-                  <p className="mono text-[8px] uppercase tracking-[0.2em] text-zinc-500">Coming soon</p>
+                  <p className="mono text-[8px] uppercase tracking-[0.2em] text-zinc-500">Expansion</p>
                   <h4 className="syne text-sm font-bold text-white">{target.name}</h4>
                 </div>
               </div>
@@ -605,7 +617,7 @@ export default function Landing() {
         }
       >
         <p className="text-zinc-400 text-[13px] leading-relaxed mb-5">
-          Velocity Brain ships today as a memory and reuse layer for coding agents. The roadmap below shows the broader surfaces we want to support next, but they are roadmap items, not already-live product claims.
+          Velocity Brain now ships as a Company Brain for teams: hosted APIs, source integrations, OAuth sign-in, and MCP-ready agent memory. The roadmap keeps expanding from this live foundation.
         </p>
 
         <div className="space-y-3">
@@ -737,7 +749,7 @@ export default function Landing() {
 </Fade>
           <Fade delay={120}>
             <h1 className="syne font-extrabold leading-[0.95] tracking-[-0.03em] mb-3 text-4xl sm:text-5xl md:text-6xl">
-              Your AI should not
+              Company Brain
               <br />
               <span
                 className="inline-block text-transparent"
@@ -750,29 +762,35 @@ export default function Landing() {
                   textShadow: '2px 2px 0 rgba(0,0,0,0.28)',
                 }}
               >
-                restart from zero.
+                just launched.
               </span>
             </h1>
+          </Fade>
+
+          <Fade delay={180}>
+            <p className="mx-auto mb-5 max-w-xl text-[13px] md:text-base leading-relaxed text-zinc-300">
+              Connect Google Workspace, GitHub, Slack, Notion, Linear, Jira, Figma, Discord, Dropbox, and your AI agents into one reusable operating memory for the company.
+            </p>
           </Fade>
 
           <Fade delay={240}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 mb-5">
               <a
-                href="/login"
+                href={accountHref}
                 className="w-full sm:w-auto px-5 py-2 rounded-xl font-bold text-black text-[13px] flex items-center justify-center gap-1.5 syne"
                 style={{ background: '#EA803A', boxShadow: '2px 2px 0 #c4612a' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f0965a')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#EA803A')}
               >
-                Start Free <ArrowRight size={14} stroke="#000000" />
+                Open Company Brain <ArrowRight size={14} stroke="#000000" />
               </a>
 
               <a
-                href={researchFeature.href}
+                href="/company-brain"
                 className="w-full sm:w-auto px-5 py-2 rounded-xl font-bold text-zinc-300 text-[13px] flex items-center justify-center gap-1.5 border border-[#333] bg-[#111] syne"
                 style={{ boxShadow: '2px 2px 0 #000' }}
               >
-                <ArrowRight size={14} stroke="#ffffff" /> Why we're different
+                <ArrowRight size={14} stroke="#ffffff" /> See the system
               </a>
             </div>
           </Fade>
@@ -781,7 +799,8 @@ export default function Landing() {
             <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-[11px] mono text-zinc-500 mb-6">
               <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">CLI-first</span>
               <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">MCP-native</span>
-              <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">Model-agnostic</span>
+              <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">OAuth integrations</span>
+              <span className="rounded-full border border-[#2a2a2a] bg-[#0d0d0d]/80 px-2 py-0.5">Hosted API</span>
             </div>
           </Fade>
 
@@ -795,10 +814,10 @@ export default function Landing() {
               </div>
 
               <div className="p-3 bg-[#0a0a0a] space-y-1">
-                <TL color="text-zinc-300">$ velocitybrain query "Map auth and API key flow in this repo"</TL>
-                <TL color="text-[#EA803A]">Found reusable context from prior runs</TL>
-                <TL color="text-zinc-500">Modules: auth, usage, API keys, dashboard</TL>
-                <TL color="text-green-400">Prepared a smaller context package for the agent</TL>
+                <TL color="text-zinc-300">$ velocitybrain company-brain sync --sources all</TL>
+                <TL color="text-[#EA803A]">Connected Google Workspace, GitHub, Slack, Notion</TL>
+                <TL color="text-zinc-500">Added Linear, Jira, Figma, Discord, Dropbox context</TL>
+                <TL color="text-green-400">Company Brain ready for dashboard, API, and agents</TL>
               </div>
             </Clay>
           </Fade>
@@ -817,6 +836,58 @@ export default function Landing() {
             </Fade>
           ))}
         </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto px-4 pb-12">
+        <Fade>
+          <Clay accent className="overflow-hidden rounded-[20px]">
+            <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="p-5 md:p-6 border-b lg:border-b-0 lg:border-r border-[#2a2a2a]">
+                <p className="mono text-[#EA803A] text-[10px] uppercase tracking-widest mb-2">Company Brain launched</p>
+                <h2 className="syne font-bold text-white text-2xl md:text-3xl mb-3">
+                  One hosted brain for the tools your team already trusts.
+                </h2>
+                <p className="text-zinc-300 text-[13px] md:text-sm leading-relaxed mb-5">
+                  Velocity Brain is no longer just an agent memory layer. It is a control plane for company context: source integrations, hosted API keys, OAuth login, and reusable memory for AI work.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    ['9+', 'sources'],
+                    ['11', 'agents'],
+                    ['24/7', 'hosted'],
+                  ].map(([value, label]) => (
+                    <div key={label} className="rounded-xl border border-[#2a2a2a] bg-[#0b0b0b] p-3 text-center">
+                      <p className="syne text-xl font-extrabold text-white">{value}</p>
+                      <p className="mono text-[9px] uppercase tracking-[0.18em] text-zinc-500">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-5 md:p-6 bg-[#090909]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {companyBrainSources.map((source) => (
+                    <div key={source.name} className="group rounded-xl border border-[#1f1f1f] bg-[#0d0d0d] p-3 transition-colors hover:border-[#333] hover:bg-[#111]">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shadow-[0_0_14px_currentColor]"
+                            style={{ color: source.tone, background: source.tone }}
+                          />
+                          <p className="syne text-sm font-bold text-white">{source.name}</p>
+                        </div>
+                        <span className="mono rounded border border-[#2a2a2a] px-1.5 py-[1px] text-[8px] uppercase tracking-[0.16em] text-zinc-500">
+                          Live
+                        </span>
+                      </div>
+                      <p className="text-[12px] leading-relaxed text-zinc-400">{source.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Clay>
+        </Fade>
       </section>
 
       <section className="max-w-5xl mx-auto px-4 pb-12">
