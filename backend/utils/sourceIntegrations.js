@@ -26,7 +26,9 @@ const PROVIDERS = {
             'team:read'
         ],
         clientIdEnv: 'SLACK_CLIENT_ID',
-        clientSecretEnv: 'SLACK_CLIENT_SECRET'
+        clientSecretEnv: 'SLACK_CLIENT_SECRET',
+        scopeSeparator: ',',
+        tokenFormat: 'form'
     },
     google: {
         id: 'google',
@@ -43,7 +45,13 @@ const PROVIDERS = {
             'profile'
         ],
         clientIdEnv: 'GOOGLE_WORKSPACE_CLIENT_ID',
-        clientSecretEnv: 'GOOGLE_WORKSPACE_CLIENT_SECRET'
+        clientSecretEnv: 'GOOGLE_WORKSPACE_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form',
+        authParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+        }
     },
     github: {
         id: 'github',
@@ -57,7 +65,161 @@ const PROVIDERS = {
             'read:org'
         ],
         clientIdEnv: 'GITHUB_CLIENT_ID',
-        clientSecretEnv: 'GITHUB_CLIENT_SECRET'
+        clientSecretEnv: 'GITHUB_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'json'
+    },
+    notion: {
+        id: 'notion',
+        label: 'Notion',
+        authUrl: 'https://api.notion.com/v1/oauth/authorize',
+        tokenUrl: 'https://api.notion.com/v1/oauth/token',
+        scope: [],
+        clientIdEnv: 'NOTION_CLIENT_ID',
+        clientSecretEnv: 'NOTION_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'json',
+        tokenAuth: 'basic',
+        authParams: {
+            response_type: 'code',
+            owner: 'user'
+        }
+    },
+    linear: {
+        id: 'linear',
+        label: 'Linear',
+        authUrl: 'https://linear.app/oauth/authorize',
+        tokenUrl: 'https://api.linear.app/oauth/token',
+        scope: ['read'],
+        clientIdEnv: 'LINEAR_CLIENT_ID',
+        clientSecretEnv: 'LINEAR_CLIENT_SECRET',
+        scopeSeparator: ',',
+        tokenFormat: 'form'
+    },
+    jira: {
+        id: 'jira',
+        label: 'Jira',
+        authUrl: 'https://auth.atlassian.com/authorize',
+        tokenUrl: 'https://auth.atlassian.com/oauth/token',
+        scope: ['read:jira-user', 'read:jira-work', 'offline_access'],
+        clientIdEnv: 'JIRA_CLIENT_ID',
+        clientSecretEnv: 'JIRA_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'json',
+        authParams: {
+            audience: 'api.atlassian.com',
+            prompt: 'consent'
+        }
+    },
+    figma: {
+        id: 'figma',
+        label: 'Figma',
+        authUrl: 'https://www.figma.com/oauth',
+        tokenUrl: 'https://www.figma.com/api/v1/oauth/token',
+        scope: ['file_content:read'],
+        clientIdEnv: 'FIGMA_CLIENT_ID',
+        clientSecretEnv: 'FIGMA_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form'
+    },
+    discord: {
+        id: 'discord',
+        label: 'Discord',
+        authUrl: 'https://discord.com/oauth2/authorize',
+        tokenUrl: 'https://discord.com/api/oauth2/token',
+        scope: ['identify', 'guilds'],
+        clientIdEnv: 'DISCORD_CLIENT_ID',
+        clientSecretEnv: 'DISCORD_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form'
+    },
+    dropbox: {
+        id: 'dropbox',
+        label: 'Dropbox',
+        authUrl: 'https://www.dropbox.com/oauth2/authorize',
+        tokenUrl: 'https://api.dropboxapi.com/oauth2/token',
+        scope: ['files.metadata.read', 'files.content.read', 'sharing.read'],
+        clientIdEnv: 'DROPBOX_CLIENT_ID',
+        clientSecretEnv: 'DROPBOX_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form',
+        authParams: {
+            token_access_type: 'offline'
+        }
+    },
+    microsoft365: {
+        id: 'microsoft365',
+        label: 'Microsoft 365',
+        authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        scope: ['offline_access', 'User.Read', 'Mail.Read', 'Calendars.Read', 'Files.Read.All'],
+        clientIdEnv: 'MICROSOFT_CLIENT_ID',
+        clientSecretEnv: 'MICROSOFT_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form'
+    },
+    outlook: {
+        id: 'outlook',
+        label: 'Outlook',
+        authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        scope: ['offline_access', 'User.Read', 'Mail.Read', 'Calendars.Read'],
+        clientIdEnv: 'MICROSOFT_CLIENT_ID',
+        clientSecretEnv: 'MICROSOFT_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form'
+    },
+    onedrive: {
+        id: 'onedrive',
+        label: 'OneDrive',
+        authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        scope: ['offline_access', 'User.Read', 'Files.Read.All'],
+        clientIdEnv: 'MICROSOFT_CLIENT_ID',
+        clientSecretEnv: 'MICROSOFT_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form'
+    },
+    teams: {
+        id: 'teams',
+        label: 'Microsoft Teams',
+        authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        scope: ['offline_access', 'User.Read', 'Team.ReadBasic.All', 'Channel.ReadBasic.All'],
+        clientIdEnv: 'MICROSOFT_CLIENT_ID',
+        clientSecretEnv: 'MICROSOFT_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form'
+    },
+    gmail: {
+        id: 'gmail',
+        label: 'Gmail',
+        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenUrl: 'https://oauth2.googleapis.com/token',
+        scope: ['https://www.googleapis.com/auth/gmail.readonly', 'openid', 'email', 'profile'],
+        clientIdEnv: 'GOOGLE_WORKSPACE_CLIENT_ID',
+        clientSecretEnv: 'GOOGLE_WORKSPACE_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form',
+        authParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+        }
+    },
+    googledocs: {
+        id: 'googledocs',
+        label: 'Google Docs',
+        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenUrl: 'https://oauth2.googleapis.com/token',
+        scope: ['https://www.googleapis.com/auth/documents.readonly', 'https://www.googleapis.com/auth/drive.metadata.readonly', 'openid', 'email', 'profile'],
+        clientIdEnv: 'GOOGLE_WORKSPACE_CLIENT_ID',
+        clientSecretEnv: 'GOOGLE_WORKSPACE_CLIENT_SECRET',
+        scopeSeparator: ' ',
+        tokenFormat: 'form',
+        authParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+        }
     }
 };
 
@@ -120,6 +282,10 @@ function providerScopes(provider) {
     return [...((getProviderConfig(provider)?.scope) || [])];
 }
 
+function formatScopes(config) {
+    return (config.scope || []).join(config.scopeSeparator || ' ');
+}
+
 function buildAuthUrl(req, provider, statePayload) {
     const config = getProviderConfig(provider);
     if (!config) {
@@ -143,25 +309,20 @@ function buildAuthUrl(req, provider, statePayload) {
     }
 
     const url = new URL(config.authUrl);
+    url.searchParams.set('client_id', clientId);
+    url.searchParams.set('redirect_uri', callbackUrl);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('state', state);
+    const scope = formatScopes(config);
+    if (scope) {
+        url.searchParams.set('scope', scope);
+    }
+    Object.entries(config.authParams || {}).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+    });
 
-    if (provider === 'slack') {
-        url.searchParams.set('client_id', clientId);
-        url.searchParams.set('scope', config.scope.join(','));
-        url.searchParams.set('redirect_uri', callbackUrl);
-        url.searchParams.set('state', state);
-    } else if (provider === 'google') {
-        url.searchParams.set('client_id', clientId);
-        url.searchParams.set('redirect_uri', callbackUrl);
-        url.searchParams.set('response_type', 'code');
-        url.searchParams.set('access_type', 'offline');
-        url.searchParams.set('prompt', 'consent');
-        url.searchParams.set('scope', config.scope.join(' '));
-        url.searchParams.set('state', state);
-    } else if (provider === 'github') {
-        url.searchParams.set('client_id', clientId);
-        url.searchParams.set('redirect_uri', callbackUrl);
-        url.searchParams.set('scope', config.scope.join(' '));
-        url.searchParams.set('state', state);
+    if (provider === 'dropbox') {
+        url.searchParams.delete('scope');
     }
 
     return {
@@ -169,6 +330,40 @@ function buildAuthUrl(req, provider, statePayload) {
         state,
         callbackUrl
     };
+}
+
+async function fetchJson(response) {
+    const text = await response.text();
+    try {
+        return text ? JSON.parse(text) : {};
+    } catch {
+        return { raw: text };
+    }
+}
+
+function tokenDisplayName(provider, payload, config) {
+    if (provider === 'slack') return payload.team?.name || 'Slack Workspace';
+    if (provider === 'notion') return payload.workspace_name || payload.owner?.user?.name || 'Notion Workspace';
+    if (provider === 'linear') return payload.organization?.name || 'Linear Workspace';
+    if (provider === 'discord') return payload.guild?.name || 'Discord Workspace';
+    return config.label;
+}
+
+function tokenExternalId(provider, payload) {
+    if (provider === 'slack') return payload.team?.id || payload.team_id || '';
+    if (provider === 'notion') return payload.workspace_id || payload.bot_id || '';
+    if (provider === 'linear') return payload.organization?.id || '';
+    if (provider === 'discord') return payload.guild?.id || '';
+    if (payload.account_id) return payload.account_id;
+    if (payload.uid) return payload.uid;
+    return `${provider}-workspace`;
+}
+
+function parseGrantedScopes(provider, payload) {
+    if (Array.isArray(payload.scope)) return payload.scope;
+    if (!payload.scope) return providerScopes(provider);
+    const separator = provider === 'slack' ? ',' : ' ';
+    return String(payload.scope).split(separator).map((item) => item.trim()).filter(Boolean);
 }
 
 async function exchangeCodeForTokens(req, provider, code) {
@@ -190,87 +385,51 @@ async function exchangeCodeForTokens(req, provider, code) {
         };
     }
 
-    let response;
-    if (provider === 'slack') {
-        response = await fetch(config.tokenUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                code,
-                client_id: clientId,
-                client_secret: clientSecret,
-                redirect_uri: redirectUri
-            })
-        });
-        const payload = await response.json();
-        if (!response.ok || !payload.ok) {
-            throw new Error(payload.error || 'Slack token exchange failed');
-        }
-        return {
-            success: true,
-            accessToken: payload.access_token,
-            refreshToken: payload.refresh_token || '',
-            expiresIn: payload.expires_in || 3600,
-            scopesGranted: payload.scope ? String(payload.scope).split(',').filter(Boolean) : providerScopes(provider),
-            externalId: payload.team?.id || payload.team_id || '',
-            displayName: payload.team?.name || 'Slack Workspace',
-            raw: payload
-        };
+    const tokenPayload = {
+        code,
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+    };
+    if (provider !== 'github') {
+        tokenPayload.client_secret = clientSecret;
     }
 
-    if (provider === 'google') {
-        response = await fetch(config.tokenUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                code,
-                client_id: clientId,
-                client_secret: clientSecret,
-                redirect_uri: redirectUri,
-                grant_type: 'authorization_code'
-            })
-        });
-        const payload = await response.json();
-        if (!response.ok || payload.error) {
-            throw new Error(payload.error_description || payload.error || 'Google token exchange failed');
-        }
-        return {
-            success: true,
-            accessToken: payload.access_token,
-            refreshToken: payload.refresh_token || '',
-            expiresIn: payload.expires_in || 3600,
-            scopesGranted: payload.scope ? String(payload.scope).split(' ').filter(Boolean) : providerScopes(provider),
-            externalId: 'google-workspace',
-            displayName: 'Google Workspace',
-            raw: payload
-        };
+    const headers = {};
+    let body;
+    if (config.tokenAuth === 'basic') {
+        headers.Authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
+    } else if (provider === 'github') {
+        tokenPayload.client_secret = clientSecret;
     }
 
-    response = await fetch(config.tokenUrl, {
+    if (config.tokenFormat === 'json') {
+        headers.Accept = 'application/json';
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify(tokenPayload);
+    } else {
+        headers.Accept = 'application/json';
+        headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        body = new URLSearchParams(tokenPayload);
+    }
+
+    const response = await fetch(config.tokenUrl, {
         method: 'POST',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            code,
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: redirectUri
-        })
+        headers,
+        body
     });
-    const payload = await response.json();
-    if (!response.ok || payload.error) {
-        throw new Error(payload.error_description || payload.error || 'GitHub token exchange failed');
+    const payload = await fetchJson(response);
+    if (!response.ok || payload.error || payload.ok === false) {
+        throw new Error(payload.error_description || payload.error || `${config.label} token exchange failed`);
     }
     return {
         success: true,
         accessToken: payload.access_token,
-        refreshToken: '',
-        expiresIn: 3600,
-        scopesGranted: payload.scope ? String(payload.scope).split(',').filter(Boolean) : providerScopes(provider),
-        externalId: 'github-org',
-        displayName: 'GitHub Workspace',
+        refreshToken: payload.refresh_token || '',
+        expiresIn: payload.expires_in || 3600,
+        scopesGranted: parseGrantedScopes(provider, payload),
+        externalId: tokenExternalId(provider, payload),
+        displayName: tokenDisplayName(provider, payload, config),
         raw: payload
     };
 }
@@ -318,18 +477,19 @@ function sourceArtifactTemplates(provider, workspaceId, displayName) {
         ];
     }
 
+    const label = getProviderConfig(provider)?.label || displayName || provider;
     return [
         {
             ...base,
-            source_object_id: `${workspaceId}:github:org`,
-            type: 'github_workspace',
-            title: `${displayName} repositories`,
+            source_object_id: `${workspaceId}:${provider}:workspace`,
+            type: `${provider}_workspace`,
+            title: `${displayName || label} source`,
             participants: [],
             owners: [],
             timestamps: { discovered_at: new Date().toISOString() },
             linked_repos: [],
             linked_people: [],
-            linked_workflows: ['engineering_delivery']
+            linked_workflows: ['company_context']
         }
     ];
 }
@@ -496,19 +656,24 @@ async function listSourceConnectionsForWorkspace(workspaceId) {
 }
 
 function buildCompanySourceSettings(connections = [], existing = {}) {
-    const next = {
-        slack: { connected: false, skipped: false, status: 'not_connected', displayName: '', lastSyncAt: null, lastSyncStatus: 'idle', scopesGranted: [] },
-        google: { connected: false, skipped: false, status: 'not_connected', displayName: '', lastSyncAt: null, lastSyncStatus: 'idle', scopesGranted: [] },
-        github: { connected: false, skipped: false, status: 'not_connected', displayName: '', lastSyncAt: null, lastSyncStatus: 'idle', scopesGranted: [] }
+    const emptySource = {
+        connected: false,
+        skipped: false,
+        status: 'not_connected',
+        displayName: '',
+        lastSyncAt: null,
+        lastSyncStatus: 'idle',
+        scopesGranted: []
     };
+    const next = Object.fromEntries(Object.keys(PROVIDERS).map((provider) => [provider, { ...emptySource }]));
     Object.entries(existing || {}).forEach(([provider, value]) => {
-        if (next[provider]) {
-            next[provider] = { ...next[provider], ...(value || {}) };
-        }
+        next[provider] = { ...(next[provider] || emptySource), ...(value || {}) };
     });
 
     connections.forEach((connection) => {
-        if (!next[connection.provider]) return;
+        if (!next[connection.provider]) {
+            next[connection.provider] = { ...emptySource };
+        }
         next[connection.provider] = {
             ...next[connection.provider],
             connected: Boolean(connection.connected),

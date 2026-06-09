@@ -333,6 +333,10 @@ export default function Integrations() {
 
   const integrations = data?.integrations || [];
   const integrationByProvider = Object.fromEntries(integrations.map((item) => [item.provider, item]));
+  const supportedProviderIds = useMemo(() => {
+    const ids = (data?.providers || []).map((provider) => provider.id).filter((id) => providerMeta[id]);
+    return ids.length ? ids : Object.keys(providerMeta);
+  }, [data?.providers]);
   const connectedSourceCount = data?.connectedSourceCount || 0;
   const connectedSources = data?.connectedSources || [];
   const demoMode = Boolean(data?.capabilities?.demoMode);
@@ -390,6 +394,12 @@ export default function Integrations() {
             </div>
           )}
 
+          {startMutation.isError && (
+            <div className="rounded-xl border border-red-900/40 bg-red-900/10 p-4 text-sm text-red-300 shadow-inner">
+              Failed to start integration: {getErrorMessage(startMutation.error, 'Unknown error')}
+            </div>
+          )}
+
           {connectedSourceCount === 0 && (
             <div className="rounded-xl border border-[#EA803A]/30 bg-[#EA803A]/10 p-5 shadow-inner">
               <p className="text-sm font-semibold text-white">No sources connected.</p>
@@ -400,13 +410,15 @@ export default function Integrations() {
           )}
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {Object.values(providerMeta).map((provider) => {
+            {supportedProviderIds.map((providerId) => {
+              const provider = providerMeta[providerId];
               const integration = integrationByProvider[provider.id];
               const statusLabel = renderStatusLabel(integration);
               const toneKey = integration?.connected
                 ? (integration?.lastSyncStatus === 'queued' ? 'syncing' : 'connected')
                 : (integration?.status || 'not_connected');
               const connectionMode = integration?.connectionMode || (integration?.isSimulated ? 'demo' : 'live');
+              const isStarting = startMutation.isLoading && startMutation.variables?.provider === provider.id;
 
               return (
                 <div key={provider.id} className="relative rounded-xl p-[1px] bg-gradient-to-b from-zinc-800/50 to-zinc-900/10">
@@ -474,10 +486,11 @@ export default function Integrations() {
                       ) : (
                         <button
                           onClick={() => startMutation.mutate({ provider: provider.id, from: 'integrations' })}
+                          disabled={isStarting}
                           className="w-full inline-flex justify-center items-center gap-2 rounded-lg bg-gradient-to-b from-[#EA803A] to-[#d66a25] px-4 py-2.5 text-sm font-bold text-black shadow-md shadow-[#EA803A]/20 hover:opacity-90 transition-opacity"
                         >
-                          Connect {provider.label}
-                          <ArrowRight className="h-4 w-4" />
+                          {isStarting ? `Opening ${provider.label}...` : `Connect ${provider.label}`}
+                          {!isStarting && <ArrowRight className="h-4 w-4" />}
                         </button>
                       )}
                     </div>
