@@ -135,6 +135,27 @@ const proofPoints = [
   },
 ];
 
+const JiraBrand = ({ className = '' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    className={className}
+  >
+    <path
+      fill="#2684FF"
+      d="M12.04 2.1 21.9 12l-9.86 9.9-3.74-3.75L14.4 12 8.3 5.85l3.74-3.75Z"
+    />
+    <path
+      fill="#0052CC"
+      d="M12.04 2.1 8.3 5.85 4.58 9.6 2.1 12l2.48 2.4 3.72 3.75L12.04 21.9 5.92 12l6.12-9.9Z"
+    />
+    <path
+      fill="#4C9AFF"
+      d="M8.3 5.85 14.4 12l-6.1 6.15L4.58 14.4 7 12 4.58 9.6 8.3 5.85Z"
+    />
+  </svg>
+);
+
 const companyBrainSources = [
   {
     name: 'Slack',
@@ -149,7 +170,7 @@ const companyBrainSources = [
   {
     name: 'GitHub',
     detail: 'repos, issues, commits, pull requests',
-    icon: 'https://svgl.app/library/github_light.svg',
+    Icon: GithubBrand,
   },
   {
     name: 'Notion',
@@ -164,7 +185,7 @@ const companyBrainSources = [
   {
     name: 'Jira',
     detail: 'delivery plans and issue history',
-    icon: 'https://svgl.app/library/jira.svg',
+    Icon: JiraBrand,
   },
   {
     name: 'Figma',
@@ -906,12 +927,16 @@ export default function Landing() {
                     <div key={source.name} className="group rounded-xl border border-[#1f1f1f] bg-[#0d0d0d] p-3 transition-colors hover:border-[#333] hover:bg-[#111]">
                       <div className="mb-2 flex items-center gap-2.5">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#262626] bg-[#151515]">
-                          <img
-                            src={source.icon}
-                            alt={`${source.name} logo`}
-                            className="h-4.5 w-4.5 max-h-5 max-w-5 object-contain"
-                            loading="lazy"
-                          />
+                          {source.Icon ? (
+                            <source.Icon className={source.name === 'GitHub' ? 'h-5 w-5 text-white' : 'h-5 w-5'} />
+                          ) : (
+                            <img
+                              src={source.icon}
+                              alt={`${source.name} logo`}
+                              className="h-4.5 w-4.5 max-h-5 max-w-5 object-contain"
+                              loading="lazy"
+                            />
+                          )}
                         </span>
                         <div className="min-w-0">
                           <p className="syne text-sm font-bold text-white">{source.name}</p>

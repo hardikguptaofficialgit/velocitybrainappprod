@@ -15,6 +15,7 @@ from velocitybrain_client.client.exceptions import VelocityBrainError
 
 
 DEFAULT_BASE_URL = "https://velocity.linkitapp.in"
+DEFAULT_DASHBOARD_URL = "https://velocitybrain.vercel.app"
 
 
 def _config_path() -> Path:
@@ -24,16 +25,18 @@ def _config_path() -> Path:
 def load_config() -> dict[str, Any]:
     api_key = os.getenv("VELOCITYBRAIN_API_KEY")
     base_url = os.getenv("VELOCITYBRAIN_BASE_URL", DEFAULT_BASE_URL)
+    dashboard_url = os.getenv("VELOCITYBRAIN_DASHBOARD_URL", DEFAULT_DASHBOARD_URL)
     if not api_key and _config_path().exists():
         config = json.loads(_config_path().read_text(encoding="utf-8"))
         api_key = config.get("api_key")
         base_url = config.get("base_url", base_url)
+        dashboard_url = config.get("dashboard_url", dashboard_url)
     if not api_key:
         raise SystemExit(
             "VelocityBrain API key not found. Set VELOCITYBRAIN_API_KEY or run "
             "`velocitybrain config --set-key <key>`."
         )
-    return {"api_key": api_key, "base_url": base_url}
+    return {"api_key": api_key, "base_url": base_url, "dashboard_url": dashboard_url}
 
 
 def _emit_json(payload: dict[str, Any]) -> None:
@@ -67,7 +70,7 @@ def _normalize_result(payload: dict[str, Any]) -> dict[str, Any]:
 def cmd_run(args: argparse.Namespace) -> int:
     config = load_config()
     try:
-        with VelocityBrainClient(config["api_key"], config["base_url"]) as client:
+        with VelocityBrainClient(config["api_key"], config["base_url"], dashboard_url=config["dashboard_url"]) as client:
             payload = _normalize_result(client.run(args.task, response_style=args.response_style))
         _emit_json(payload) if args.json else print(json.dumps(payload, indent=2))
         return 0
@@ -79,7 +82,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 def cmd_status(args: argparse.Namespace) -> int:
     config = load_config()
     try:
-        with VelocityBrainClient(config["api_key"], config["base_url"]) as client:
+        with VelocityBrainClient(config["api_key"], config["base_url"], dashboard_url=config["dashboard_url"]) as client:
             payload = client.get_status()
         _emit_json(payload) if args.json else print(json.dumps(payload, indent=2))
         return 0
@@ -91,7 +94,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 def cmd_integrations(args: argparse.Namespace) -> int:
     config = load_config()
     try:
-        with VelocityBrainClient(config["api_key"], config["base_url"]) as client:
+        with VelocityBrainClient(config["api_key"], config["base_url"], dashboard_url=config["dashboard_url"]) as client:
             payload = client.get_integrations()
         _emit_json(payload) if args.json else print(json.dumps(payload, indent=2))
         return 0
@@ -103,7 +106,7 @@ def cmd_integrations(args: argparse.Namespace) -> int:
 def cmd_integrations_connect(args: argparse.Namespace) -> int:
     config = load_config()
     try:
-        with VelocityBrainClient(config["api_key"], config["base_url"]) as client:
+        with VelocityBrainClient(config["api_key"], config["base_url"], dashboard_url=config["dashboard_url"]) as client:
             payload = client.start_integration(args.provider)
         auth_url = payload.get("authUrl")
         if auth_url:
@@ -122,7 +125,11 @@ def cmd_integrations_connect(args: argparse.Namespace) -> int:
 def cmd_config(args: argparse.Namespace) -> int:
     config_dir = _config_path().parent
     config_dir.mkdir(parents=True, exist_ok=True)
-    payload = {"api_key": args.set_key, "base_url": args.base_url or DEFAULT_BASE_URL}
+    payload = {
+        "api_key": args.set_key,
+        "base_url": args.base_url or DEFAULT_BASE_URL,
+        "dashboard_url": args.dashboard_url or DEFAULT_DASHBOARD_URL,
+    }
     _config_path().write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"Saved VelocityBrain config to {_config_path()}")
     return 0
@@ -156,6 +163,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_config = sub.add_parser("config", help="Save hosted credentials")
     p_config.add_argument("--set-key", required=True)
     p_config.add_argument("--base-url")
+    p_config.add_argument("--dashboard-url")
     p_config.set_defaults(func=cmd_config)
     return parser
 

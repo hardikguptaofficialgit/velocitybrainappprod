@@ -6,9 +6,6 @@
   Hosted memory and reuse for coding agents, with a dashboard, company integrations, and a publishable open-source client boundary.
 </p>
 
-<p align="center">
-  <img src="docs/assets/velocitybrain-workflow.svg" alt="Velocity Brain workflow diagram" width="920" />
-</p>
 
 ## Overview
 

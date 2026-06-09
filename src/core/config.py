@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, field_validator, ConfigDict
@@ -33,6 +34,18 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _expand_env_refs(value: str) -> str:
+    return re.sub(
+        r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}",
+        lambda match: os.getenv(match.group(1), match.group(0)),
+        value,
+    )
+
+
+def _env_database_url(default: str) -> str:
+    return _expand_env_refs(os.path.expandvars(_env_str('DATABASE_URL', default)))
+
+
 class Settings(BaseModel):
     """Production-ready settings with validation."""
     
@@ -42,7 +55,7 @@ class Settings(BaseModel):
     port: int = Field(default_factory=lambda: _env_int('PORT', 8080), ge=1, le=65535, description='Server port')
     
     # Database settings
-    database_url: str = Field(default_factory=lambda: _env_str('DATABASE_URL', 'postgresql://velocity:velocity@localhost:5432/velocitybrain'), description='Database connection URL')
+    database_url: str = Field(default_factory=lambda: _env_database_url('postgresql://velocity:velocity@localhost:5432/velocitybrain'), description='Database connection URL')
     db_connect_timeout_seconds: int = Field(default_factory=lambda: _env_int('DB_CONNECT_TIMEOUT_SECONDS', 5), ge=1, le=60, description='Database connection timeout')
     db_lock_timeout_ms: int = Field(default_factory=lambda: _env_int('DB_LOCK_TIMEOUT_MS', 5000), ge=1000, le=300000, description='Database lock timeout')
     db_statement_timeout_ms: int = Field(default_factory=lambda: _env_int('DB_STATEMENT_TIMEOUT_MS', 15000), ge=1000, le=300000, description='Database statement timeout')
@@ -103,9 +116,10 @@ class Settings(BaseModel):
     def validate_database_url(cls, v):
         if not v or not v.strip():
             raise ValueError('Database URL cannot be empty')
+        v = _expand_env_refs(os.path.expandvars(v.strip()))
         if not v.startswith(('postgresql://', 'postgres://')):
             raise ValueError('Database URL must be a PostgreSQL connection string')
-        return v.strip()
+        return v
     
     @field_validator('default_access_level')
     @classmethod

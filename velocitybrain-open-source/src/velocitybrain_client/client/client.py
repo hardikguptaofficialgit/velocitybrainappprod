@@ -18,10 +18,12 @@ class VelocityBrainClient:
         self,
         api_key: str,
         base_url: str = "https://velocity.linkitapp.in",
+        dashboard_url: str = "https://velocitybrain.vercel.app",
         timeout: int = 30,
         max_retries: int = 3,
     ):
         self.base_url = base_url.rstrip("/")
+        self.dashboard_url = dashboard_url.rstrip("/")
         self.timeout = timeout
         self.max_retries = max_retries
         self.auth = AuthManager(api_key, self.base_url)
@@ -35,9 +37,10 @@ class VelocityBrainClient:
         *,
         data: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
+        authenticated: bool = True,
     ) -> dict[str, Any]:
         url = f"{self.base_url}{endpoint}"
-        headers = self.auth.get_auth_headers()
+        headers = self.auth.get_auth_headers() if authenticated else {"Content-Type": "application/json"}
         for attempt in range(self.max_retries + 1):
             try:
                 response = self._session.request(
@@ -116,32 +119,70 @@ class VelocityBrainClient:
         ))
 
     def get_status(self) -> dict[str, Any]:
-        return self.get_usage_stats()
+        health = self.get_health()
+        usage = self.get_usage_stats()
+        return {
+            "status": health.get("status", "unknown"),
+            "health": health,
+            "usage": usage,
+        }
 
     def get_health(self) -> dict[str, Any]:
-        return self.get_usage_stats()
+        return self._make_request("GET", "/v1/health", authenticated=False)
 
     def get_usage_stats(self) -> dict[str, Any]:
         return self._make_request("GET", "/v1/usage")
 
     def get_integrations(self) -> dict[str, Any]:
-        return self._make_request("GET", "/api/integrations")
+        return self._make_request("GET", "/v1/integrations")
 
     def get_integration_status(self, provider: str) -> dict[str, Any]:
-        return self._make_request("GET", f"/api/integrations/{provider}/status")
+        integrations = self.get_integrations().get("integrations", [])
+        for integration in integrations:
+            identifiers = {
+                str(integration.get("id", "")).lower(),
+                str(integration.get("agent_id", "")).lower(),
+                str(integration.get("provider", "")).lower(),
+                str(integration.get("source_type", "")).lower(),
+            }
+            if provider.lower() in identifiers:
+                return {"success": True, "provider": provider, "integration": integration}
+        return {
+            "success": True,
+            "provider": provider,
+            "integration": None,
+            "status": "not_connected",
+        }
 
     def start_integration(self, provider: str, *, from_surface: str = "integrations") -> dict[str, Any]:
-        return self._make_request(
-            "POST",
-            f"/api/integrations/{provider}/start",
-            data={"from": from_surface},
-        )
+        return {
+            "success": False,
+            "provider": provider,
+            "status": "dashboard_required",
+            "message": "Browser OAuth integrations must be connected from the VelocityBrain dashboard.",
+            "dashboard_url": f"{self.dashboard_url}/dashboard/integrations?provider={provider}&from={from_surface}",
+        }
 
     def resync_integration(self, provider: str) -> dict[str, Any]:
-        return self._make_request("POST", f"/api/integrations/{provider}/resync")
+        return {
+            "success": False,
+            "provider": provider,
+            "status": "dashboard_required",
+            "message": "Integration resync is currently available from the VelocityBrain dashboard.",
+            "dashboard_url": f"{self.dashboard_url}/dashboard/integrations?provider={provider}",
+        }
 
     def disconnect_integration(self, provider: str) -> dict[str, Any]:
-        return self._make_request("POST", f"/api/integrations/{provider}/disconnect")
+        status = self.get_integration_status(provider)
+        integration = status.get("integration")
+        connection_id = integration.get("id") if isinstance(integration, dict) else None
+        if not connection_id:
+            return {
+                "success": True,
+                "provider": provider,
+                "status": "not_connected",
+            }
+        return self._make_request("POST", f"/v1/integrations/{connection_id}/revoke")
 
     def close(self) -> None:
         self._session.close()

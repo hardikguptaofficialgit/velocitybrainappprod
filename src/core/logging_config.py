@@ -94,13 +94,16 @@ def setup_logging(
     # File handler
     if log_file:
         log_path = Path(log_file)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        file_handler = logging.FileHandler(log_path)
-        file_handler.setFormatter(formatter)
-        file_handler.addFilter(SecurityFilter())
-        file_handler.addFilter(AuditFilter())
-        root_logger.addHandler(file_handler)
+        try:
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+
+            file_handler = logging.FileHandler(log_path)
+            file_handler.setFormatter(formatter)
+            file_handler.addFilter(SecurityFilter())
+            file_handler.addFilter(AuditFilter())
+            root_logger.addHandler(file_handler)
+        except OSError as exc:
+            root_logger.warning("File logging disabled for %s: %s", log_path, exc)
     
     # Configure specific loggers
     configure_specific_loggers()

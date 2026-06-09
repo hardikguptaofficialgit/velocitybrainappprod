@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/velocity-brain-logo.svg" alt="Velocity Brain logo" width="96" />
+</p>
+
 # VelocityBrain Client
 
 Open-source CLI, Python SDK, and MCP bridge for the hosted Velocity Brain API.
@@ -59,3 +63,29 @@ Install from PyPI:
 
 ```bash
 pip install velocitybrain-client
+```
+
+## Quick Start
+
+Create an API key in the Velocity Brain dashboard, then configure the client:
+
+```bash
+velocitybrain config --set-key vb_your_key_here
+velocitybrain status
+velocitybrain run "Summarize the repo context I should reuse before editing auth."
+```
+
+Or use the Python SDK:
+
+```python
+from velocitybrain_client import VelocityBrainClient
+
+with VelocityBrainClient("vb_your_key_here") as client:
+    print(client.get_health())
+    print(client.run("Map the hosted API key flow."))
+```
+
+## Hosted API Notes
+
+The SDK talks to the hosted API at `https://velocity.linkitapp.in` by default.
+Browser OAuth integrations such as Slack, Google Workspace, and GitHub are connected from the dashboard because those flows require an interactive browser session. The SDK exposes integration status and returns dashboard guidance for browser-only connect/resync actions.
