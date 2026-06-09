@@ -1,111 +1,82 @@
 # OAuth Configuration Guide for VelocityBrain
 
-VelocityBrain uses **Firebase Authentication** for Google and GitHub sign-in. You must configure both **Firebase Console** and **Google Cloud Console** (for Google).
+VelocityBrain uses **Appwrite Authentication** for Google and GitHub sign-in. You must configure the Appwrite Console.
 
-Project: `velocitybrainapp`
-
-## Step 1: Firebase Authentication
+## Step 1: Appwrite OAuth Providers
 
 ### 1.1 Enable providers
 
-1. Open [Firebase Console](https://console.firebase.google.com) → project **velocitybrainapp**
-2. Go to **Build** → **Authentication** → **Sign-in method**
-3. Enable **Google** and **GitHub**
-4. For GitHub, enter the OAuth App Client ID and Secret (see Step 3)
+1. Open [Appwrite Console](https://cloud.appwrite.io) → project **VelocityBrain**
+2. Go to **Auth** → **Providers**
+3. Enable **Google** and **GitHub** providers
+4. For each provider, add the required credentials (Client ID/Secret)
 
-### 1.2 Authorized domains
+### 1.2 Configure Web Platform
 
-Go to **Authentication** → **Settings** → **Authorized domains** and ensure every frontend URL is listed:
+Go to **Auth** → **Websites** and add your frontend URLs:
 
-| Domain | Required for |
-|--------|----------------|
-| `localhost` | Local dev |
-| `velocitybrainapp.firebaseapp.com` | Firebase default |
-| `velocitybrainapp.web.app` | Firebase default |
-| `velocitybrain.vercel.app` | Vercel production |
-| `velocity.linkitapp.in` | Custom production domain |
+| Origin URL | Required for |
+|------------||----------------|
+| `http://localhost:3000` | Local dev |
+| `https://velocitybrain.vercel.app` | Vercel production |
+| `https://velocity.linkitapp.in` | Custom production domain |
 
-> Adding a domain here alone is **not enough** for Google sign-in. You also need Step 2.
+## Step 2: Google OAuth Configuration
 
-## Step 2: Google Cloud Console (required for Google sign-in)
-
-Firebase creates a **Web client (auto created by Google Service)** OAuth client. You must add your app URLs there.
-
-1. Open [Google Cloud Console](https://console.cloud.google.com) → project **velocitybrainapp**
+1. Open [Google Cloud Console](https://console.cloud.google.com)
 2. Go to **APIs & Services** → **Credentials**
-3. Open **Web client (auto created by Google Service)**
+3. Create OAuth 2.0 Client ID (Web application)
 4. Under **Authorised JavaScript origins**, add:
-   - `http://localhost`
    - `http://localhost:3000`
    - `https://velocitybrain.vercel.app`
    - `https://velocity.linkitapp.in`
-   - `https://velocitybrainapp.firebaseapp.com`
-5. Under **Authorised redirect URIs**, ensure this exists:
-   - `https://velocitybrainapp.firebaseapp.com/__/auth/handler`
-6. Save
-
-If `https://velocitybrain.vercel.app` is missing from **JavaScript origins**, Google sign-in can return to the login page without creating a Firebase session.
+5. Under **Authorised redirect URIs**, add:
+   - `https://fra.cloud.appwrite.io/v1/account/oauth2/callback/google`
 
 ## Step 3: GitHub OAuth App
 
 1. Go to [GitHub Developer Settings](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
 2. Configure:
-   - **Homepage URL**: `https://velocitybrain.vercel.app`
-   - **Authorization callback URL**: copy from Firebase Console → Authentication → Sign-in method → GitHub → **Authorization callback URL**
-3. Copy Client ID and Secret into Firebase → GitHub provider settings
+   - **Homepage URL**: Your dashboard URL
+   - **Authorization callback URL**: `https://fra.cloud.appwrite.io/v1/account/oauth2/callback/github`
+3. Copy Client ID and Secret into Appwrite → Google provider settings
 
-## Step 4: Vercel environment variables
+## Step 4: Vercel Environment Variables
 
-Firebase config is baked in at **build time**. In the Vercel project for the dashboard, set:
+In the Vercel project for the dashboard, set:
 
-- `REACT_APP_FIREBASE_API_KEY`
-- `REACT_APP_FIREBASE_AUTH_DOMAIN` = `velocitybrainapp.firebaseapp.com`
-- `REACT_APP_FIREBASE_PROJECT_ID` = `velocitybrainapp`
-- `REACT_APP_FIREBASE_STORAGE_BUCKET`
-- `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`
-- `REACT_APP_FIREBASE_APP_ID`
-- `REACT_APP_FIREBASE_MEASUREMENT_ID`
 - `REACT_APP_API_URL` = your backend URL (e.g. `https://velocity.linkitapp.in`)
+- `REACT_APP_APPWRITE_ENDPOINT` = `https://fra.cloud.appwrite.io/v1`
+- `REACT_APP_APPWRITE_PROJECT_ID` = your Appwrite project ID
 
-Redeploy after changing these values.
+## Step 5: Backend Appwrite Configuration
 
-## Step 5: Backend Firebase Admin
+The Node backend uses the Appwrite API key to verify sessions. Ensure production has:
 
-The Node backend verifies Firebase ID tokens at `/api/auth/firebase-session`. Ensure production has a valid service account:
-
-- `FIREBASE_SERVICE_ACCOUNT_PATH` or inline `FIREBASE_*` credentials in backend env
+- `APPWRITE_ENDPOINT` = `https://fra.cloud.appwrite.io/v1`
+- `APPWRITE_PROJECT_ID` = your Appwrite project ID
+- `APPWRITE_API_KEY` = backend server API key
+- `APPWRITE_DATABASE_ID` = your database ID
 
 ## Troubleshooting
 
-### "OAuth sign-in returned … but no Firebase session was created"
+### "OAuth sign-in could not be completed" error
 
-**Symptom**: After choosing a Google account, you land back on `/login` with this error.
+**Symptom**: After OAuth redirect, you land on `/login` with an error.
 
-**Most common cause**: `https://velocitybrain.vercel.app` is in Firebase **Authorized domains** but **not** in Google Cloud **Authorised JavaScript origins** (Step 2).
+**Most common cause**: The domain is **not** listed as a Web platform in Appwrite Console.
 
-**Also check**:
-1. Google provider is **Enabled** in Firebase Authentication
-2. Vercel has correct `REACT_APP_FIREBASE_*` vars and the app was redeployed
-3. On mobile, try again after the latest deploy (popup flow is preferred over redirect)
+**Check**:
+1. Appwrite project has OAuth providers enabled
+2. Your domain is in Appwrite **Websites** configuration
+3. The `REACT_APP_APPWRITE_*` environment variables are correct
+4. Backend `APPWRITE_API_KEY` is valid and has database permissions
 
-### Backend sync errors after Google sign-in succeeds
+### OAuth sign-in succeeds but session is not established
 
-If Firebase sign-in works but you stay on login with a server error:
+**Symptom**: OAuth returns but you're redirected back to login.
 
-1. Confirm `REACT_APP_API_URL` points to a reachable backend
-2. Confirm backend Firebase Admin credentials are configured
-3. Check backend logs for `/api/auth/firebase-session`
-
-## Current implementation
-
-```javascript
-// AuthContext.js — popup first, redirect fallback
-const result = await signInWithPopup(auth, googleProvider);
-await axios.post('/api/auth/firebase-session', { idToken });
-```
-
-After successful OAuth:
-1. Firebase creates the user session
-2. Frontend sends the Firebase ID token to `/api/auth/firebase-session`
-3. Backend creates/updates the user and returns a JWT
-4. User is redirected to onboarding or dashboard
+**Check backend logs** for `/api/auth/me` errors and verify:
+1. `CORS_ORIGINS` includes your frontend URL
+2. `APPWRITE_API_KEY` has proper permissions (users.read, databases.read)
+3. Database collections exist (users, workspaces, user_settings)

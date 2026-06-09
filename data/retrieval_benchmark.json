@@ -14,7 +14,7 @@
   {
     "question": "What do we know about Velocity Brain auth flow?",
     "expected_slugs": ["velocity-brain-auth-flow"],
-    "seed_content": "Velocity Brain auth flows include backend API key validation, Firebase-backed user sessions, and protected API routes.",
+    "seed_content": "Velocity Brain auth flows include backend API key validation, Appwrite-backed user sessions, and protected API routes.",
     "source": "benchmark"
   }
 ]

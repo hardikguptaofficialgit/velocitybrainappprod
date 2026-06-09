@@ -8,7 +8,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const { initializeDatabase } = require('./config/firebase');
+const { getDatabaseHealth, initializeDatabase } = require('./config/appwrite');
 const authRoutes = require('./routes/auth');
 const apiKeyRoutes = require('./routes/apiKeys');
 const usageRoutes = require('./routes/usage');
@@ -42,15 +42,12 @@ const normalizeOrigin = (value) => {
 
 // PRODUCTION REQUIREMENT: CORS_ORIGINS must include every domain that the
 // dashboard is served from, including the primary Vercel deployment URL and
-// any custom domains.  Missing an origin here causes POST /api/auth/firebase-session
-// to be silently blocked by the browser, which makes Google/GitHub sign-in appear
-// to get stuck with no visible error.
+// any custom domains. Missing an origin here causes authenticated dashboard API requests to be blocked by the browser after Appwrite sign-in.
 //
 // Example (backend .env or Vercel environment variable):
 //   CORS_ORIGINS=https://velocitybrain.vercel.app,https://app.velocitybrain.com
 //
-// Also ensure the same origins are listed in Firebase Console:
-//   Authentication → Settings → Authorized Domains
+// Also ensure the same origins are listed as Web platforms in Appwrite Console.
 const configuredCorsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map((origin) => normalizeOrigin(origin?.trim()))
@@ -68,7 +65,7 @@ const allowedOrigins = new Set([
 // Trust proxy (required for rate limiting behind proxies)
 app.set('trust proxy', 1);
 
-// Security middleware — allow OAuth popups (Firebase/Google) when this server serves the SPA.
+// Security middleware - allow OAuth popups when this server serves the SPA.
 app.use(helmet({
     crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
 }));
@@ -129,7 +126,6 @@ const authLimiter = rateLimit({
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/firebase-session', authLimiter);
 app.use('/api/', apiLimiter);
 
 // Body parsing
@@ -137,8 +133,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+    const database = await getDatabaseHealth();
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        database
+    });
 });
 
 app.get('/', (req, res) => {
@@ -213,12 +214,12 @@ app.use((req, res) => {
 // Start server
 async function startServer() {
     try {
-        // Initialize Firebase connection
+        // Initialize Appwrite connection
         const initResult = await initializeDatabase();
         if (initResult?.ok) {
-            console.log('Firebase initialized successfully');
+            console.log('Appwrite initialized successfully');
         } else if (initResult?.skipped) {
-            console.warn('Firebase skipped - database features will not be available');
+            console.warn('Appwrite skipped - database features will not be available');
         }
 
         const server = app.listen(PORT, () => {

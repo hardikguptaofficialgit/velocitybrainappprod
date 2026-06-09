@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, COLLECTIONS } = require('../config/firebase');
+const { db, COLLECTIONS } = require('../config/appwrite');
 const { authenticate } = require('../middleware/auth');
 const { ACCESS_POLICY } = require('../config/access');
 const { aggregateObservability } = require('../utils/observability');

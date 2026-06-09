@@ -23,7 +23,7 @@ copy dashboard\.env.example dashboard\.env
 
 Edit `backend/.env`:
 
-1. Firebase service account path (for auth)
+1. Appwrite endpoint, project id, database id, and backend API key
 2. `GITHUB_TOKEN` for VelAI (GitHub Models)
 3. Optional OAuth client IDs for **live** integrations (leave empty for **demo** mode)
 

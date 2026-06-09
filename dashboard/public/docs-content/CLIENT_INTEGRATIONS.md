@@ -387,7 +387,7 @@ This is expected by default. Enable policy only when needed using runtime approv
 ## Recommended Validation Flow
 
 1. `velocitybrain doctor`
-2. `velocitybrain ingest --source note --content "Auth uses Firebase on the frontend and backend session sync through /api/auth/firebase-session."`
+2. `velocitybrain ingest --source note --content "Auth uses Appwrite on the frontend and backend session sync through /api/auth/me."`
 3. `velocitybrain query "What do we know about auth and API keys in this repo?"`
 4. Client MCP `healthz` call
 5. Client MCP `query` call

@@ -344,7 +344,7 @@ class KnowledgeGraphService:
             similarity = self._calculate_text_similarity(entity_text, context_text)
             
             if similarity > 0.7:  # High similarity threshold
-                relationship_type = self._infer_relationship_from_similarity(
+                relationship_type = self._infer_relationship_type_from_similarity(
                     entity, context_entity, similarity
                 )
                 

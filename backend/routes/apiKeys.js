@@ -1,6 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
-const { db, COLLECTIONS } = require('../config/firebase');
+const { db, COLLECTIONS } = require('../config/appwrite');
 const { authenticate } = require('../middleware/auth');
 const { ACCESS_POLICY, getStandardQuota } = require('../config/access');
 const { aggregateObservability } = require('../utils/observability');

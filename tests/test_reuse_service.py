@@ -8,7 +8,7 @@ def test_reuse_service_records_exact_hit_and_savings():
     first = service.record_reuse_decision(
         run_id='run-1',
         task_text='Map the auth system in repo billing-api',
-        response_text='Auth map with Firebase session flow and API key validation.',
+        response_text='Auth map with Appwrite session flow and API key validation.',
         artifact_kind='repo_map',
         metadata={'workspace_id': 'acme', 'repo_id': 'billing-api'},
     )

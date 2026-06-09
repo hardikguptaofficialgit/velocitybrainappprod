@@ -1,23 +1,40 @@
 import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import BlobLoader from '../components/BlobLoader';
 
 const OAuthCallback = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const location = useLocation();
+  const { user, loading, appwriteUser, verifyOAuthToken } = useAuth();
 
   useEffect(() => {
-    // OAuth redirect completion is handled by AuthContext.
-    // Redirect to the correct destination once auth state resolves.
+    const params = new URLSearchParams(location.search);
+    const userId = params.get('userId');
+    const secret = params.get('secret');
+
+    if (userId && secret && !user) {
+      verifyOAuthToken(userId, secret).then((result) => {
+        if (result?.success) {
+          window.history.replaceState({}, '', '/oauth-callback');
+          navigate(result.user?.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
+        } else {
+          navigate('/login?error=oauth_failed', { replace: true });
+        }
+      });
+      return;
+    }
+
     if (!loading) {
       if (user) {
         navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding', { replace: true });
-      } else {
+      } else if (!appwriteUser) {
+        // No session found after OAuth redirect - fallback to login
         navigate('/login', { replace: true });
       }
     }
-  }, [user, loading, navigate]);
+  }, [appwriteUser, loading, location.search, navigate, user, verifyOAuthToken]);
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">

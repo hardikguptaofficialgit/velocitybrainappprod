@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import AvatarPicker from '../components/AvatarPicker';
@@ -169,11 +170,16 @@ const sanitizeDraftForm = (draft, fallback) => {
 
 const SelectDropdown = ({ label, value, onChange, options, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState(null);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const clickedTrigger = dropdownRef.current?.contains(event.target);
+      const clickedMenu = menuRef.current?.contains(event.target);
+      if (!clickedTrigger && !clickedMenu) {
         setIsOpen(false);
       }
     };
@@ -181,16 +187,83 @@ const SelectDropdown = ({ label, value, onChange, options, placeholder }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const updateMenuPosition = () => {
+      const button = buttonRef.current;
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const gap = 8;
+      const viewportPadding = 16;
+      const preferredMaxHeight = 240;
+      const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+      const spaceAbove = rect.top - viewportPadding;
+      const openAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(132, Math.min(preferredMaxHeight, openAbove ? spaceAbove - gap : spaceBelow - gap));
+      const left = Math.min(
+        Math.max(viewportPadding, rect.left),
+        Math.max(viewportPadding, window.innerWidth - rect.width - viewportPadding)
+      );
+
+      setMenuStyle({
+        left,
+        width: rect.width,
+        maxHeight,
+        top: openAbove ? undefined : rect.bottom + gap,
+        bottom: openAbove ? window.innerHeight - rect.top + gap : undefined
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [isOpen]);
+
   const selectedOption = options.find((opt) => opt.value === value);
+  const menu = isOpen && menuStyle ? createPortal(
+    <div
+      ref={menuRef}
+      style={menuStyle}
+      className="fixed z-[9999] overflow-y-auto rounded-2xl border border-white/10 bg-[#121212] py-1.5 shadow-[0_24px_70px_rgba(0,0,0,0.65)] animate-in fade-in slide-in-from-top-1"
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => {
+            onChange(option.value);
+            setIsOpen(false);
+          }}
+          className={`w-full px-4 py-2.5 text-left text-[13px] transition-colors ${
+            value === option.value
+            ? 'bg-[#EA803A]/10 text-[#EA803A] font-semibold'
+            : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>,
+    document.body
+  ) : null;
 
   return (
     <div className="block space-y-1.5" ref={dropdownRef}>
       {label && <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{label}</span>}
       <div className="relative">
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="flex w-full items-center justify-between rounded-2xl bg-[#121212] px-4 py-3.5 text-[13px] outline-none transition-colors duration-200 hover:bg-[#18181b] focus:bg-[#18181b]"
+          aria-expanded={isOpen}
         >
           <span className={selectedOption ? 'text-white' : 'text-zinc-500'}>
             {selectedOption ? selectedOption.label : placeholder || 'Select an option...'}
@@ -200,27 +273,7 @@ const SelectDropdown = ({ label, value, onChange, options, placeholder }) => {
           </svg>
         </button>
 
-        {isOpen && (
-          <div className="absolute left-0 top-full z-50 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl bg-[#121212] py-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1">
-            {options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-4 py-2.5 text-left text-[13px] transition-colors ${
-                  value === option.value 
-                  ? 'bg-[#EA803A]/10 text-[#EA803A] font-semibold' 
-                  : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {menu}
       </div>
     </div>
   );

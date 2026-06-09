@@ -85,9 +85,6 @@ const isHostedAvatarUrl = (value) => {
         if (!['http:', 'https:'].includes(parsed.protocol)) {
             return false;
         }
-        if (parsed.hostname === 'res.cloudinary.com' && parsed.pathname.includes('/velocitybrain/')) {
-            return true;
-        }
         if (parsed.hostname === 'api.dicebear.com' && parsed.pathname.startsWith('/9.x/')) {
             return true;
         }

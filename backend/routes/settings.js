@@ -1,8 +1,19 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
+const { InputFile } = require('../node_modules/node-appwrite/dist/inputFile.js');
 
-const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
-const { cloudinary, cloudinaryReady } = require('../config/cloudinary');
+const {
+    BUCKETS,
+    db,
+    endpoint,
+    ID,
+    Permission,
+    projectId,
+    Role,
+    storage,
+    COLLECTIONS,
+    appwriteInitialized
+} = require('../config/appwrite');
 const { authenticate } = require('../middleware/auth');
 const {
     ACCOUNT_TYPES,
@@ -23,11 +34,11 @@ const {
 
 const router = express.Router();
 
-const ensureFirebase = (res) => {
-    if (!firebaseInitialized) {
+const ensureAppwrite = (res) => {
+    if (!appwriteInitialized) {
         res.status(503).json({
             success: false,
-            message: 'Firebase not configured. Please set up Firebase credentials.'
+            message: 'Appwrite not configured. Please set up Appwrite credentials.'
         });
         return false;
     }
@@ -54,12 +65,18 @@ const getWorkspaceDoc = async (workspaceId) => {
     return doc;
 };
 
-const destroyCloudinaryAsset = async (publicId) => {
-    if (!cloudinaryReady || !publicId) return;
+const getFileViewUrl = ({ bucketId, fileId }) => (
+    `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${encodeURIComponent(projectId)}`
+);
+
+const deleteStorageFile = async ({ bucketId, fileId }) => {
+    if (!fileId) return;
     try {
-        await cloudinary.uploader.destroy(publicId, { invalidate: true, resource_type: 'image' });
+        await storage.deleteFile({ bucketId, fileId });
     } catch (error) {
-        console.warn('Failed to clean previous Cloudinary asset', publicId, error.message);
+        if (error?.code !== 404) {
+            console.warn('Failed to delete previous Appwrite Storage file', fileId, error.message);
+        }
     }
 };
 
@@ -83,31 +100,31 @@ const parseImageData = (imageData) => {
 };
 
 const saveImageUpload = async ({ imageData, target, entityId }) => {
-    if (!cloudinaryReady) {
-        throw new Error('Cloudinary is not configured on the backend');
-    }
+    const { mimeType, buffer } = parseImageData(imageData);
+    const bucketId = target === WORKSPACE_IMAGE_TARGET
+        ? BUCKETS.WORKSPACE_IMAGES
+        : BUCKETS.PROFILE_IMAGES;
+    const extension = mimeType.split('/')[1].replace('jpeg', 'jpg');
+    const fileId = ID.unique();
+    const file = InputFile.fromBuffer(buffer, `${target}-${entityId}-${Date.now()}.${extension}`);
 
-    const folder = target === WORKSPACE_IMAGE_TARGET
-        ? 'velocitybrain/workspaces'
-        : 'velocitybrain/profiles';
-
-    const result = await cloudinary.uploader.upload(imageData, {
-        folder,
-        public_id: `${entityId}-${Date.now()}`,
-        overwrite: true,
-        resource_type: 'image',
-        invalidate: true
+    const result = await storage.createFile({
+        bucketId,
+        fileId,
+        file,
+        permissions: [Permission.read(Role.any())]
     });
 
     return {
-        publicPath: result.secure_url,
-        publicId: result.public_id
+        bucketId,
+        fileId: result.$id,
+        publicPath: getFileViewUrl({ bucketId, fileId: result.$id })
     };
 };
 
 router.get('/', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const userDoc = await getUserDoc(req.user.id);
         if (!userDoc.exists) {
@@ -151,7 +168,7 @@ router.post('/onboarding', authenticate, [
     body('onboardingSelections').optional().isObject()
 ], async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -182,14 +199,6 @@ router.post('/onboarding', authenticate, [
         let workspaceId = userData.workspace_id || '';
         let existingWorkspace = workspaceId ? await getWorkspaceDoc(workspaceId) : null;
         const nextWorkspaceImageUrl = sanitizeAvatarUrl(req.body.workspaceImageUrl) || existingWorkspace?.data()?.image_url || '';
-
-        if (userData.avatar_public_id && userData.avatar_url !== nextAvatarUrl) {
-            await destroyCloudinaryAsset(userData.avatar_public_id);
-        }
-
-        if (existingWorkspace?.data()?.image_public_id && existingWorkspace.data().image_url !== nextWorkspaceImageUrl) {
-            await destroyCloudinaryAsset(existingWorkspace.data().image_public_id);
-        }
 
         const workspacePayload = buildWorkspacePayload({
             name: workspaceName,
@@ -260,7 +269,8 @@ router.post('/onboarding', authenticate, [
             account_type: accountType,
             avatar_url: nextAvatarUrl,
             avatar_path: '',
-            avatar_public_id: '',
+            avatar_file_id: userData.avatar_file_id || '',
+            avatar_bucket_id: userData.avatar_bucket_id || '',
             workspace_id: workspaceId,
             workspace_ids: Array.from(new Set([...(userData.workspace_ids || []), workspaceId])),
             onboarding_completed: true,
@@ -289,7 +299,7 @@ router.patch('/profile', authenticate, [
     body('avatarUrl').optional().isString()
 ], async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const userDoc = await getUserDoc(req.user.id);
         if (!userDoc.exists) {
@@ -305,12 +315,10 @@ router.patch('/profile', authenticate, [
         if (Object.prototype.hasOwnProperty.call(req.body, 'company')) updates.company = sanitizeText(req.body.company, 120);
         if (Object.prototype.hasOwnProperty.call(req.body, 'avatarUrl')) {
             const nextAvatarUrl = sanitizeAvatarUrl(req.body.avatarUrl);
-            if (nextAvatarUrl && nextAvatarUrl !== userDoc.data().avatar_url && userDoc.data().avatar_public_id) {
-                await destroyCloudinaryAsset(userDoc.data().avatar_public_id);
-            }
             updates.avatar_url = nextAvatarUrl;
             updates.avatar_path = '';
-            updates.avatar_public_id = '';
+            updates.avatar_file_id = nextAvatarUrl ? (userDoc.data().avatar_file_id || '') : '';
+            updates.avatar_bucket_id = nextAvatarUrl ? (userDoc.data().avatar_bucket_id || '') : '';
         }
 
         await userDoc.ref.update(updates);
@@ -328,7 +336,7 @@ router.patch('/profile', authenticate, [
 
 router.patch('/workspace', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const userDoc = await getUserDoc(req.user.id);
         if (!userDoc.exists) {
@@ -346,15 +354,13 @@ router.patch('/workspace', authenticate, async (req, res) => {
         }
 
         const update = sanitizeWorkspaceUpdate(req.body);
-        if (update.imageUrl && update.imageUrl !== workspaceDoc.data().image_url && workspaceDoc.data().image_public_id) {
-            await destroyCloudinaryAsset(workspaceDoc.data().image_public_id);
-        }
         const nextWorkspace = {
             ...workspaceDoc.data(),
             name: update.name || workspaceDoc.data().name,
             image_url: update.imageUrl || workspaceDoc.data().image_url,
             image_path: update.imageUrl ? '' : workspaceDoc.data().image_path,
-            image_public_id: update.imageUrl ? '' : workspaceDoc.data().image_public_id,
+            image_file_id: update.imageUrl ? (workspaceDoc.data().image_file_id || '') : workspaceDoc.data().image_file_id,
+            image_bucket_id: update.imageUrl ? (workspaceDoc.data().image_bucket_id || '') : workspaceDoc.data().image_bucket_id,
             settings: {
                 ...(workspaceDoc.data().settings || {}),
                 ...update.settings
@@ -378,7 +384,7 @@ router.patch('/workspace', authenticate, async (req, res) => {
 
 router.patch('/notifications', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const settingsDoc = await getSettingsDoc(req.user.id);
         const nextSettings = mergeSettings({
@@ -400,7 +406,7 @@ router.patch('/notifications', authenticate, async (req, res) => {
 
 router.patch('/api', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const settingsDoc = await getSettingsDoc(req.user.id);
         const nextApi = {
@@ -426,7 +432,7 @@ router.patch('/api', authenticate, async (req, res) => {
 
 router.patch('/agents', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const settingsDoc = await getSettingsDoc(req.user.id);
         const nextAgents = {
@@ -457,7 +463,7 @@ router.patch('/agents', authenticate, async (req, res) => {
 
 router.patch('/company-sources', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const settingsDoc = await getSettingsDoc(req.user.id);
         const nextSettings = mergeSettings({
@@ -479,27 +485,29 @@ router.patch('/company-sources', authenticate, async (req, res) => {
 
 router.post('/upload-image', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const target = sanitizeText(req.body.target, 20).toLowerCase();
         if (![WORKSPACE_IMAGE_TARGET, PROFILE_IMAGE_TARGET].includes(target)) {
             return res.status(400).json({ success: false, message: 'Upload target must be profile or workspace' });
         }
 
-        parseImageData(req.body.imageData);
         const userDoc = await getUserDoc(req.user.id);
         if (!userDoc.exists) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         if (target === PROFILE_IMAGE_TARGET) {
-            const currentPublicId = userDoc.data().avatar_public_id;
             const saved = await saveImageUpload({ imageData: req.body.imageData, target, entityId: req.user.id });
-            await destroyCloudinaryAsset(currentPublicId);
+            await deleteStorageFile({
+                bucketId: userDoc.data().avatar_bucket_id || BUCKETS.PROFILE_IMAGES,
+                fileId: userDoc.data().avatar_file_id
+            });
             await userDoc.ref.update({
                 avatar_url: saved.publicPath,
                 avatar_path: '',
-                avatar_public_id: saved.publicId,
+                avatar_file_id: saved.fileId,
+                avatar_bucket_id: saved.bucketId,
                 updated_at: new Date().toISOString()
             });
             const freshUserDoc = await getUserDoc(req.user.id);
@@ -521,11 +529,15 @@ router.post('/upload-image', authenticate, async (req, res) => {
         }
 
         const saved = await saveImageUpload({ imageData: req.body.imageData, target, entityId: workspaceId });
-        await destroyCloudinaryAsset(workspaceDoc.data().image_public_id);
+        await deleteStorageFile({
+            bucketId: workspaceDoc.data().image_bucket_id || BUCKETS.WORKSPACE_IMAGES,
+            fileId: workspaceDoc.data().image_file_id
+        });
         await workspaceDoc.ref.update({
             image_url: saved.publicPath,
             image_path: '',
-            image_public_id: saved.publicId,
+            image_file_id: saved.fileId,
+            image_bucket_id: saved.bucketId,
             updated_at: new Date().toISOString()
         });
         const freshWorkspace = await getWorkspaceDoc(workspaceId);

@@ -20,13 +20,8 @@ The local dev server uses `REACT_APP_API_URL` when it is set (default local stac
 Set these project environment variables in Vercel:
 
 - `REACT_APP_API_URL`
-- `REACT_APP_FIREBASE_API_KEY`
-- `REACT_APP_FIREBASE_AUTH_DOMAIN`
-- `REACT_APP_FIREBASE_PROJECT_ID`
-- `REACT_APP_FIREBASE_STORAGE_BUCKET`
-- `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`
-- `REACT_APP_FIREBASE_APP_ID`
-- `REACT_APP_FIREBASE_MEASUREMENT_ID`
+- `REACT_APP_APPWRITE_ENDPOINT`
+- `REACT_APP_APPWRITE_PROJECT_ID`
 
 Recommended production API URL for the current setup:
 
@@ -46,4 +41,4 @@ Recommended Vercel settings:
 
 - Do not commit `.env`
 - `build/` and `node_modules/` are intentionally ignored
-- Firebase frontend config is public client config; backend admin credentials do not belong in this repo
+- Appwrite frontend config is public client config; backend API keys do not belong in the dashboard bundle

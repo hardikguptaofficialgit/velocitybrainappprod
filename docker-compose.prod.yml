@@ -123,8 +123,6 @@ services:
     restart: unless-stopped
     networks:
       - velocitybrain-network
-    volumes:
-      - ./secrets/firebase-service-account.json:/app/firebase-service-account.json:ro
     deploy:
       resources:
         limits:

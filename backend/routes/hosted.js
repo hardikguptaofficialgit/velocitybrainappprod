@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
+const { db, COLLECTIONS, appwriteInitialized } = require('../config/appwrite');
 const { aggregateObservability } = require('../utils/observability');
 
 const router = express.Router();
@@ -27,7 +27,7 @@ function randomToken(prefix = 'vbp', bytes = 24) {
 }
 
 async function validateApiKey(apiKey) {
-    if (!apiKey || !firebaseInitialized) {
+    if (!apiKey || !appwriteInitialized) {
         return null;
     }
 
@@ -93,7 +93,7 @@ function issueHostedTokens(keyInfo) {
 }
 
 async function loadAgentConnection(connectionId) {
-    if (!firebaseInitialized || !connectionId) {
+    if (!appwriteInitialized || !connectionId) {
         return null;
     }
 
@@ -161,7 +161,7 @@ async function createAgentToken(connection, metadata = {}) {
         updated_at: now
     };
 
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return { id: randomToken('agt', 6), ...record };
     }
 
@@ -170,7 +170,7 @@ async function createAgentToken(connection, metadata = {}) {
 }
 
 async function revokeAgentTokensForConnection(connectionId, reason = 'revoked') {
-    if (!firebaseInitialized || !connectionId) {
+    if (!appwriteInitialized || !connectionId) {
         return;
     }
 
@@ -275,7 +275,7 @@ function collectSkills() {
 }
 
 async function buildUsageSummary(userId) {
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return {
             total_runs: 0,
             repeat_rate: 0,
@@ -341,7 +341,7 @@ async function logHostedUsage({
     errorType = '',
     insightFlags = []
 }) {
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return;
     }
 
@@ -409,7 +409,7 @@ async function upsertAgentConnection(userId, payload = {}) {
         updated_at: new Date().toISOString()
     };
 
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return {
             id: `${agentId}:${repoId}`,
             ...record
@@ -466,7 +466,7 @@ async function createPairingSession(userId, payload = {}) {
         updated_at: now.toISOString()
     };
 
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return { id: pairCode, pair_code: pairCode, ...record };
     }
 
@@ -475,7 +475,7 @@ async function createPairingSession(userId, payload = {}) {
 }
 
 async function loadPairingSession(pairCode) {
-    if (!pairCode || !firebaseInitialized) {
+    if (!pairCode || !appwriteInitialized) {
         return null;
     }
 
@@ -493,7 +493,7 @@ async function loadPairingSession(pairCode) {
 }
 
 async function recordInsightEvent(userId, insight = {}) {
-    if (!firebaseInitialized || !userId || !insight?.type) {
+    if (!appwriteInitialized || !userId || !insight?.type) {
         return;
     }
 
@@ -505,7 +505,7 @@ async function recordInsightEvent(userId, insight = {}) {
 }
 
 async function collectHostedIntelligence(userId) {
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return aggregateObservability({ logs: [], connections: [], apiKeys: [] });
     }
 
@@ -523,7 +523,7 @@ async function collectHostedIntelligence(userId) {
 }
 
 async function listAgentConnections(userId) {
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return [];
     }
 
@@ -552,7 +552,7 @@ async function storeHostedIngest(userId, body = {}) {
         return null;
     }
 
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return {
             id: `doc_${Date.now()}`,
             ...record
@@ -567,7 +567,7 @@ async function storeHostedIngest(userId, body = {}) {
 }
 
 async function loadHostedIngests(userId, limit = 50) {
-    if (!firebaseInitialized) {
+    if (!appwriteInitialized) {
         return [];
     }
 
@@ -721,7 +721,7 @@ router.post('/agent/pairings/complete', async (req, res) => {
             return res.status(409).json({ detail: 'Pairing session is no longer pending' });
         }
         if (new Date(session.expires_at) <= new Date()) {
-            if (firebaseInitialized) {
+            if (appwriteInitialized) {
                 await db.collection(COLLECTIONS.AGENT_PAIRING_SESSIONS).doc(session.id).update({
                     status: 'expired',
                     updated_at: new Date().toISOString()
@@ -750,7 +750,7 @@ router.post('/agent/pairings/complete', async (req, res) => {
             }
         });
 
-        if (firebaseInitialized) {
+        if (appwriteInitialized) {
             await db.collection(COLLECTIONS.AGENT_PAIRING_SESSIONS).doc(session.id).update({
                 status: 'completed',
                 completed_at: new Date().toISOString(),
@@ -826,7 +826,7 @@ router.post('/integrations/:id/revoke', authenticateHosted, async (req, res) => 
         if (!connection || connection.user_id !== req.hostedUser.user_id) {
             return res.status(404).json({ detail: 'Connection not found' });
         }
-        if (firebaseInitialized) {
+        if (appwriteInitialized) {
             await db.collection(COLLECTIONS.AGENT_CONNECTIONS).doc(connection.id).update({
                 status: 'revoked',
                 updated_at: new Date().toISOString(),

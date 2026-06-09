@@ -124,7 +124,7 @@ This layer manages the canonical data model.
 
 This is separate from the Python core and handles account/business features.
 
-- `backend/`: Express backend with Firebase-backed user and API-key management
+- `backend/`: Express backend with Appwrite-backed user and API-key management
 - `dashboard/`: customer dashboard and docs UI
 
 ### 7. Public/Open-Source Distribution Boundary
@@ -358,7 +358,7 @@ Below is the practical folder map of the repository.
 ```text
 velocitybrain/
   backend/                    Node/Express commercial backend
-    config/                   Firebase and access policy setup
+    config/                   Appwrite and access policy setup
     middleware/               Auth middleware
     routes/                   Auth, API keys, usage, dashboard endpoints
     __tests__/                Backend route tests
@@ -438,7 +438,7 @@ From the code:
 
 - `routes/auth.js` handles registration, login, profile, 2FA
 - `routes/apiKeys.js` handles creation, listing, update, deletion, validation
-- the backend uses Firebase/Firestore as the application database for users and keys
+- the backend uses Appwrite Cloud as the application database for users and keys
 
 ### `dashboard/`
 
@@ -586,7 +586,7 @@ This suggests the codebase mixes:
 ### 4. Security/auth implementation differs by layer
 
 The Python runtime has its own token/rate-limit helpers.
-The Node backend has its own JWT/auth and Firebase identity model.
+The Node backend has its own JWT/auth plus Appwrite identity model.
 
 This is sometimes unavoidable, but it means authentication is not unified into one single platform security model.
 

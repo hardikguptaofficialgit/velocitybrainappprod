@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
+const { db, COLLECTIONS, appwriteInitialized } = require('../config/appwrite');
 const { authenticate } = require('../middleware/auth');
 const { aggregateObservability } = require('../utils/observability');
 const { listSourceConnectionsForWorkspace, summarizeWorkspaceCoverage } = require('../utils/sourceIntegrations');
@@ -298,7 +298,7 @@ router.get('/stats', authenticate, async (req, res) => {
             .limit(10000)
             .get();
         const allUsageData = allUsageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const connectionSnapshot = firebaseInitialized
+        const connectionSnapshot = appwriteInitialized
             ? await db.collection(COLLECTIONS.AGENT_CONNECTIONS).where('user_id', '==', userId).limit(500).get()
             : { docs: [] };
         const connectionDocs = connectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -457,7 +457,7 @@ router.get('/agents', authenticate, async (req, res) => {
         let connectionDocs = [];
         let apiKeyDocs = [];
         let usageDocs = [];
-        if (firebaseInitialized) {
+        if (appwriteInitialized) {
             const snapshot = await db.collection(COLLECTIONS.AGENT_CONNECTIONS)
                 .where('user_id', '==', userId)
                 .limit(500)

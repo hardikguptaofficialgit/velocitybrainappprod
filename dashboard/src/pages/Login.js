@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Github, Google } from '../components/Icons';
+import { Github, Google, Mail } from '../components/Icons';
 import Logo from '../components/Logo';
 import BlobLoader from '../components/BlobLoader';
 import loginIllustration from '../assets/authillu.png';
@@ -17,13 +17,19 @@ export default function Login() {
   const {
     loginWithGithub,
     loginWithGoogle,
+    sendMagicUrl,
+    verifyMagicUrl,
     completeTwoFactor,
     error,
     user,
     loading,
-    oauthPending
+    oauthPending,
+    magicUrlPending
   } = useAuth();
   const [form, setForm] = useState(initialForm);
+  const [magicEmail, setMagicEmail] = useState('');
+  const [magicUrlSent, setMagicUrlSent] = useState(false);
+  const [magicUrlAction, setMagicUrlAction] = useState(false);
   const [oauthAction, setOauthAction] = useState(null);
   const [formAction, setFormAction] = useState(null);
   const [twoFactorChallenge, setTwoFactorChallenge] = useState(null);
@@ -31,6 +37,25 @@ export default function Login() {
   const oauthTimeoutRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Handle magic URL verification from email link
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const userId = params.get('userId');
+    const secret = params.get('secret');
+
+    if (userId && secret && !user) {
+      setMagicUrlAction(true);
+      verifyMagicUrl(userId, secret).then((result) => {
+        setMagicUrlAction(false);
+        if (result?.success) {
+          // Clean URL params and route
+          window.history.replaceState({}, '', '/login');
+          routeAfterAuth(result.user);
+        }
+      });
+    }
+  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (error) setLocalError(null);
@@ -67,6 +92,8 @@ export default function Login() {
     localStorage.removeItem('velocitybrain_oauth_pending');
     localStorage.removeItem('velocitybrain_oauth_provider');
     localStorage.removeItem('velocitybrain_oauth_pending_started_at');
+    localStorage.removeItem('velocitybrain_magic_url_pending');
+    localStorage.removeItem('velocitybrain_magic_url_pending_started_at');
     sessionStorage.clear();
     window.location.assign('/login');
   };
@@ -136,20 +163,40 @@ export default function Login() {
     }
   };
 
-  const oauthDisabled = Boolean(oauthAction || formAction);
+  const handleSendMagicUrl = async (e) => {
+    e.preventDefault();
+    const email = magicEmail.trim();
+    if (!email || !email.includes('@')) {
+      setLocalError('Please enter a valid email address.');
+      return;
+    }
+    setLocalError(null);
+    const result = await sendMagicUrl(email);
+    if (result?.success) {
+      setMagicUrlSent(true);
+    }
+  };
+
+  const oauthDisabled = Boolean(oauthAction || formAction || magicUrlAction);
   const formDisabled = Boolean(formAction);
 
   if (user) {
     return <Navigate to={user.onboardingCompleted ? '/dashboard' : '/onboarding'} replace />;
   }
 
-  if ((loading && !formAction) || oauthPending) {
+  if ((loading && !formAction && !magicUrlAction) || oauthPending || magicUrlPending) {
     return (
       <div className="min-h-screen bg-[#080808] flex items-center justify-center px-6 text-center text-white">
         <div className="space-y-4">
           <BlobLoader
             size={84}
-            label={oauthPending ? 'Completing secure sign in...' : 'Checking your session...'}
+            label={
+              magicUrlPending
+                ? 'Verifying magic link...'
+                : oauthPending
+                  ? 'Completing secure sign in...'
+                  : 'Checking your session...'
+            }
           />
           <button
             type="button"
@@ -189,12 +236,18 @@ export default function Login() {
         <div className="w-full max-w-md relative z-10 flex flex-col justify-center">
           <div className="mb-8 text-center lg:text-left">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
-              {twoFactorChallenge ? 'Verify your account' : 'Welcome back'}
+              {twoFactorChallenge
+                ? 'Verify your account'
+                : magicUrlSent
+                  ? 'Check your inbox'
+                  : 'Welcome back'}
             </h2>
             <p className="text-zinc-400 text-base font-light">
               {twoFactorChallenge
                 ? `Enter the code for ${twoFactorChallenge.user?.email || 'your account'}.`
-                : 'Sign in with Google or GitHub to access your workspace.'}
+                : magicUrlSent
+                  ? `We sent a magic link to ${magicEmail}. Click it to sign in.`
+                  : 'Sign in with Google, GitHub, or a magic link to access your workspace.'}
             </p>
           </div>
 
@@ -205,7 +258,7 @@ export default function Login() {
             </div>
           )}
 
-          {!twoFactorChallenge && (
+          {!twoFactorChallenge && !magicUrlSent && (
             <>
               <div className="space-y-3 mb-6">
                 <button
@@ -227,7 +280,57 @@ export default function Login() {
                   {oauthAction === 'google' ? 'Continuing with Google...' : 'Continue with Google'}
                 </button>
               </div>
+
+              <div className="relative flex items-center my-6">
+                <div className="flex-grow border-t border-white/10" />
+                <span className="mx-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">or</span>
+                <div className="flex-grow border-t border-white/10" />
+              </div>
+
+              <form onSubmit={handleSendMagicUrl} className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={magicEmail}
+                    onChange={(e) => setMagicEmail(e.target.value)}
+                    disabled={oauthDisabled}
+                    placeholder="you@example.com"
+                    className="flex-1 rounded-2xl border border-white/10 bg-[#111113] px-4 py-3.5 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-[#EA803A]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={oauthDisabled || !magicEmail.trim()}
+                    className="flex items-center gap-2 rounded-2xl bg-[#EA803A] px-5 py-3.5 text-sm font-bold text-black transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 hover:bg-[#f0965a] whitespace-nowrap"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Magic Link
+                  </button>
+                </div>
+              </form>
             </>
+          )}
+
+          {magicUrlSent && !twoFactorChallenge && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center py-8">
+                <div className="w-16 h-16 rounded-full bg-[#EA803A]/10 flex items-center justify-center">
+                  <Mail className="h-8 w-8 text-[#EA803A]" />
+                </div>
+              </div>
+              <p className="text-center text-sm text-zinc-400">
+                The link expires in 15 minutes. If you don't see it, check your spam folder.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setMagicUrlSent(false);
+                  setMagicEmail('');
+                }}
+                className="w-full rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:text-white"
+              >
+                Try a different method
+              </button>
+            </div>
           )}
 
           {twoFactorChallenge && (

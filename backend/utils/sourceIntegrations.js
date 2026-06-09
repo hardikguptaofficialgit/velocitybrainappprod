@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
+const { db, COLLECTIONS, appwriteInitialized } = require('../config/appwrite');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'velocitybrain-dev-secret';
 const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
@@ -335,7 +335,7 @@ function sourceArtifactTemplates(provider, workspaceId, displayName) {
 }
 
 async function writeConnectionArtifacts(connection) {
-    if (!firebaseInitialized) return;
+    if (!appwriteInitialized) return;
     const artifacts = sourceArtifactTemplates(connection.provider, connection.workspace_id, connection.display_name || connection.provider);
     await Promise.all(artifacts.map((artifact) => db.collection(COLLECTIONS.SOURCE_ARTIFACTS).add({
         ...artifact,
@@ -346,7 +346,7 @@ async function writeConnectionArtifacts(connection) {
 }
 
 async function createSyncJob(connection, status = 'queued') {
-    if (!firebaseInitialized) return null;
+    if (!appwriteInitialized) return null;
     const now = new Date().toISOString();
     const payload = {
         source_connection_id: connection.id,
@@ -363,7 +363,7 @@ async function createSyncJob(connection, status = 'queued') {
 }
 
 async function appendConnectionEvent(connectionId, eventType, payload = {}) {
-    if (!firebaseInitialized) return null;
+    if (!appwriteInitialized) return null;
     const event = {
         source_connection_id: connectionId,
         event_type: eventType,
@@ -384,8 +384,8 @@ async function upsertSourceConnection({
     tokens,
     metadata = {}
 }) {
-    if (!firebaseInitialized) {
-        throw new Error('Firebase not configured');
+    if (!appwriteInitialized) {
+        throw new Error('Appwrite not configured');
     }
 
     const snapshot = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
@@ -469,7 +469,7 @@ function summarizeConnection(connection, latestJob = null) {
 }
 
 async function listSourceConnectionsForWorkspace(workspaceId) {
-    if (!firebaseInitialized || !workspaceId) return [];
+    if (!appwriteInitialized || !workspaceId) return [];
     const [connectionsSnapshot, jobsSnapshot] = await Promise.all([
         db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
             .where('workspace_id', '==', workspaceId)

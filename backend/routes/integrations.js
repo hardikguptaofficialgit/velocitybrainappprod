@@ -1,6 +1,6 @@
 const express = require('express');
 
-const { db, COLLECTIONS, firebaseInitialized } = require('../config/firebase');
+const { db, COLLECTIONS, appwriteInitialized } = require('../config/appwrite');
 const { authenticate } = require('../middleware/auth');
 const { mergeSettings } = require('../utils/account');
 const {
@@ -20,11 +20,11 @@ const {
 const router = express.Router();
 const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
-const ensureFirebase = (res) => {
-    if (!firebaseInitialized) {
+const ensureAppwrite = (res) => {
+    if (!appwriteInitialized) {
         res.status(503).json({
             success: false,
-            message: 'Firebase not configured. Please set up Firebase credentials.'
+            message: 'Appwrite not configured. Please set up Appwrite credentials.'
         });
         return false;
     }
@@ -65,7 +65,7 @@ async function persistCompanySourceSettings(userId, connections, existingSelecti
 
 router.get('/', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const connections = await listSourceConnectionsForWorkspace(req.user.workspaceId);
         const settingsDoc = await getSettingsDoc(req.user.id);
@@ -89,7 +89,7 @@ router.get('/', authenticate, async (req, res) => {
 
 router.get('/onboarding-status', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const connections = await listSourceConnectionsForWorkspace(req.user.workspaceId);
         const settingsDoc = await getSettingsDoc(req.user.id);
@@ -112,7 +112,7 @@ router.get('/onboarding-status', authenticate, async (req, res) => {
 
 router.post('/:provider/start', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const provider = String(req.params.provider || '').toLowerCase();
         if (!PROVIDERS[provider]) {
@@ -160,7 +160,7 @@ router.get('/:provider/callback', async (req, res) => {
     };
 
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
         if (!PROVIDERS[provider]) {
             return res.redirect(status({ status: 'error', from: 'integrations', message: 'unsupported_provider' }));
         }
@@ -240,7 +240,7 @@ router.get('/:provider/callback', async (req, res) => {
 
 router.get('/:provider/status', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const provider = String(req.params.provider || '').toLowerCase();
         if (!PROVIDERS[provider]) {
@@ -263,7 +263,7 @@ router.get('/:provider/status', authenticate, async (req, res) => {
 
 router.post('/:provider/resync', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const provider = String(req.params.provider || '').toLowerCase();
         if (!PROVIDERS[provider]) {
@@ -310,7 +310,7 @@ router.post('/:provider/resync', authenticate, async (req, res) => {
 
 router.post('/:provider/disconnect', authenticate, async (req, res) => {
     try {
-        if (!ensureFirebase(res)) return;
+        if (!ensureAppwrite(res)) return;
 
         const provider = String(req.params.provider || '').toLowerCase();
         if (!PROVIDERS[provider]) {

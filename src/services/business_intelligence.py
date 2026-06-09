@@ -125,35 +125,42 @@ class BusinessIntelligenceService:
                 with conn.cursor() as cur:
                     # Calculate daily active users
                     cur.execute("""
-                        SELECT COUNT(DISTINCT actor) as daily_users
-                        FROM timeline_events
-                        WHERE event_ts >= NOW() - INTERVAL '%s days'
-                        AND actor IS NOT NULL
-                    """, (days))
+                        SELECT COUNT(DISTINCT actor_ref) as daily_users
+                        FROM (
+                            SELECT COALESCE(
+                                event_payload->>'user_id',
+                                event_payload->>'actor',
+                                source_ref
+                            ) as actor_ref
+                            FROM timeline_events
+                            WHERE event_ts >= NOW() - (%s * INTERVAL '1 day')
+                        ) activity
+                        WHERE actor_ref IS NOT NULL AND actor_ref <> ''
+                    """, (days,))
                     
                     user_result = cur.fetchone()
-                    daily_users = float(user_result['daily_users']) if user_result else 0.0
+                    daily_users = float(user_result['daily_users'] or 0) if user_result else 0.0
                     
                     # Calculate knowledge entities
                     cur.execute("""
                         SELECT COUNT(*) as total_entities
                         FROM entities
-                        WHERE updated_at >= NOW() - INTERVAL '%s days'
-                    """, (days))
+                        WHERE updated_at >= NOW() - (%s * INTERVAL '1 day')
+                    """, (days,))
                     
                     entity_result = cur.fetchone()
-                    total_entities = float(entity_result['total_entities']) if entity_result else 0.0
+                    total_entities = float(entity_result['total_entities'] or 0) if entity_result else 0.0
                     
                     # Calculate queries per day
                     cur.execute("""
-                        SELECT COUNT(*) / %s as queries_per_day
+                        SELECT COUNT(*) / %s::float as queries_per_day
                         FROM timeline_events
-                        WHERE event_ts >= NOW() - INTERVAL '%s days'
+                        WHERE event_ts >= NOW() - (%s * INTERVAL '1 day')
                         AND source_type = 'query_executed'
-                    """, (days))
+                    """, (days, days))
                     
                     query_result = cur.fetchone()
-                    queries_per_day = float(query_result['queries_per_day']) if query_result else 0.0
+                    queries_per_day = float(query_result['queries_per_day'] or 0) if query_result else 0.0
                     
                     # Calculate task completion rate
                     cur.execute("""
@@ -161,8 +168,8 @@ class BusinessIntelligenceService:
                             COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
                             COUNT(*) as total
                         FROM agent_runs
-                        WHERE created_at >= NOW() - INTERVAL '%s days'
-                    """, (days))
+                        WHERE created_at >= NOW() - (%s * INTERVAL '1 day')
+                    """, (days,))
                     
                     task_result = cur.fetchone()
                     if task_result and task_result['total'] > 0:
@@ -175,11 +182,11 @@ class BusinessIntelligenceService:
                         SELECT AVG(EXTRACT(EPOCH FROM (completed_at - created_at)) * 1000) as avg_response_ms
                         FROM agent_runs
                         WHERE status = 'completed'
-                        AND created_at >= NOW() - INTERVAL '%s days'
-                    """, (days))
+                        AND created_at >= NOW() - (%s * INTERVAL '1 day')
+                    """, (days,))
                     
                     response_result = cur.fetchone()
-                    avg_response_time = float(response_result['avg_response_ms']) if response_result else 0.0
+                    avg_response_time = float(response_result['avg_response_ms'] or 0) if response_result else 0.0
                     
                     # Calculate error rate
                     cur.execute("""
@@ -187,8 +194,8 @@ class BusinessIntelligenceService:
                             COUNT(CASE WHEN status = 'failed' THEN 1 END) as errors,
                             COUNT(*) as total
                         FROM agent_runs
-                        WHERE created_at >= NOW() - INTERVAL '%s days'
-                    """, (days))
+                        WHERE created_at >= NOW() - (%s * INTERVAL '1 day')
+                    """, (days,))
                     
                     error_result = cur.fetchone()
                     if error_result and error_result['total'] > 0:

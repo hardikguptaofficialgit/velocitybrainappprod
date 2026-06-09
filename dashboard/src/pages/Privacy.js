@@ -96,7 +96,7 @@ const Privacy = () => {
             <ul className="list-disc list-inside text-zinc-400 space-y-2 ml-4">
               <li>GitHub OAuth for authentication</li>
               <li>Google OAuth for authentication</li>
-              <li>Firebase for backend services</li>
+              <li>Appwrite Cloud for authentication, database, and storage</li>
             </ul>
             <p className="text-zinc-400 leading-relaxed mt-4">
               These services have their own privacy policies which we encourage you to review.

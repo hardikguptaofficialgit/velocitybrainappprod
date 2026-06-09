@@ -20,6 +20,7 @@ $results = New-Object System.Collections.Generic.List[object]
 $apiProcess = $null
 $apiOwnedByScript = $false
 $apiLogPath = Join-Path $root "test-results\api-server.log"
+$apiErrLogPath = Join-Path $root "test-results\api-server.err.log"
 
 function Add-Result {
     param(
@@ -167,6 +168,9 @@ try {
             if (Test-Path $apiLogPath) {
                 Remove-Item $apiLogPath -Force
             }
+            if (Test-Path $apiErrLogPath) {
+                Remove-Item $apiErrLogPath -Force
+            }
 
             if (Test-ApiHealthy -BaseUrl $baseUrl) {
                 Write-Host "API already healthy at $baseUrl. Reusing existing server."
@@ -174,7 +178,7 @@ try {
             }
 
             $cmd = "Set-Location '$root'; & '$pythonExe' -m src.cli serve api --host $ApiHost --port $ApiPort"
-            $apiProcess = Start-Process -FilePath "powershell" -ArgumentList "-NoProfile", "-Command", $cmd -PassThru -RedirectStandardOutput $apiLogPath -RedirectStandardError $apiLogPath
+            $apiProcess = Start-Process -FilePath "powershell" -ArgumentList "-NoProfile", "-Command", $cmd -PassThru -WindowStyle Hidden -RedirectStandardOutput $apiLogPath -RedirectStandardError $apiErrLogPath
             $apiOwnedByScript = $true
             Wait-ForApi -BaseUrl $baseUrl
 
