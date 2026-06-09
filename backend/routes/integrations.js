@@ -20,6 +20,15 @@ const {
 const router = express.Router();
 const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
+function callbackErrorMessage(error) {
+    const message = String(error?.message || 'callback_failed')
+        .toLowerCase()
+        .replace(/[^a-z0-9_ .:-]/g, '')
+        .trim()
+        .replace(/\s+/g, '_');
+    return message || 'callback_failed';
+}
+
 const ensureAppwrite = (res) => {
     if (!appwriteInitialized) {
         res.status(503).json({
@@ -224,7 +233,7 @@ router.get('/:provider/callback', async (req, res) => {
             workspaceId: decoded.workspaceId
         }));
     } catch (error) {
-        console.error('Integration callback error:', error);
+        console.error(`Integration callback error for ${provider}:`, error);
         let decoded = { from: 'integrations' };
         try {
             decoded = verifyIntegrationState(String(req.query.state || ''));
@@ -233,7 +242,7 @@ router.get('/:provider/callback', async (req, res) => {
             status: 'error',
             from: decoded.from || 'integrations',
             workspaceId: decoded.workspaceId,
-            message: 'callback_failed'
+            message: callbackErrorMessage(error)
         }));
     }
 });
@@ -272,7 +281,7 @@ router.post('/:provider/resync', authenticate, async (req, res) => {
 
         const snapshot = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
             .where('workspace_id', '==', req.user.workspaceId)
-            .where('provider', '==', provider)
+            .where('source_type', '==', provider)
             .limit(1)
             .get();
 
@@ -284,7 +293,11 @@ router.post('/:provider/resync', authenticate, async (req, res) => {
         const current = { id: doc.id, ...doc.data() };
         const now = new Date().toISOString();
         await doc.ref.update({
-            last_sync_status: 'queued',
+            metadata: {
+                ...(current.metadata || {}),
+                last_sync_status: 'queued'
+            },
+            last_sync_at: now,
             updated_at: now
         });
         const syncJob = await createSyncJob(current, 'queued');
@@ -319,7 +332,7 @@ router.post('/:provider/disconnect', authenticate, async (req, res) => {
 
         const snapshot = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
             .where('workspace_id', '==', req.user.workspaceId)
-            .where('provider', '==', provider)
+            .where('source_type', '==', provider)
             .limit(1)
             .get();
 
@@ -331,9 +344,13 @@ router.post('/:provider/disconnect', authenticate, async (req, res) => {
         const now = new Date().toISOString();
         await doc.ref.update({
             status: 'disconnected',
-            revoked_at: now,
+            metadata: {
+                ...(doc.data().metadata || {}),
+                revoked_at: now,
+                last_sync_status: 'revoked'
+            },
             updated_at: now,
-            last_sync_status: 'revoked'
+            last_sync_at: now
         });
         await appendConnectionEvent(doc.id, 'disconnected', {
             userId: req.user.id

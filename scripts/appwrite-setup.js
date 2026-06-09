@@ -316,6 +316,8 @@ const COLLECTIONS = {
     indexes: [
       { key: 'idx_workspace_id', type: 'key', attrs: ['workspace_id'] },
       { key: 'idx_user_id', type: 'key', attrs: ['user_id'] },
+      { key: 'idx_source_type', type: 'key', attrs: ['source_type'] },
+      { key: 'idx_workspace_source', type: 'key', attrs: ['workspace_id', 'source_type'] },
     ],
   },
   source_sync_jobs: {
@@ -332,6 +334,7 @@ const COLLECTIONS = {
     ],
     indexes: [
       { key: 'idx_source_connection_id', type: 'key', attrs: ['source_connection_id'] },
+      { key: 'idx_workspace_id', type: 'key', attrs: ['workspace_id'] },
     ],
   },
   source_artifacts: {

@@ -435,27 +435,37 @@ async function exchangeCodeForTokens(req, provider, code) {
 }
 
 function sourceArtifactTemplates(provider, workspaceId, displayName) {
+    const now = new Date().toISOString();
     const base = {
         workspace_id: workspaceId,
-        source_provider: provider,
-        freshness: 'connected',
-        confidence: 0.9,
-        permissions_context: 'workspace_oauth'
+        metadata: {
+            source_provider: provider,
+            freshness: 'connected',
+            confidence: 0.9,
+            permissions_context: 'workspace_oauth'
+        },
+        synced_at: now,
+        created_at: now,
+        updated_at: now
     };
 
     if (provider === 'slack') {
         return [
             {
                 ...base,
-                source_object_id: `${workspaceId}:slack:welcome-thread`,
-                type: 'slack_thread',
+                external_id: `${workspaceId}:slack:welcome-thread`,
+                artifact_type: 'slack_thread',
                 title: `${displayName} onboarding thread`,
-                participants: [],
-                owners: [],
-                timestamps: { discovered_at: new Date().toISOString() },
-                linked_repos: [],
-                linked_people: [],
-                linked_workflows: ['team_communication']
+                content: '',
+                metadata: {
+                    ...base.metadata,
+                    participants: [],
+                    owners: [],
+                    timestamps: { discovered_at: now },
+                    linked_repos: [],
+                    linked_people: [],
+                    linked_workflows: ['team_communication']
+                }
             }
         ];
     }
@@ -464,15 +474,19 @@ function sourceArtifactTemplates(provider, workspaceId, displayName) {
         return [
             {
                 ...base,
-                source_object_id: `${workspaceId}:google:workspace`,
-                type: 'google_workspace',
+                external_id: `${workspaceId}:google:workspace`,
+                artifact_type: 'google_workspace',
                 title: `${displayName} workspace corpus`,
-                participants: [],
-                owners: [],
-                timestamps: { discovered_at: new Date().toISOString() },
-                linked_repos: [],
-                linked_people: [],
-                linked_workflows: ['knowledge_management']
+                content: '',
+                metadata: {
+                    ...base.metadata,
+                    participants: [],
+                    owners: [],
+                    timestamps: { discovered_at: now },
+                    linked_repos: [],
+                    linked_people: [],
+                    linked_workflows: ['knowledge_management']
+                }
             }
         ];
     }
@@ -481,27 +495,30 @@ function sourceArtifactTemplates(provider, workspaceId, displayName) {
     return [
         {
             ...base,
-            source_object_id: `${workspaceId}:${provider}:workspace`,
-            type: `${provider}_workspace`,
+            external_id: `${workspaceId}:${provider}:workspace`,
+            artifact_type: `${provider}_workspace`,
             title: `${displayName || label} source`,
-            participants: [],
-            owners: [],
-            timestamps: { discovered_at: new Date().toISOString() },
-            linked_repos: [],
-            linked_people: [],
-            linked_workflows: ['company_context']
+            content: '',
+            metadata: {
+                ...base.metadata,
+                participants: [],
+                owners: [],
+                timestamps: { discovered_at: now },
+                linked_repos: [],
+                linked_people: [],
+                linked_workflows: ['company_context']
+            }
         }
     ];
 }
 
 async function writeConnectionArtifacts(connection) {
     if (!appwriteInitialized) return;
-    const artifacts = sourceArtifactTemplates(connection.provider, connection.workspace_id, connection.display_name || connection.provider);
+    const provider = connection.source_type || connection.provider;
+    const artifacts = sourceArtifactTemplates(provider, connection.workspace_id, connection.display_name || provider);
     await Promise.all(artifacts.map((artifact) => db.collection(COLLECTIONS.SOURCE_ARTIFACTS).add({
         ...artifact,
-        source_connection_id: connection.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        source_connection_id: connection.id
     })));
 }
 
@@ -510,13 +527,14 @@ async function createSyncJob(connection, status = 'queued') {
     const now = new Date().toISOString();
     const payload = {
         source_connection_id: connection.id,
-        provider: connection.provider,
         workspace_id: connection.workspace_id,
-        user_id: connection.user_id,
-        stage: 'initial_backfill',
         status,
-        created_at: now,
-        updated_at: now
+        items_synced: 0,
+        items_failed: 0,
+        error_message: '',
+        started_at: '',
+        completed_at: null,
+        created_at: now
     };
     const ref = await db.collection(COLLECTIONS.SOURCE_SYNC_JOBS).add(payload);
     return { id: ref.id, ...payload };
@@ -550,28 +568,30 @@ async function upsertSourceConnection({
 
     const snapshot = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
         .where('workspace_id', '==', workspaceId)
-        .where('provider', '==', provider)
+        .where('source_type', '==', provider)
         .limit(1)
         .get();
 
     const now = new Date().toISOString();
     const tokenBundle = encryptTokenBundle(tokens);
     const payload = {
-        provider,
+        source_type: provider,
+        source_id: externalTeamOrOrgId || `${provider}-workspace`,
         workspace_id: workspaceId,
         user_id: userId,
         status: 'connected',
-        scopes_granted: scopesGranted,
+        scopes: scopesGranted,
         connected_at: snapshot.empty ? now : (snapshot.docs[0].data().connected_at || now),
         last_sync_at: now,
-        last_sync_status: 'queued',
-        external_team_or_org_id: externalTeamOrOrgId || '',
         display_name: displayName || getProviderConfig(provider)?.label || provider,
         metadata: {
             ...metadata,
-            token_bundle: tokenBundle
+            token_bundle: tokenBundle,
+            provider,
+            external_team_or_org_id: externalTeamOrOrgId || '',
+            last_sync_status: 'queued',
+            revoked_at: null
         },
-        revoked_at: null,
         updated_at: now
     };
 
@@ -605,19 +625,21 @@ function summarizeConnection(connection, latestJob = null) {
     const metadata = connection.metadata || {};
     const tokenBundle = metadata.token_bundle;
     const simulated = Boolean(metadata.simulated);
+    const provider = connection.provider || connection.source_type || metadata.provider || '';
+    const revokedAt = connection.revoked_at || metadata.revoked_at || null;
     return {
         id: connection.id,
-        provider: connection.provider,
-        label: getProviderConfig(connection.provider)?.label || connection.provider,
+        provider,
+        label: getProviderConfig(provider)?.label || provider,
         status: connection.status || 'unknown',
-        connected: connection.status === 'connected' && !connection.revoked_at,
+        connected: connection.status === 'connected' && !revokedAt,
         displayName: connection.display_name || '',
-        scopesGranted: Array.isArray(connection.scopes_granted) ? connection.scopes_granted : [],
+        scopesGranted: Array.isArray(connection.scopes_granted) ? connection.scopes_granted : (Array.isArray(connection.scopes) ? connection.scopes : []),
         connectedAt: connection.connected_at || null,
         lastSyncAt: connection.last_sync_at || null,
-        lastSyncStatus: latestJob?.status || connection.last_sync_status || 'idle',
-        externalTeamOrOrgId: connection.external_team_or_org_id || '',
-        revokedAt: connection.revoked_at || null,
+        lastSyncStatus: latestJob?.status || connection.last_sync_status || metadata.last_sync_status || 'idle',
+        externalTeamOrOrgId: connection.external_team_or_org_id || connection.source_id || metadata.external_team_or_org_id || '',
+        revokedAt,
         hasStoredCredentials: Boolean(tokenBundle),
         isSimulated: simulated,
         connectionMode: simulated ? 'demo' : 'live',
@@ -644,7 +666,9 @@ async function listSourceConnectionsForWorkspace(workspaceId) {
     const latestJobByConnection = new Map();
     jobs.forEach((job) => {
         const current = latestJobByConnection.get(job.source_connection_id);
-        if (!current || new Date(job.updated_at || 0) > new Date(current.updated_at || 0)) {
+        const jobTime = job.updated_at || job.completed_at || job.started_at || job.created_at || 0;
+        const currentTime = current?.updated_at || current?.completed_at || current?.started_at || current?.created_at || 0;
+        if (!current || new Date(jobTime) > new Date(currentTime)) {
             latestJobByConnection.set(job.source_connection_id, job);
         }
     });
