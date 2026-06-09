@@ -28,7 +28,12 @@ const PROVIDERS = {
         clientIdEnv: 'SLACK_CLIENT_ID',
         clientSecretEnv: 'SLACK_CLIENT_SECRET',
         scopeSeparator: ',',
-        tokenFormat: 'form'
+        tokenFormat: 'form',
+        tokenParams: {
+            client_id: true,
+            client_secret: true,
+            grant_type: false
+        }
     },
     google: {
         id: 'google',
@@ -67,7 +72,7 @@ const PROVIDERS = {
         clientIdEnv: 'GITHUB_CLIENT_ID',
         clientSecretEnv: 'GITHUB_CLIENT_SECRET',
         scopeSeparator: ' ',
-        tokenFormat: 'json'
+        tokenFormat: 'form'
     },
     notion: {
         id: 'notion',
@@ -79,7 +84,6 @@ const PROVIDERS = {
         clientSecretEnv: 'NOTION_CLIENT_SECRET',
         scopeSeparator: ' ',
         tokenFormat: 'json',
-        tokenAuth: 'basic',
         authParams: {
             response_type: 'code',
             owner: 'user'
@@ -115,12 +119,17 @@ const PROVIDERS = {
         id: 'figma',
         label: 'Figma',
         authUrl: 'https://www.figma.com/oauth',
-        tokenUrl: 'https://www.figma.com/api/v1/oauth/token',
-        scope: ['file_content:read'],
+        tokenUrl: 'https://api.figma.com/v1/oauth/token',
+        scope: ['current_user:read', 'file_content:read', 'file_metadata:read', 'file_versions:read', 'project_metadata:read'],
         clientIdEnv: 'FIGMA_CLIENT_ID',
         clientSecretEnv: 'FIGMA_CLIENT_SECRET',
         scopeSeparator: ' ',
-        tokenFormat: 'form'
+        tokenFormat: 'form',
+        tokenAuth: 'basic',
+        tokenParams: {
+            grant_type: true,
+            redirect_uri: true
+        }
     },
     discord: {
         id: 'discord',
@@ -311,7 +320,9 @@ function buildAuthUrl(req, provider, statePayload) {
     const url = new URL(config.authUrl);
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', callbackUrl);
-    url.searchParams.set('response_type', 'code');
+    if (config.authParams?.response_type !== null) {
+        url.searchParams.set('response_type', 'code');
+    }
     url.searchParams.set('state', state);
     const scope = formatScopes(config);
     if (scope) {
@@ -354,6 +365,7 @@ function tokenExternalId(provider, payload) {
     if (provider === 'notion') return payload.workspace_id || payload.bot_id || '';
     if (provider === 'linear') return payload.organization?.id || '';
     if (provider === 'discord') return payload.guild?.id || '';
+    if (provider === 'figma') return payload.user_id_string || payload.user_id || '';
     if (payload.account_id) return payload.account_id;
     if (payload.uid) return payload.uid;
     return `${provider}-workspace`;
@@ -385,13 +397,24 @@ async function exchangeCodeForTokens(req, provider, code) {
         };
     }
 
-    const tokenPayload = {
-        code,
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code'
+    const tokenParams = {
+        client_id: config.tokenAuth !== 'basic',
+        client_secret: config.tokenAuth !== 'basic' && provider !== 'github',
+        grant_type: true,
+        redirect_uri: true,
+        ...(config.tokenParams || {})
     };
-    if (provider !== 'github') {
+    const tokenPayload = { code };
+    if (tokenParams.redirect_uri) {
+        tokenPayload.redirect_uri = redirectUri;
+    }
+    if (tokenParams.grant_type) {
+        tokenPayload.grant_type = 'authorization_code';
+    }
+    if (tokenParams.client_id) {
+        tokenPayload.client_id = clientId;
+    }
+    if (tokenParams.client_secret) {
         tokenPayload.client_secret = clientSecret;
     }
 
@@ -420,7 +443,8 @@ async function exchangeCodeForTokens(req, provider, code) {
     });
     const payload = await fetchJson(response);
     if (!response.ok || payload.error || payload.ok === false) {
-        throw new Error(payload.error_description || payload.error || `${config.label} token exchange failed`);
+        const providerError = payload.error_description || payload.error || payload.raw || `${config.label} token exchange failed`;
+        throw new Error(`${config.label} token exchange failed: ${String(providerError).slice(0, 240)}`);
     }
     return {
         success: true,
