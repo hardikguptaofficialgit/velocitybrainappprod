@@ -281,15 +281,18 @@ router.post('/:provider/resync', authenticate, async (req, res) => {
 
         const snapshot = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
             .where('workspace_id', '==', req.user.workspaceId)
-            .where('source_type', '==', provider)
-            .limit(1)
+            .limit(100)
             .get();
+        const sourceDoc = snapshot.docs.find((doc) => {
+            const data = doc.data();
+            return (data.source_type || data.provider || data.metadata?.provider) === provider;
+        });
 
-        if (snapshot.empty) {
+        if (!sourceDoc) {
             return res.status(404).json({ success: false, message: 'Integration not connected yet' });
         }
 
-        const doc = snapshot.docs[0];
+        const doc = sourceDoc;
         const current = { id: doc.id, ...doc.data() };
         const now = new Date().toISOString();
         await doc.ref.update({
@@ -332,15 +335,18 @@ router.post('/:provider/disconnect', authenticate, async (req, res) => {
 
         const snapshot = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
             .where('workspace_id', '==', req.user.workspaceId)
-            .where('source_type', '==', provider)
-            .limit(1)
+            .limit(100)
             .get();
+        const sourceDoc = snapshot.docs.find((doc) => {
+            const data = doc.data();
+            return (data.source_type || data.provider || data.metadata?.provider) === provider;
+        });
 
-        if (snapshot.empty) {
+        if (!sourceDoc) {
             return res.status(404).json({ success: false, message: 'Integration not connected yet' });
         }
 
-        const doc = snapshot.docs[0];
+        const doc = sourceDoc;
         const now = new Date().toISOString();
         await doc.ref.update({
             status: 'disconnected',

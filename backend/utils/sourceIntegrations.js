@@ -568,9 +568,12 @@ async function upsertSourceConnection({
 
     const snapshot = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS)
         .where('workspace_id', '==', workspaceId)
-        .where('source_type', '==', provider)
-        .limit(1)
+        .limit(100)
         .get();
+    const existingDoc = snapshot.docs.find((doc) => {
+        const data = doc.data();
+        return (data.source_type || data.provider || data.metadata?.provider) === provider;
+    });
 
     const now = new Date().toISOString();
     const tokenBundle = encryptTokenBundle(tokens);
@@ -581,7 +584,7 @@ async function upsertSourceConnection({
         user_id: userId,
         status: 'connected',
         scopes: scopesGranted,
-        connected_at: snapshot.empty ? now : (snapshot.docs[0].data().connected_at || now),
+        connected_at: existingDoc ? (existingDoc.data().connected_at || now) : now,
         last_sync_at: now,
         display_name: displayName || getProviderConfig(provider)?.label || provider,
         metadata: {
@@ -596,16 +599,16 @@ async function upsertSourceConnection({
     };
 
     let id;
-    if (snapshot.empty) {
+    if (!existingDoc) {
         const ref = await db.collection(COLLECTIONS.SOURCE_CONNECTIONS).add({
             ...payload,
             created_at: now
         });
         id = ref.id;
     } else {
-        id = snapshot.docs[0].id;
-        await snapshot.docs[0].ref.set({
-            ...snapshot.docs[0].data(),
+        id = existingDoc.id;
+        await existingDoc.ref.set({
+            ...existingDoc.data(),
             ...payload
         });
     }
@@ -695,14 +698,16 @@ function buildCompanySourceSettings(connections = [], existing = {}) {
     });
 
     connections.forEach((connection) => {
-        if (!next[connection.provider]) {
-            next[connection.provider] = { ...emptySource };
+        const provider = connection.provider || connection.source_type || connection.metadata?.provider;
+        if (!provider) return;
+        if (!next[provider]) {
+            next[provider] = { ...emptySource };
         }
-        next[connection.provider] = {
-            ...next[connection.provider],
+        next[provider] = {
+            ...next[provider],
             connected: Boolean(connection.connected),
             status: connection.status || 'connected',
-            displayName: connection.displayName || next[connection.provider].displayName,
+            displayName: connection.displayName || connection.display_name || next[provider].displayName,
             lastSyncAt: connection.lastSyncAt || null,
             lastSyncStatus: connection.lastSyncStatus || 'idle',
             scopesGranted: connection.scopesGranted || []
