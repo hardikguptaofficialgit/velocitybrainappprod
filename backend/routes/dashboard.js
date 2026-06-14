@@ -216,6 +216,99 @@ const buildAgentRuntimeStatus = () => {
             extraCandidates: [
                 ['docs', 'CLIENT_INTEGRATIONS.md']
             ]
+        },
+        {
+            id: 'antigravity',
+            name: 'Antigravity',
+            surface: 'MCP',
+            setup: 'antigravity mcp add velocitybrain',
+            summary: 'Google DeepMind highly capable autonomous agent integration.',
+            strengths: ['Advanced reasoning', 'System-level access', 'Deep codebase understanding'],
+            templateCandidates: [
+                ['integrations', 'mcp', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
+            ],
+            workspaceCandidates: [
+                ['.gemini'],
+                ['.gemini', 'mcp.json'],
+                ['.gemini.json']
+            ],
+            extraCandidates: [
+                ['identity.spec.json'],
+                ['scripts', 'verify_mcp_integrations.ps1']
+            ]
+        },
+        {
+            id: 'warp',
+            name: 'Warp AI',
+            surface: 'MCP',
+            setup: 'warp mcp add velocitybrain',
+            summary: 'AI-enhanced terminal workflows with shared memory.',
+            strengths: ['Terminal context', 'Command generation', 'Native execution'],
+            templateCandidates: [
+                ['integrations', 'mcp', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
+            ],
+            workspaceCandidates: [
+                ['.warp']
+            ],
+            extraCandidates: [
+                ['docs', 'CLIENT_INTEGRATIONS.md']
+            ]
+        },
+        {
+            id: 'cursor',
+            name: 'Cursor',
+            surface: 'MCP',
+            setup: 'cursor mcp add velocitybrain',
+            summary: 'AI-first code editor integration with background workspace retrieval.',
+            strengths: ['Editor native', 'File context', 'Inline generation'],
+            templateCandidates: [
+                ['integrations', 'mcp', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
+            ],
+            workspaceCandidates: [
+                ['.cursorrules']
+            ],
+            extraCandidates: [
+                ['docs', 'CLIENT_INTEGRATIONS.md']
+            ]
+        },
+        {
+            id: 'copilot',
+            name: 'GitHub Copilot',
+            surface: 'MCP',
+            setup: 'copilot mcp add velocitybrain',
+            summary: 'Enterprise AI pair programmer wired to the Company Brain.',
+            strengths: ['Enterprise ready', 'Autocomplete', 'Widespread adoption'],
+            templateCandidates: [
+                ['integrations', 'mcp', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
+            ],
+            workspaceCandidates: [
+                ['.github']
+            ],
+            extraCandidates: [
+                ['docs', 'CLIENT_INTEGRATIONS.md']
+            ]
+        },
+        {
+            id: 'windsurf',
+            name: 'Windsurf',
+            surface: 'MCP',
+            setup: 'windsurf mcp add velocitybrain',
+            summary: 'Codeium AI IDE integration with fast retrieval mechanisms.',
+            strengths: ['Fast autocomplete', 'Contextual chat', 'Editor integration'],
+            templateCandidates: [
+                ['integrations', 'mcp', 'README.md'],
+                ['velocitybrain-open-source', 'integrations', 'mcp', 'mcpServers.velocitybrain.json']
+            ],
+            workspaceCandidates: [
+                ['.codeium']
+            ],
+            extraCandidates: [
+                ['docs', 'CLIENT_INTEGRATIONS.md']
+            ]
         }
     ];
 

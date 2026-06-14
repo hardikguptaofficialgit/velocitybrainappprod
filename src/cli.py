@@ -1710,9 +1710,12 @@ def _try_auto_connect(client_name: str) -> tuple[bool, str]:
     if client_name not in {'codex', 'claude'}:
         return False, 'Automatic MCP connection is supported for Codex and Claude.'
     command = _connect_command_for_client(client_name)
-    completed = subprocess.run(command.split(), capture_output=True, text=True)
-    output = completed.stdout.strip() or completed.stderr.strip() or 'Command executed.'
-    return completed.returncode == 0, output
+    try:
+        completed = subprocess.run(command.split(), capture_output=True, text=True)
+        output = completed.stdout.strip() or completed.stderr.strip() or 'Command executed.'
+        return completed.returncode == 0, output
+    except FileNotFoundError:
+        return False, f"Client executable '{client_name}' was not found on this system. Skipped auto-connect."
 
 
 def cmd_quickstart(args: argparse.Namespace) -> int:
