@@ -2211,6 +2211,17 @@ def cmd_connect(args: argparse.Namespace) -> int:
         }, indent=2)
         payload['hint'] = 'Add this MCP entry to the OpenClaw settings file, then restart OpenClaw.'
         exit_code = 0
+    elif args.client == 'antigravity':
+        payload['config'] = json.dumps({
+            'mcpServers': {
+                'velocitybrain': {
+                    'command': 'velocitybrain',
+                    'args': ['serve', 'mcp'],
+                }
+            }
+        }, indent=2)
+        payload['hint'] = 'Pairing completed! Configure your Antigravity agent configuration to include the velocitybrain MCP server.'
+        exit_code = 0
     else:
         payload['config'] = json.dumps({
             'mcpServers': {
@@ -2326,7 +2337,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_config.set_defaults(func=cmd_config)
 
     p_connect = sub.add_parser('connect', help='Show or apply MCP client setup for Codex, Claude, Hermes, OpenClaw, or a generic client.')
-    p_connect.add_argument('client', choices=['codex', 'claude', 'hermes', 'openclaw', 'generic'])
+    p_connect.add_argument('client', choices=['codex', 'claude', 'hermes', 'openclaw', 'antigravity', 'generic'])
     p_connect.add_argument('--apply', action='store_true', help='Run the client registration command when supported.')
     p_connect.add_argument('--pair-code', help='Complete a browser-issued agent pairing session before applying local MCP setup.')
     p_connect.add_argument('--repo-path', help='Repository path to associate with the pairing and connection flow.')

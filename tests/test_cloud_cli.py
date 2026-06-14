@@ -324,3 +324,33 @@ def test_export_metrics_outputs_user_repo_and_failure_groups(monkeypatch, capsys
 
     assert exit_code == 0
     assert set(output.keys()) >= {'user_metrics', 'repo_metrics', 'failure_clusters'}
+
+
+def test_connect_antigravity_returns_config_and_pairing_hint(monkeypatch, capsys):
+    state = {'base_url': 'https://api.example.com'}
+    monkeypatch.setattr(cli, '_load_cli_config', lambda: dict(state))
+    monkeypatch.setattr(cli, '_save_cli_config', lambda payload: state.clear() or state.update(payload))
+    monkeypatch.setattr(cli, '_detect_repo_context', lambda repo_path=None: {
+        'repo_id': 'repo-x',
+        'repo_name': 'repo-x',
+        'repo_path': str(Path.cwd()),
+        'cwd': str(Path.cwd()),
+        'project_id': 'repo-x',
+        'branch': 'main',
+    })
+    monkeypatch.setattr(cli.VelocityBrainClient, 'complete_agent_pairing', lambda **kwargs: {
+        'agent_connection_id': 'conn_123',
+        'access_token': 'agent_access',
+        'refresh_token': 'agent_refresh',
+        'expires_in': 3600,
+    })
+
+    parser = cli.build_parser()
+    args = parser.parse_args(['connect', 'antigravity', '--pair-code', 'vbp_pair_code'])
+
+    exit_code = cli.cmd_connect(args)
+    captured = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert state['preferred_agent'] == 'antigravity'
+    assert 'Antigravity agent configuration' in captured
